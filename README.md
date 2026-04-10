@@ -22,10 +22,10 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-3. Set Mapbox token in local config
+3. Set Mapbox token
 
-- Copy `web/config.example.js` to `web/config.js`
-- Put your token in `window.APP_CONFIG.mapboxToken`
+- Local: set env var `MAPBOX_PUBLIC_TOKEN`
+- Vercel: Project Settings -> Environment Variables -> add `MAPBOX_PUBLIC_TOKEN`
 
 4. Start backend server
 
@@ -39,9 +39,10 @@ uvicorn backend.main:app --reload
 
 ## Endpoints
 - `GET /api/health`
+- `GET /api/config`
 - `GET /api/lot/{borough}/{block}/{lot}`
 - `POST /api/envelope`
 
 ## Notes
 - This is a starter scaffold. Envelope math is intentionally simplified and should be replaced with your full Rhino zoning logic port.
-- Keep `web/config.js` untracked so the token is not committed.
+- The frontend reads token from `/api/config`, which returns `MAPBOX_PUBLIC_TOKEN`.

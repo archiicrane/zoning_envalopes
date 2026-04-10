@@ -72,6 +72,13 @@ def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/config")
+def frontend_config() -> Dict[str, str]:
+    # Mapbox public tokens are safe to expose to the browser.
+    token = os.getenv("MAPBOX_PUBLIC_TOKEN") or os.getenv("MAPBOX_TOKEN") or ""
+    return {"mapboxToken": token}
+
+
 @app.get("/api/lot/{borough}/{block}/{lot}")
 def get_lot_by_bbl_parts(borough: str, block: str, lot: str) -> Dict[str, Any]:
     # Borough can be numeric (1..5) or letter (M,B,K,Q,S)

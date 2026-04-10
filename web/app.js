@@ -1,19 +1,45 @@
-const config = window.APP_CONFIG || {};
-if (!config.mapboxToken || config.mapboxToken.includes("YOUR_MAPBOX")) {
-  alert("Missing Mapbox token. Add it to web/config.js");
+async function resolveMapboxToken() {
+  const local = (window.APP_CONFIG && window.APP_CONFIG.mapboxToken) || "";
+  if (local && !local.includes("YOUR_MAPBOX")) {
+    return local;
+  }
+
+  try {
+    const res = await fetch("/api/config");
+    if (res.ok) {
+      const cfg = await res.json();
+      const token = (cfg && cfg.mapboxToken) || "";
+      if (token) {
+        return token;
+      }
+    }
+  } catch (err) {
+    // Continue to explicit error below.
+  }
+
+  throw new Error(
+    "Missing Mapbox token. Set MAPBOX_PUBLIC_TOKEN in Vercel Environment Variables."
+  );
 }
 
-mapboxgl.accessToken = config.mapboxToken;
+let map = null;
 
-const map = new mapboxgl.Map({
-  container: "map",
-  style: "mapbox://styles/mapbox/light-v11",
-  center: [-73.989358, 40.678785],
-  zoom: 16,
-  pitch: 50,
-  bearing: -17,
-  antialias: true,
-});
+function initMap(token) {
+  mapboxgl.accessToken = token;
+  map = new mapboxgl.Map({
+    container: "map",
+    style: "mapbox://styles/mapbox/light-v11",
+    center: [-73.989358, 40.678785],
+    zoom: 16,
+    pitch: 50,
+    bearing: -17,
+    antialias: true,
+  });
+
+  map.on("load", () => {
+    setReport("Map ready. Lookup lot, then generate envelopes.");
+  });
+}
 
 const report = document.getElementById("report");
 const coverageInput = document.getElementById("coverage");
@@ -127,6 +153,9 @@ async function generateEnvelopes() {
 
 document.getElementById("lookupBtn").addEventListener("click", async () => {
   try {
+    if (!map) {
+      throw new Error("Map is still loading.");
+    }
     await lookupLot();
   } catch (err) {
     setReport(String(err));
@@ -135,12 +164,21 @@ document.getElementById("lookupBtn").addEventListener("click", async () => {
 
 document.getElementById("runBtn").addEventListener("click", async () => {
   try {
+    if (!map) {
+      throw new Error("Map is still loading.");
+    }
     await generateEnvelopes();
   } catch (err) {
     setReport(String(err));
   }
 });
 
-map.on("load", () => {
-  setReport("Map ready. Lookup lot, then generate envelopes.");
-});
+(async function bootstrap() {
+  try {
+    const token = await resolveMapboxToken();
+    initMap(token);
+  } catch (err) {
+    setReport(String(err));
+    alert(String(err));
+  }
+})();
