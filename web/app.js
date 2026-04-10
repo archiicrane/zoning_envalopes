@@ -23,6 +23,7 @@ async function resolveMapboxToken() {
 }
 
 let map = null;
+let activeLotPolygon = null;
 
 function initMap(token) {
   mapboxgl.accessToken = token;
@@ -37,6 +38,16 @@ function initMap(token) {
   });
 
   map.on("load", () => {
+    ensureSelectionSourceAndLayers();
+
+    map.on("click", async (ev) => {
+      try {
+        await selectLotAtPoint(ev.lngLat.lng, ev.lngLat.lat);
+      } catch (err) {
+        setReport(String(err));
+      }
+    });
+
     setReport("Map ready. Lookup lot, then generate envelopes.");
   });
 }
@@ -49,10 +60,37 @@ coverageInput.addEventListener("input", () => {
   covVal.textContent = `${coverageInput.value}%`;
 });
 
-let activeLotPolygon = null;
-
 function setReport(text) {
   report.textContent = text;
+}
+
+function ensureSelectionSourceAndLayers() {
+  if (!map.getSource("selected-lot")) {
+    map.addSource("selected-lot", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    });
+
+    map.addLayer({
+      id: "selected-lot-fill",
+      type: "fill",
+      source: "selected-lot",
+      paint: {
+        "fill-color": "#14b8a6",
+        "fill-opacity": 0.2,
+      },
+    });
+
+    map.addLayer({
+      id: "selected-lot-outline",
+      type: "line",
+      source: "selected-lot",
+      paint: {
+        "line-color": "#0f766e",
+        "line-width": 3,
+      },
+    });
+  }
 }
 
 function ensureSourceAndLayers() {
@@ -101,18 +139,77 @@ async function lookupLot() {
 
   const data = await res.json();
 
-  // Starter polygon around map center for visual prototype.
-  const c = map.getCenter();
-  const d = 0.00035;
-  activeLotPolygon = [
-    [c.lng - d, c.lat - d],
-    [c.lng + d, c.lat - d],
-    [c.lng + d, c.lat + d],
-    [c.lng - d, c.lat + d],
-    [c.lng - d, c.lat - d],
-  ];
+  if (data.lot_polygon && Array.isArray(data.lot_polygon) && data.lot_polygon.length >= 4) {
+    activeLotPolygon = data.lot_polygon;
+    updateBblInputsFromLotData(data);
+    updateSelectionVisual(activeLotPolygon);
+  } else {
+    throw new Error("BBL lookup found attributes but no lot polygon geometry.");
+  }
 
   setReport(JSON.stringify(data, null, 2));
+  return data;
+}
+
+function updateSelectionVisual(polygon) {
+  ensureSelectionSourceAndLayers();
+  map.getSource("selected-lot").setData({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [polygon],
+        },
+      },
+    ],
+  });
+
+  const bounds = polygon.reduce(
+    (acc, pt) => acc.extend(pt),
+    new mapboxgl.LngLatBounds(polygon[0], polygon[0])
+  );
+  map.fitBounds(bounds, { padding: 50, duration: 500, maxZoom: 19.2 });
+}
+
+function updateBblInputsFromLotData(data) {
+  if (data && data.borough) {
+    document.getElementById("borough").value = String(data.borough);
+  }
+  if (data && data.block) {
+    document.getElementById("block").value = String(data.block);
+  }
+  if (data && data.lot) {
+    document.getElementById("lot").value = String(data.lot);
+  }
+}
+
+async function fetchLotAtPoint(lng, lat) {
+  const url = `/api/lot_at_point?lng=${encodeURIComponent(lng)}&lat=${encodeURIComponent(lat)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Lot selection failed: ${txt}`);
+  }
+  return res.json();
+}
+
+async function selectLotAtPoint(lng, lat, seedData) {
+  const data = seedData || (await fetchLotAtPoint(lng, lat));
+
+  if (!data.lot_polygon || !Array.isArray(data.lot_polygon) || data.lot_polygon.length < 4) {
+    throw new Error("Clicked lot does not have a valid polygon geometry.");
+  }
+
+  activeLotPolygon = data.lot_polygon;
+  updateBblInputsFromLotData(data);
+  updateSelectionVisual(activeLotPolygon);
+
+  const zoneText = data.zone ? ` | Zone: ${data.zone}` : "";
+  setReport(`Selected lot by map click:\nBBL: ${data.bbl || "n/a"}\nBorough/Block/Lot: ${data.borough || "?"}/${data.block || "?"}/${data.lot || "?"}${zoneText}`);
+
   return data;
 }
 

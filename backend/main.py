@@ -24,6 +24,10 @@ app.add_middleware(
 WEB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web")
 app.mount("/web", StaticFiles(directory=WEB_DIR), name="web")
 
+MAPPLUTO_QUERY_URL = (
+    "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MapPLUTO/FeatureServer/0/query"
+)
+
 
 class EnvelopeRequest(BaseModel):
     lot_polygon: List[List[float]] = Field(..., description="[[lng, lat], ...] closed or open")
@@ -33,6 +37,52 @@ class EnvelopeRequest(BaseModel):
     floor_height_ft: float = Field(default=10.0, ge=8.0, le=20.0)
     zoning_far: float = Field(default=3.0, ge=0.1, le=30.0)
     max_height_ft: float = Field(default=120.0, ge=20.0, le=2000.0)
+
+
+def _borough_code_to_numeric(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    text = str(value).strip().upper()
+    code_map = {"MN": "1", "M": "1", "BX": "2", "B": "2", "BK": "3", "K": "3", "QN": "4", "Q": "4", "SI": "5", "S": "5"}
+    if text in code_map:
+        return code_map[text]
+    if text in {"1", "2", "3", "4", "5"}:
+        return text
+    return None
+
+
+def _rings_to_lot_polygon(rings: Any) -> List[List[float]]:
+    if not rings or not isinstance(rings, list):
+        raise HTTPException(status_code=502, detail="Lot geometry missing from MapPLUTO response")
+    outer = rings[0]
+    if not outer or len(outer) < 4:
+        raise HTTPException(status_code=502, detail="Lot geometry ring is invalid")
+    polygon = [[float(p[0]), float(p[1])] for p in outer]
+    return _close_ring(polygon)
+
+
+def _query_mappluto_lot(conditions: str) -> Optional[Dict[str, Any]]:
+    params = {
+        "f": "json",
+        "where": conditions,
+        "outFields": "Borough,Block,Lot,BBL,ZoneDist1,ZoneDist2,BldgArea,NumFloors,LandUse",
+        "returnGeometry": "true",
+        "outSR": "4326",
+        "resultRecordCount": "1",
+    }
+    try:
+        resp = requests.get(MAPPLUTO_QUERY_URL, params=params, timeout=15)
+    except requests.RequestException:
+        return None
+
+    if not resp.ok:
+        return None
+
+    payload = resp.json()
+    features = payload.get("features") or []
+    if not features:
+        return None
+    return features[0]
 
 
 def _close_ring(coords: List[List[float]]) -> List[List[float]]:
@@ -108,6 +158,16 @@ def get_lot_by_bbl_parts(borough: str, block: str, lot: str) -> Dict[str, Any]:
     z1 = (row.get("zonedist1") or "").strip()
     z2 = (row.get("zonedist2") or "").strip()
 
+    lot_polygon = None
+    borough_mappluto = {"1": "MN", "2": "BX", "3": "BK", "4": "QN", "5": "SI"}
+    where = f"Borough='{borough_mappluto.get(b, b)}' AND Block={int(block_num)} AND Lot={int(lot_num)}"
+    feature = _query_mappluto_lot(where)
+    if feature:
+        geom = feature.get("geometry") or {}
+        rings = geom.get("rings")
+        if rings:
+            lot_polygon = _rings_to_lot_polygon(rings)
+
     return {
         "bbl": row.get("bbl"),
         "borough": row.get("borough"),
@@ -119,6 +179,62 @@ def get_lot_by_bbl_parts(borough: str, block: str, lot: str) -> Dict[str, Any]:
         "landuse": row.get("landuse"),
         "bldgarea": row.get("bldgarea"),
         "numfloors": row.get("numfloors"),
+        "lot_polygon": lot_polygon,
+    }
+
+
+@app.get("/api/lot_at_point")
+def get_lot_at_point(lng: float, lat: float) -> Dict[str, Any]:
+    params = {
+        "f": "json",
+        "where": "1=1",
+        "outFields": "Borough,Block,Lot,BBL,ZoneDist1,ZoneDist2,BldgArea,NumFloors,LandUse",
+        "geometry": f"{lng},{lat}",
+        "geometryType": "esriGeometryPoint",
+        "inSR": "4326",
+        "spatialRel": "esriSpatialRelIntersects",
+        "returnGeometry": "true",
+        "outSR": "4326",
+        "resultRecordCount": "1",
+    }
+
+    try:
+        resp = requests.get(MAPPLUTO_QUERY_URL, params=params, timeout=15)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"MapPLUTO query failed: {exc}")
+
+    if not resp.ok:
+        raise HTTPException(status_code=502, detail="Failed to query MapPLUTO")
+
+    payload = resp.json()
+    features = payload.get("features") or []
+    if not features:
+        raise HTTPException(status_code=404, detail="No lot found at clicked location")
+
+    feat = features[0]
+    attrs = feat.get("attributes") or {}
+    geom = feat.get("geometry") or {}
+    lot_polygon = _rings_to_lot_polygon(geom.get("rings"))
+
+    borough_value = attrs.get("Borough")
+    borough_numeric = _borough_code_to_numeric(borough_value)
+
+    block_value = attrs.get("Block")
+    lot_value = attrs.get("Lot")
+
+    return {
+        "bbl": str(attrs.get("BBL")) if attrs.get("BBL") is not None else None,
+        "borough": borough_numeric,
+        "borough_raw": borough_value,
+        "block": str(block_value) if block_value is not None else None,
+        "lot": str(lot_value) if lot_value is not None else None,
+        "zone": (attrs.get("ZoneDist1") or attrs.get("ZoneDist2") or None),
+        "zonedist1": attrs.get("ZoneDist1") or None,
+        "zonedist2": attrs.get("ZoneDist2") or None,
+        "landuse": attrs.get("LandUse"),
+        "bldgarea": attrs.get("BldgArea"),
+        "numfloors": attrs.get("NumFloors"),
+        "lot_polygon": lot_polygon,
     }
 
 
