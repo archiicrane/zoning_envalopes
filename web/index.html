@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zoning Envelopes Starter</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/web/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="panel">
+        <h1>Zoning Envelope Explorer</h1>
+        <p class="small">Starter app: BBL lookup + envelope study</p>
+
+        <div class="group">
+          <label>Borough (1-5 or M/B/K/Q/S)</label>
+          <input id="borough" value="3" />
+        </div>
+        <div class="group">
+          <label>Block</label>
+          <input id="block" value="445" />
+        </div>
+        <div class="group">
+          <label>Lot</label>
+          <input id="lot" value="1" />
+        </div>
+        <button id="lookupBtn">Lookup Lot</button>
+
+        <hr />
+
+        <div class="group">
+          <label>Use Type</label>
+          <select id="useType">
+            <option value="market_rate">Market Rate</option>
+            <option value="affordable">Affordable</option>
+          </select>
+        </div>
+
+        <div class="group inline">
+          <input id="farMode" type="checkbox" checked />
+          <label for="farMode">Enable FAR envelope</label>
+        </div>
+
+        <div class="group">
+          <label>Lot Coverage: <span id="covVal">75%</span></label>
+          <input id="coverage" type="range" min="20" max="100" value="75" />
+        </div>
+
+        <div class="group">
+          <label>Floor Height (ft)</label>
+          <input id="floorHeight" type="number" min="8" max="20" step="0.5" value="10" />
+        </div>
+
+        <button id="runBtn">Generate Envelopes</button>
+
+        <pre id="report">Ready.</pre>
+      </aside>
+
+      <main id="map"></main>
+    </div>
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+    <script src="/web/config.js"></script>
+    <script src="/web/app.js"></script>
+  </body>
+</html>
