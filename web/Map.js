@@ -1,3 +1,9 @@
+// Utility to show/hide a layer by id
+export function setLayerVisibility(layerId, visible) {
+  if (!map) return;
+  if (!map.getLayer(layerId)) return;
+  map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+}
 // Map.js
 // Handles Mapbox map initialization, layer management, and feature selection
 
