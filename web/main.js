@@ -39,12 +39,14 @@ async function bootstrap() {
           if (token) return token;
         }
       } catch {}
-      throw new Error("Missing Mapbox token. Set MAPBOX_PUBLIC_TOKEN in Vercel Environment Variables.");
+      // Fallback for local dev: put your token here if needed
+      return "YOUR_MAPBOX_TOKEN_HERE";
     })();
   } catch (err) {
     alert(String(err));
     return;
   }
+  console.log("Mapbox token:", token);
 
   // 2. Load neighborhoods
   neighborhoods = await fetchNeighborhoods();
