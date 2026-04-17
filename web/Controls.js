@@ -23,6 +23,7 @@ export function renderControls({ neighborhoods, onNeighborhoodChange, onToggleBu
   // Toggle buttons
   const btnBuildings = document.createElement('button');
   btnBuildings.textContent = 'Show Existing Buildings';
+  btnBuildings.id = 'btn-buildings';
   btnBuildings.style.marginRight = '0.5em';
   btnBuildings.onclick = () => {
     btnBuildings.classList.toggle('active');
@@ -31,6 +32,7 @@ export function renderControls({ neighborhoods, onNeighborhoodChange, onToggleBu
 
   const btnEnvelope = document.createElement('button');
   btnEnvelope.textContent = 'Show Zoning Envelope';
+  btnEnvelope.id = 'btn-envelope';
   btnEnvelope.onclick = () => {
     btnEnvelope.classList.toggle('active');
     if (onToggleEnvelope) onToggleEnvelope(btnEnvelope.classList.contains('active'));

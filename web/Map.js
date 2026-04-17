@@ -3,7 +3,7 @@ export function addPlutoLayers(far) {
   if (!map.getSource('pluto')) {
     map.addSource('pluto', {
       type: 'geojson',
-      data: '/data/pluto.geojson',
+      data: '/pluto.geojson', // Now served from public directory
     });
   }
   // Existing buildings extrusion

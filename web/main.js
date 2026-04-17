@@ -72,7 +72,7 @@ async function bootstrap() {
       // Visual feedback
       document.querySelectorAll('button').forEach(btn => btn.style.background = '');
       if (show) {
-        const btn = document.querySelector('button:contains("Show Existing Buildings")');
+        const btn = document.getElementById('btn-buildings');
         if (btn) btn.style.background = '#22c55e';
       }
       console.log('Show Existing Buildings:', show);
@@ -83,7 +83,7 @@ async function bootstrap() {
       // Visual feedback
       document.querySelectorAll('button').forEach(btn => btn.style.background = '');
       if (show) {
-        const btn = document.querySelector('button:contains("Show Zoning Envelope")');
+        const btn = document.getElementById('btn-envelope');
         if (btn) btn.style.background = '#a21caf';
       }
       console.log('Show Zoning Envelope:', show);
