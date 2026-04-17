@@ -1,9 +1,3 @@
-// Utility to show/hide a layer by id
-export function setLayerVisibility(layerId, visible) {
-  if (!map) return;
-  if (!map.getLayer(layerId)) return;
-  map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
-}
 // Add PLUTO source and extrusion layers
 export function addPlutoLayers(far) {
   if (!map.getSource('pluto')) {
