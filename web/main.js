@@ -63,10 +63,7 @@ async function bootstrap() {
       updateNeighborhood(selectedNeighborhood.geojson);
     },
     onToggleBuildings: (show) => {
-      // Mapbox's default 3D buildings layer is usually 'building' or 'building-3d'.
-      // If you use a custom layer, update the id accordingly.
-      setLayerVisibility('building', show); // Try 'building' first
-      setLayerVisibility('building-3d', show); // Try 'building-3d' as fallback
+      setLayerVisibility('3d-buildings', show);
     },
     onToggleEnvelope: (show) => {
       setLayerVisibility('envelope-fill', show);

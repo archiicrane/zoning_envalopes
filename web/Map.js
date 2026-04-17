@@ -73,6 +73,43 @@ export function initMap(containerId, token, onLotSelect, onNeighborhoodSelect) {
       });
     }
 
+    // Add Mapbox 3D buildings layer if not present
+    if (!map.getLayer('3d-buildings')) {
+      map.addLayer(
+        {
+          id: '3d-buildings',
+          source: 'composite',
+          'source-layer': 'building',
+          filter: ['==', 'extrude', 'true'],
+          type: 'fill-extrusion',
+          minzoom: 15,
+          paint: {
+            'fill-extrusion-color': '#aaa',
+            'fill-extrusion-height': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              15,
+              0,
+              15.05,
+              ['get', 'height']
+            ],
+            'fill-extrusion-base': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              15,
+              0,
+              15.05,
+              ['get', 'min_height']
+            ],
+            'fill-extrusion-opacity': 0.6
+          }
+        },
+        'waterway-label'
+      );
+    }
+
     // Click to select lot (placeholder: emits null)
     map.on('click', (ev) => {
       // TODO: Query rendered features for lot selection
