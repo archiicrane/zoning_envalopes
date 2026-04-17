@@ -106,8 +106,8 @@ function ensureSourceAndLayers() {
       source: "envelopes",
       paint: {
         "fill-extrusion-color": ["get", "color"],
-        "fill-extrusion-height": ["get", "height_ft"],
-        "fill-extrusion-base": 0,
+        "fill-extrusion-height": ["coalesce", ["get", "height_m"], ["get", "height_ft"], 0],
+        "fill-extrusion-base": ["coalesce", ["get", "base_m"], 0],
         "fill-extrusion-opacity": ["get", "opacity"],
       },
     });
@@ -171,7 +171,13 @@ function updateSelectionVisual(polygon) {
     (acc, pt) => acc.extend(pt),
     new mapboxgl.LngLatBounds(polygon[0], polygon[0])
   );
-  map.fitBounds(bounds, { padding: 50, duration: 500, maxZoom: 19.2 });
+  map.fitBounds(bounds, {
+    padding: 50,
+    duration: 700,
+    maxZoom: 19.2,
+    pitch: 55,
+    bearing: -20,
+  });
 }
 
 function updateBblInputsFromLotData(data) {
@@ -213,9 +219,22 @@ async function selectLotAtPoint(lng, lat, seedData) {
   return data;
 }
 
+
 async function generateEnvelopes() {
   if (!activeLotPolygon) {
     throw new Error("Lookup a lot first so we have a base polygon.");
+  }
+
+  const upzone = document.getElementById("upzoneToggle").checked;
+
+  // Default zoning FAR and max height
+  let zoning_far = 3.0;
+  let max_height_ft = 180;
+
+  // If upzoning, increase FAR and max height
+  if (upzone) {
+    zoning_far = 6.0; // Example: double the FAR
+    max_height_ft = 360; // Example: double the max height
   }
 
   const payload = {
@@ -224,11 +243,11 @@ async function generateEnvelopes() {
     far_mode: document.getElementById("farMode").checked,
     lot_coverage: Number(document.getElementById("coverage").value) / 100,
     floor_height_ft: Number(document.getElementById("floorHeight").value),
-    zoning_far: 3.0,
-    max_height_ft: 180,
+    zoning_far,
+    max_height_ft,
   };
 
-  setReport("Generating envelopes...");
+  setReport(upzone ? "Generating upzoned envelopes..." : "Generating envelopes...");
 
   const res = await fetch("/api/envelope", {
     method: "POST",
