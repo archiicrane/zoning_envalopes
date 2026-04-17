@@ -4,6 +4,83 @@ export function setLayerVisibility(layerId, visible) {
   if (!map.getLayer(layerId)) return;
   map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
 }
+// Add PLUTO source and extrusion layers
+export function addPlutoLayers(far) {
+  if (!map.getSource('pluto')) {
+    map.addSource('pluto', {
+      type: 'geojson',
+      data: '/data/pluto.geojson',
+    });
+  }
+  // Existing buildings extrusion
+  if (!map.getLayer('pluto-buildings')) {
+    map.addLayer({
+      id: 'pluto-buildings',
+      type: 'fill-extrusion',
+      source: 'pluto',
+      paint: {
+        'fill-extrusion-color': [
+          'case',
+          ['boolean', ['feature-state', 'active'], false], '#22c55e', // green highlight
+          '#888'
+        ],
+        'fill-extrusion-height': [
+          '*',
+          ['coalesce', ['get', 'numfloors'], 3],
+          3.2
+        ],
+        'fill-extrusion-base': 0,
+        'fill-extrusion-opacity': 0.7,
+      },
+      layout: { visibility: 'none' },
+    });
+  }
+  // Zoning envelope extrusion
+  if (!map.getLayer('pluto-envelope')) {
+    map.addLayer({
+      id: 'pluto-envelope',
+      type: 'fill-extrusion',
+      source: 'pluto',
+      paint: {
+        'fill-extrusion-color': [
+          'case',
+          ['boolean', ['feature-state', 'active'], false], '#a21caf', // purple highlight
+          '#6366f1'
+        ],
+        'fill-extrusion-height': [
+          'coalesce',
+          ['*', ['coalesce', ['get', 'maxfar'], 3], ['get', 'lotarea'], 0.1],
+          30
+        ],
+        'fill-extrusion-base': 0,
+        'fill-extrusion-opacity': 0.5,
+      },
+      layout: { visibility: 'none' },
+    });
+  }
+  // Set initial FAR for envelope
+  updatePlutoEnvelopeFAR(far);
+}
+
+// Update zoning envelope extrusion height with new FAR
+export function updatePlutoEnvelopeFAR(far) {
+  if (!map || !map.getLayer('pluto-envelope')) return;
+  map.setPaintProperty(
+    'pluto-envelope',
+    'fill-extrusion-height',
+    [
+      'coalesce',
+      ['*', far, ['get', 'lotarea'], 0.1],
+      30
+    ]
+  );
+}
+// Utility to show/hide a layer by id
+export function setLayerVisibility(layerId, visible) {
+  if (!map) return;
+  if (!map.getLayer(layerId)) return;
+  map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+}
 // Map.js
 // Handles Mapbox map initialization, layer management, and feature selection
 
@@ -25,6 +102,8 @@ export function initMap(containerId, token, onLotSelect, onNeighborhoodSelect) {
   });
 
   map.on('load', () => {
+    // Add PLUTO layers
+    addPlutoLayers(3.0);
     // Add empty sources for lots, envelopes, neighborhoods
     if (!map.getSource(lotLayerId)) {
       map.addSource(lotLayerId, {

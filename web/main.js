@@ -1,7 +1,7 @@
 
 // main.js
 // Entry point for modular NYC Zoning Envelope Explorer
-import { initMap, updateNeighborhood, updateEnvelopeHeight, setLayerVisibility } from './Map.js';
+import { initMap, updateNeighborhood, updateEnvelopeHeight, setLayerVisibility, addPlutoLayers, updatePlutoEnvelopeFAR } from './Map.js';
 import { renderControls } from './Controls.js';
 import { renderSliderPanel } from './SliderPanel.js';
 import { renderLotInfoCard } from './LotInfoCard.js';
@@ -54,6 +54,10 @@ async function bootstrap() {
 
   // 3. Initialize Map
   const map = initMap('map', token, onLotSelect, onNeighborhoodSelect);
+  // Add PLUTO layers after map load
+  map.on('load', () => {
+    addPlutoLayers(far);
+  });
 
   // 4. Render Controls
   renderControls({
@@ -63,10 +67,26 @@ async function bootstrap() {
       updateNeighborhood(selectedNeighborhood.geojson);
     },
     onToggleBuildings: (show) => {
-      setLayerVisibility('3d-buildings', show);
+      setLayerVisibility('pluto-buildings', show);
+      setLayerVisibility('pluto-envelope', false);
+      // Visual feedback
+      document.querySelectorAll('button').forEach(btn => btn.style.background = '');
+      if (show) {
+        const btn = document.querySelector('button:contains("Show Existing Buildings")');
+        if (btn) btn.style.background = '#22c55e';
+      }
+      console.log('Show Existing Buildings:', show);
     },
     onToggleEnvelope: (show) => {
-      setLayerVisibility('envelope-fill', show);
+      setLayerVisibility('pluto-envelope', show);
+      setLayerVisibility('pluto-buildings', false);
+      // Visual feedback
+      document.querySelectorAll('button').forEach(btn => btn.style.background = '');
+      if (show) {
+        const btn = document.querySelector('button:contains("Show Zoning Envelope")');
+        if (btn) btn.style.background = '#a21caf';
+      }
+      console.log('Show Zoning Envelope:', show);
     },
   });
 
@@ -77,8 +97,8 @@ async function bootstrap() {
     useType,
     onFarChange: (val) => {
       far = val;
-      // TODO: update envelope height for all lots in view
-      if (selectedLot) updateEnvelopeHeight(selectedLot.id, computeEnvelopeHeight(far, selectedLot.lot_area, selectedLot.coverage));
+      updatePlutoEnvelopeFAR(far);
+      console.log('FAR slider changed:', far);
     },
     onUseTypeChange: (val) => {
       useType = val;
