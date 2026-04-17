@@ -53,7 +53,7 @@ async function bootstrap() {
   selectedNeighborhood = neighborhoods[0];
 
   // 3. Initialize Map
-  const map = initMap('map', onLotSelect, onNeighborhoodSelect);
+  const map = initMap('map', token, onLotSelect, onNeighborhoodSelect);
 
   // 4. Render Controls
   renderControls({

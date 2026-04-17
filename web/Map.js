@@ -6,7 +6,8 @@ let lotLayerId = 'selected-lot';
 let envelopeLayerId = 'envelope-fill';
 let neighborhoodLayerId = 'neighborhood-boundary';
 
-export function initMap(containerId, onLotSelect, onNeighborhoodSelect) {
+export function initMap(containerId, token, onLotSelect, onNeighborhoodSelect) {
+  mapboxgl.accessToken = token;
   map = new mapboxgl.Map({
     container: containerId,
     style: 'mapbox://styles/mapbox/light-v11',
