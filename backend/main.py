@@ -662,64 +662,70 @@ def frontend_config() -> Dict[str, str]:
 
 @app.get("/api/data/splits")
 def list_split_files() -> Dict[str, Any]:
-    local_paths = _split_geojson_paths()
-    if local_paths:
-        files = []
-        for path in local_paths:
-            rel = path.relative_to(SPLIT_PLUTO_DIR).as_posix()
-            files.append(
+    try:
+        local_paths = _split_geojson_paths()
+        if local_paths:
+            files = []
+            for path in local_paths:
+                rel = path.relative_to(SPLIT_PLUTO_DIR).as_posix()
+                files.append(
+                    {
+                        "id": path.stem,
+                        "name": _split_display_name(path),
+                        "path": rel,
+                        "url": f"/split_pluto/{rel}",
+                        "size_bytes": path.stat().st_size,
+                    }
+                )
+            return {"files": files, "count": len(files)}
+
+        # Primary remote source: user-maintained S3 index file.
+        if os.path.isfile(GEOJSON_INDEX_PATH):
+            with open(GEOJSON_INDEX_PATH, "r", encoding="utf-8-sig") as fh:
+                index_payload = json.load(fh)
+            if isinstance(index_payload, dict):
+                index_entries = index_payload.get("files") or []
+            elif isinstance(index_payload, list):
+                index_entries = index_payload
+            else:
+                index_entries = []
+            files = []
+            for entry in index_entries or []:
+                if not isinstance(entry, dict):
+                    continue
+                filename = _coerce_str(entry.get("name")) or Path(_coerce_str(entry.get("key") or "")).name
+                if not filename:
+                    continue
+                entry_stem = Path(filename).stem
+                files.append(
+                    {
+                        "id": entry_stem,
+                        "name": _split_display_name(Path(filename)),
+                        "path": _coerce_str(entry.get("key")) or filename,
+                        "url": _coerce_str(entry.get("url")) or _remote_split_url(filename),
+                        "size_bytes": 0,
+                    }
+                )
+            return {"files": files, "count": len(files)}
+
+        # Fallback: read the pre-built manifest (used on Vercel where split_pluto/ is excluded)
+        if os.path.isfile(SPLIT_PLUTO_MANIFEST):
+            with open(SPLIT_PLUTO_MANIFEST, "r", encoding="utf-8") as fh:
+                manifest = json.load(fh)
+            files = [
                 {
-                    "id": path.stem,
-                    "name": _split_display_name(path),
-                    "path": rel,
-                    "url": f"/split_pluto/{rel}",
-                    "size_bytes": path.stat().st_size,
-                }
-            )
-        return {"files": files, "count": len(files)}
-    # Primary remote source: user-maintained S3 index file.
-    if os.path.isfile(GEOJSON_INDEX_PATH):
-        with open(GEOJSON_INDEX_PATH, "r", encoding="utf-8-sig") as fh:
-            index_payload = json.load(fh)
-        if isinstance(index_payload, dict):
-            index_entries = index_payload.get("files") or []
-        elif isinstance(index_payload, list):
-            index_entries = index_payload
-        else:
-            index_entries = []
-        files = []
-        for entry in index_entries or []:
-            if not isinstance(entry, dict):
-                continue
-            filename = _coerce_str(entry.get("name")) or Path(_coerce_str(entry.get("key") or "")).name
-            if not filename:
-                continue
-            entry_stem = Path(filename).stem
-            files.append(
-                {
-                    "id": entry_stem,
-                    "name": _split_display_name(Path(filename)),
-                    "path": _coerce_str(entry.get("key")) or filename,
-                    "url": _coerce_str(entry.get("url")) or _remote_split_url(filename),
+                    "id": entry["id"],
+                    "name": entry["name"],
+                    "path": entry["filename"],
+                    "url": _remote_split_url(entry["filename"]),
                     "size_bytes": 0,
                 }
-            )
-        return {"files": files, "count": len(files)}
-    # Fallback: read the pre-built manifest (used on Vercel where split_pluto/ is excluded)
-    if os.path.isfile(SPLIT_PLUTO_MANIFEST):
-        with open(SPLIT_PLUTO_MANIFEST, "r", encoding="utf-8") as fh:
-            manifest = json.load(fh)
-        files = [
-            {
-                "id": entry["id"],
-                "name": entry["name"],
-                "path": entry["filename"],
-                "url": _remote_split_url(entry["filename"]),
-                "size_bytes": 0,
-            }
-            for entry in (manifest.get("files") or [])
-        ]
-        return {"files": files, "count": len(files)}
+                for entry in (manifest.get("files") or [])
+            ]
+            return {"files": files, "count": len(files)}
+    except Exception:
+        return {"files": [], "count": 0}
+
     return {"files": [], "count": 0}
 
 
