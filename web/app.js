@@ -183,6 +183,81 @@ function normalizeNeighborhoodData(geojson, neighborhoodName) {
   };
 }
 
+function computeEnvelopeHeight(props) {
+  const maxHeight = coerceNumber(props.max_height ?? props.maxHeight);
+  if (maxHeight && maxHeight > 0) {
+    return maxHeight;
+  }
+
+  const zoningHeight = coerceNumber(props.zoning_height ?? props.zoningHeight);
+  if (zoningHeight && zoningHeight > 0) {
+    return zoningHeight;
+  }
+
+  const far = coerceNumber(props.FAR ?? props.far ?? props.resid_far ?? props.comm_far ?? props.facil_far);
+  if (far && far > 0) {
+    return far * 12;
+  }
+
+  return 45;
+}
+
+function buildZoningEnvelopeFeatures(geojson) {
+  const features = [];
+  const samples = [];
+
+  for (const feature of geojson.features || []) {
+    const geometry = feature?.geometry;
+    if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) {
+      continue;
+    }
+
+    const props = extractProps(feature);
+    const envelopeHeight = computeEnvelopeHeight(props);
+    const farVal = coerceNumber(props.FAR ?? props.far ?? props.resid_far ?? props.comm_far ?? props.facil_far);
+
+    if (samples.length < 5) {
+      samples.push({
+        bbl: props.bbl || props.BBL || "n/a",
+        far: farVal,
+        envelopeHeight,
+      });
+    }
+
+    features.push({
+      type: "Feature",
+      geometry,
+      properties: {
+        envelopeHeight,
+      },
+    });
+  }
+
+  return {
+    type: "FeatureCollection",
+    features,
+    samples,
+  };
+}
+
+function refreshZoningEnvelopeFromNeighborhood() {
+  if (!map || !map.getSource("zoning-envelope-source")) {
+    console.log("[zoning-envelope] source not available yet");
+    return;
+  }
+
+  const built = buildZoningEnvelopeFeatures(activeNeighborhoodData || EMPTY_FC);
+  map.getSource("zoning-envelope-source").setData({
+    type: "FeatureCollection",
+    features: built.features,
+  });
+
+  console.log("[zoning-envelope] selected neighborhood:", activeNeighborhood?.name || "n/a");
+  console.log("[zoning-envelope] lots loaded:", (activeNeighborhoodData?.features || []).length);
+  console.log("[zoning-envelope] envelope features created:", built.features.length);
+  console.log("[zoning-envelope] sample FAR/height values:", built.samples);
+}
+
 function initMap(token) {
   return new Promise((resolve) => {
     mapboxgl.accessToken = token;
@@ -244,6 +319,25 @@ function ensureSourcesAndLayers() {
     });
   }
 
+  if (!map.getSource("zoning-envelope-source")) {
+    map.addSource("zoning-envelope-source", { type: "geojson", data: EMPTY_FC });
+  }
+
+  if (!map.getLayer("zoning-envelope-layer")) {
+    map.addLayer({
+      id: "zoning-envelope-layer",
+      type: "fill-extrusion",
+      source: "zoning-envelope-source",
+      paint: {
+        "fill-extrusion-color": "#00c2ff",
+        "fill-extrusion-opacity": 0.35,
+        "fill-extrusion-base": 0,
+        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
+      },
+    });
+    console.log("[zoning-envelope] envelope layer added successfully");
+  }
+
   if (!map.getSource("selected-lot")) {
     map.addSource("selected-lot", { type: "geojson", data: EMPTY_FC });
 
@@ -303,8 +397,9 @@ function syncLayerVisibility() {
   if (map.getLayer("neighborhood-building-fill")) {
     map.setLayoutProperty("neighborhood-building-fill", "visibility", showBuildingToggle.checked ? "visible" : "none");
   }
-  if (map.getLayer("zoning-envelope-fill")) {
-    map.setLayoutProperty("zoning-envelope-fill", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
+  const envelopeLayerExists = !!map.getLayer("zoning-envelope-layer");
+  if (envelopeLayerExists) {
+    map.setLayoutProperty("zoning-envelope-layer", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
   }
   if (showBuildingsBtn) {
     showBuildingsBtn.classList.toggle("active", showBuildingToggle.checked);
@@ -312,7 +407,11 @@ function syncLayerVisibility() {
   }
   if (showEnvelopeBtn) {
     showEnvelopeBtn.classList.toggle("active", showEnvelopeToggle.checked);
-    showEnvelopeBtn.textContent = showEnvelopeToggle.checked ? "Show Zoning Envelope" : "Hide Zoning Envelope";
+    if (envelopeLayerExists) {
+      showEnvelopeBtn.textContent = showEnvelopeToggle.checked ? "Hide Zoning Envelope" : "Show Zoning Envelope";
+    } else {
+      showEnvelopeBtn.textContent = "Show Zoning Envelope";
+    }
   }
 }
 
@@ -479,6 +578,8 @@ async function loadNeighborhoodById(id) {
   activeNeighborhoodData = normalizeNeighborhoodData(geojson, neighborhood.name);
   map.getSource("neighborhood-lots").setData(activeNeighborhoodData);
   clearActiveEnvelope();
+  refreshZoningEnvelopeFromNeighborhood();
+  syncLayerVisibility();
 
   const bounds = computeNeighborhoodBounds(activeNeighborhoodData);
   if (bounds && !bounds.isEmpty()) {
