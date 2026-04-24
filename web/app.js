@@ -273,6 +273,55 @@ function refreshExistingBuildingsForNeighborhood() {
   const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
   const seen = new Set();
   const features = [];
+  let nonZeroHeightCount = 0;
+
+  function collectCoords(geometry, out) {
+    if (!geometry || !geometry.coordinates) {
+      return;
+    }
+    if (geometry.type === "Polygon") {
+      for (const ring of geometry.coordinates || []) {
+        for (const pt of ring || []) {
+          out.push(pt);
+        }
+      }
+      return;
+    }
+    if (geometry.type === "MultiPolygon") {
+      for (const poly of geometry.coordinates || []) {
+        for (const ring of poly || []) {
+          for (const pt of ring || []) {
+            out.push(pt);
+          }
+        }
+      }
+    }
+  }
+
+  function geometryIntersectsNeighborhood(geometry, neighborhoodBounds) {
+    const coords = [];
+    collectCoords(geometry, coords);
+    if (!coords.length) {
+      return false;
+    }
+
+    let minLng = coords[0][0];
+    let minLat = coords[0][1];
+    let maxLng = coords[0][0];
+    let maxLat = coords[0][1];
+
+    for (const pt of coords) {
+      const lng = pt[0];
+      const lat = pt[1];
+      if (lng < minLng) minLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lng > maxLng) maxLng = lng;
+      if (lat > maxLat) maxLat = lat;
+    }
+
+    const featureBounds = new mapboxgl.LngLatBounds([minLng, minLat], [maxLng, maxLat]);
+    return featureBounds.intersects(neighborhoodBounds);
+  }
 
   for (const candidate of candidates) {
     const geometry = candidate && candidate.geometry ? candidate.geometry : null;
@@ -280,31 +329,36 @@ function refreshExistingBuildingsForNeighborhood() {
       continue;
     }
 
-    const coords = geometry.type === "Polygon"
-      ? geometry.coordinates?.[0]
-      : geometry.coordinates?.[0]?.[0];
-    if (!coords || !coords.length) {
+    if (!geometryIntersectsNeighborhood(geometry, bounds)) {
       continue;
     }
 
-    const sample = coords[0];
-    if (!sample || sample.length < 2 || !bounds.contains(sample)) {
-      continue;
-    }
-
-    const idVal = candidate.id ?? `${sample[0]}:${sample[1]}:${coords.length}`;
+    const idVal = candidate.id ?? JSON.stringify(geometry.coordinates?.[0]?.[0] || geometry.coordinates?.[0] || []);
     const key = String(idVal);
     if (seen.has(key)) {
       continue;
     }
     seen.add(key);
 
+    const height =
+      coerceNumber(candidate.properties?.height)
+      || coerceNumber(candidate.properties?.render_height)
+      || (coerceNumber(candidate.properties?.levels) ? coerceNumber(candidate.properties?.levels) * 3 : null)
+      || 10;
+    const minHeight =
+      coerceNumber(candidate.properties?.min_height)
+      || coerceNumber(candidate.properties?.render_min_height)
+      || 0;
+    if (height > 0) {
+      nonZeroHeightCount += 1;
+    }
+
     features.push({
       type: "Feature",
       geometry,
       properties: {
-        height: coerceNumber(candidate.properties?.height) || 0,
-        min_height: coerceNumber(candidate.properties?.min_height) || 0,
+        height,
+        min_height: minHeight,
       },
     });
   }
@@ -316,6 +370,7 @@ function refreshExistingBuildingsForNeighborhood() {
   console.log("[existing-buildings] selected neighborhood:", activeNeighborhood?.name || "n/a");
   console.log("[existing-buildings] lots loaded:", (activeNeighborhoodData?.features || []).length);
   console.log("[existing-buildings] mapbox building features loaded:", features.length);
+  console.log("[existing-buildings] mapbox buildings with non-zero height:", nonZeroHeightCount);
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
