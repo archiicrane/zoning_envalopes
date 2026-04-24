@@ -35,6 +35,8 @@ const dataStatus = document.getElementById("dataStatus");
 const neighborhoodSelect = document.getElementById("neighborhoodSelect");
 const showBuildingToggle = document.getElementById("showBuildingToggle");
 const showEnvelopeToggle = document.getElementById("showEnvelopeToggle");
+const showBuildingsBtn = document.getElementById("showBuildingsBtn");
+const showEnvelopeBtn = document.getElementById("showEnvelopeBtn");
 
 coverageInput.addEventListener("input", () => {
   covVal.textContent = `${coverageInput.value}%`;
@@ -46,6 +48,18 @@ farInput.addEventListener("input", () => {
 
 showBuildingToggle.addEventListener("change", syncLayerVisibility);
 showEnvelopeToggle.addEventListener("change", syncLayerVisibility);
+if (showBuildingsBtn) {
+  showBuildingsBtn.addEventListener("click", () => {
+    showBuildingToggle.checked = !showBuildingToggle.checked;
+    syncLayerVisibility();
+  });
+}
+if (showEnvelopeBtn) {
+  showEnvelopeBtn.addEventListener("click", () => {
+    showEnvelopeToggle.checked = !showEnvelopeToggle.checked;
+    syncLayerVisibility();
+  });
+}
 
 function setReport(text) {
   report.textContent = text;
@@ -292,6 +306,14 @@ function syncLayerVisibility() {
   if (map.getLayer("zoning-envelope-fill")) {
     map.setLayoutProperty("zoning-envelope-fill", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
   }
+  if (showBuildingsBtn) {
+    showBuildingsBtn.classList.toggle("active", showBuildingToggle.checked);
+    showBuildingsBtn.textContent = showBuildingToggle.checked ? "Show Existing Buildings" : "Hide Existing Buildings";
+  }
+  if (showEnvelopeBtn) {
+    showEnvelopeBtn.classList.toggle("active", showEnvelopeToggle.checked);
+    showEnvelopeBtn.textContent = showEnvelopeToggle.checked ? "Show Zoning Envelope" : "Hide Zoning Envelope";
+  }
 }
 
 function updateSelectionVisual(polygon, shouldRefocus = true) {
@@ -436,7 +458,7 @@ async function loadNeighborhoodOptions() {
     neighborhoodSelect.appendChild(option);
   }
 
-  setDataStatus(`Loaded ${availableNeighborhoods.length} neighborhood files from split_pluto.`);
+  setDataStatus(`Loaded ${availableNeighborhoods.length} neighborhood files.`);
   await loadNeighborhoodById(availableNeighborhoods[0].id);
 }
 
@@ -630,6 +652,5 @@ neighborhoodSelect.addEventListener("change", async () => {
     await loadNeighborhoodOptions();
   } catch (err) {
     setReport(String(err));
-    alert(String(err));
   }
 })();

@@ -16,6 +16,10 @@
       "dest": "app.py"
     },
     {
+      "src": "/favicon.ico",
+      "dest": "/web/favicon.svg"
+    },
+    {
       "src": "/$",
       "dest": "/web/index.html"
     },

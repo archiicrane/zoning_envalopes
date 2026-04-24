@@ -4,31 +4,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NYC Zoning Envelope Explorer</title>
+    <link rel="icon" type="image/svg+xml" href="/web/favicon.svg" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
     <link rel="stylesheet" href="/web/styles.css" />
   </head>
   <body>
     <div class="app-shell">
-      <aside class="panel">
-        <div class="hero">
-          <p class="eyebrow">Neighborhood PLUTO + zoning massing</p>
-          <h1>NYC Zoning Envelope Explorer</h1>
-          <p class="small">
-            Pick a split neighborhood file, then click a lot. Existing buildings extrude from that
-            neighborhood's PLUTO attributes, and the zoning envelope uses the selected lot's zoning fields.
-          </p>
-          <div id="dataStatus" class="small"></div>
+      <header class="top-ui">
+        <div class="title-row">NYC Zoning Envelope Explorer</div>
+        <select id="neighborhoodSelect">
+          <option value="">Loading neighborhoods...</option>
+        </select>
+        <div class="top-actions">
+          <button id="showBuildingsBtn" type="button" class="bar-btn active">Show Existing Buildings</button>
+          <button id="showEnvelopeBtn" type="button" class="bar-btn active">Show Zoning Envelope</button>
+        </div>
+      </header>
+
+      <main class="map-wrap">
+        <div id="map"></div>
+      </main>
+
+      <section class="bottom-ui">
+        <div class="control-row">
+          <label for="farSlider">Density (Floor Area Ratio)</label>
+          <input id="farSlider" type="range" min="0.1" max="15" step="0.01" value="3" />
+          <span id="farVal" class="value-pill">3.00</span>
         </div>
 
-        <div class="group">
-          <label for="neighborhoodSelect">Neighborhood</label>
-          <select id="neighborhoodSelect">
-            <option value="">Loading neighborhoods...</option>
+        <div class="control-row compact">
+          <label for="useType">Housing Type:</label>
+          <select id="useType">
+            <option value="market_rate">Market Rate</option>
+            <option value="affordable">Affordable</option>
           </select>
         </div>
+      </section>
 
-        <div class="group">
-          <label for="borough">Borough</label>
+      <aside class="info-card">
+        <div class="lookup-grid">
           <select id="borough">
             <option value="1">Manhattan</option>
             <option value="2">Bronx</option>
@@ -36,87 +50,25 @@
             <option value="4">Queens</option>
             <option value="5">Staten Island</option>
           </select>
+          <input id="block" type="number" value="981" min="1" placeholder="Block" />
+          <input id="lot" type="number" value="1" min="1" placeholder="Lot" />
+          <button id="lookupBtn" type="button" class="small-btn">Find Lot</button>
         </div>
-
-        <div class="group grid-3">
-          <div>
-            <label for="block">Block</label>
-            <input id="block" type="number" value="981" min="1" />
-          </div>
-          <div>
-            <label for="lot">Lot</label>
-            <input id="lot" type="number" value="1" min="1" />
-          </div>
-          <div class="align-end">
-            <button id="lookupBtn" type="button">Find In Neighborhood</button>
-          </div>
-        </div>
-
-        <hr />
-
-        <div class="group">
-          <label for="farSlider">Scenario FAR</label>
-          <div class="inline compact-row">
-            <input id="farSlider" type="range" min="0.1" max="15" step="0.01" value="3" />
-            <span id="farVal" class="value-pill">3.00</span>
-          </div>
-        </div>
-
-        <div class="group">
-          <label for="coverage">Envelope Coverage</label>
-          <div class="inline compact-row">
-            <input id="coverage" type="range" min="20" max="100" step="1" value="80" />
-            <span id="covVal" class="value-pill">80%</span>
-          </div>
-        </div>
-
-        <div class="group grid-2">
-          <div>
-            <label for="floorHeight">Floor Height (ft)</label>
-            <input id="floorHeight" type="number" min="8" max="20" step="0.5" value="10" />
-          </div>
-          <div>
-            <label for="useType">Use Type</label>
-            <select id="useType">
-              <option value="market_rate">Market Rate</option>
-              <option value="affordable">Affordable</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="group grid-2">
-          <label class="checkbox-field">
-            <input id="farMode" type="checkbox" checked />
-            Use custom coverage
-          </label>
-          <label class="checkbox-field">
-            <input id="upzoneToggle" type="checkbox" />
-            Upzone scenario
-          </label>
-        </div>
-
-        <div class="group grid-2">
-          <label class="checkbox-field">
-            <input id="showBuildingToggle" type="checkbox" checked />
-            Show existing buildings
-          </label>
-          <label class="checkbox-field">
-            <input id="showEnvelopeToggle" type="checkbox" checked />
-            Show zoning envelope
-          </label>
-        </div>
-
-        <div class="group">
-          <button id="runBtn" type="button">Generate Selected Lot Envelope</button>
-        </div>
-
+        <div id="dataStatus" class="small"></div>
         <div id="lotSummary" class="lot-summary empty">Choose a neighborhood and click a lot.</div>
         <pre id="report"></pre>
       </aside>
 
-      <main class="map-wrap">
-        <div id="map"></div>
-      </main>
+      <div class="hidden-controls" aria-hidden="true">
+        <input id="coverage" type="range" min="20" max="100" step="1" value="80" />
+        <span id="covVal">80%</span>
+        <input id="floorHeight" type="number" min="8" max="20" step="0.5" value="10" />
+        <input id="farMode" type="checkbox" checked />
+        <input id="upzoneToggle" type="checkbox" />
+        <input id="showBuildingToggle" type="checkbox" checked />
+        <input id="showEnvelopeToggle" type="checkbox" checked />
+        <button id="runBtn" type="button">Generate Selected Lot Envelope</button>
+      </div>
     </div>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>

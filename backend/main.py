@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -33,8 +33,10 @@ SPLIT_PLUTO_MANIFEST = os.path.join(ROOT_DIR, "split_pluto_manifest.json")
 GEOJSON_INDEX_PATH = os.path.join(ROOT_DIR, "geojson-index.json")
 SPLIT_PLUTO_BUCKET = os.getenv("SPLIT_PLUTO_BUCKET", "zoning-geojson")
 SPLIT_PLUTO_BASE_URL = os.getenv("SPLIT_PLUTO_BASE_URL", f"https://{SPLIT_PLUTO_BUCKET}.s3.amazonaws.com")
-app.mount("/web", StaticFiles(directory=WEB_DIR), name="web")
-app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
+if os.path.isdir(WEB_DIR):
+    app.mount("/web", StaticFiles(directory=WEB_DIR), name="web")
+if os.path.isdir(PUBLIC_DIR):
+    app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
 if os.path.isdir(SPLIT_PLUTO_DIR):
     app.mount("/split_pluto", StaticFiles(directory=SPLIT_PLUTO_DIR), name="split_pluto")
 
@@ -632,6 +634,14 @@ def _compose_lot_response(row: Dict[str, Any], lot_polygon: Optional[List[List[f
 @app.get("/")
 def root() -> FileResponse:
     return FileResponse(os.path.join(WEB_DIR, "index.html"))
+
+
+@app.get("/favicon.ico")
+def favicon() -> Response:
+    icon_path = os.path.join(WEB_DIR, "favicon.svg")
+    if os.path.isfile(icon_path):
+        return FileResponse(icon_path, media_type="image/svg+xml")
+    return Response(status_code=204)
 
 
 @app.get("/api/health")
