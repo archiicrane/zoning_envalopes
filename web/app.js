@@ -309,70 +309,13 @@ function refreshExistingBuildingsForNeighborhood() {
   const features = [];
   let nonZeroHeightCount = 0;
 
-  function collectCoords(geometry, out) {
-    if (!geometry || !geometry.coordinates) {
-      return;
-    }
-    if (geometry.type === "Polygon") {
-      for (const ring of geometry.coordinates || []) {
-        for (const pt of ring || []) {
-          out.push(pt);
-        }
-      }
-      return;
-    }
-    if (geometry.type === "MultiPolygon") {
-      for (const poly of geometry.coordinates || []) {
-        for (const ring of poly || []) {
-          for (const pt of ring || []) {
-            out.push(pt);
-          }
-        }
-      }
-    }
-  }
-
-  function geometryIntersectsNeighborhood(geometry, neighborhoodBounds) {
-    const coords = [];
-    collectCoords(geometry, coords);
-    if (!coords.length) {
-      return false;
-    }
-
-    let minLng = coords[0][0];
-    let minLat = coords[0][1];
-    let maxLng = coords[0][0];
-    let maxLat = coords[0][1];
-
-    for (const pt of coords) {
-      const lng = pt[0];
-      const lat = pt[1];
-      if (lng < minLng) minLng = lng;
-      if (lat < minLat) minLat = lat;
-      if (lng > maxLng) maxLng = lng;
-      if (lat > maxLat) maxLat = lat;
-    }
-
-    const nWest = neighborhoodBounds.getWest();
-    const nSouth = neighborhoodBounds.getSouth();
-    const nEast = neighborhoodBounds.getEast();
-    const nNorth = neighborhoodBounds.getNorth();
-
-    const separated = maxLng < nWest || minLng > nEast || maxLat < nSouth || minLat > nNorth;
-    return !separated;
-  }
-
   for (const candidate of candidates) {
     const geometry = candidate && candidate.geometry ? candidate.geometry : null;
     if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) {
       continue;
     }
 
-    if (!geometryIntersectsNeighborhood(geometry, bounds)) {
-      continue;
-    }
-
-    const idVal = candidate.id ?? JSON.stringify(geometry.coordinates?.[0]?.[0] || geometry.coordinates?.[0] || []);
+    const idVal = candidate.id ?? JSON.stringify(geometry.coordinates || []);
     const key = String(idVal);
     if (seen.has(key)) {
       continue;
@@ -408,6 +351,7 @@ function refreshExistingBuildingsForNeighborhood() {
   });
   console.log("[existing-buildings] selected neighborhood:", activeNeighborhood?.name || "n/a");
   console.log("[existing-buildings] lots loaded:", (activeNeighborhoodData?.features || []).length);
+  console.log("[existing-buildings] mapbox building candidates loaded:", candidates.length);
   console.log("[existing-buildings] mapbox building features loaded:", features.length);
   console.log("[existing-buildings] mapbox buildings with non-zero height:", nonZeroHeightCount);
 }
