@@ -729,6 +729,36 @@ def list_split_files() -> Dict[str, Any]:
     return {"files": [], "count": 0}
 
 
+@app.get("/api/data/split/{split_id}")
+def get_split_geojson(split_id: str) -> Response:
+    catalog = list_split_files().get("files") or []
+    target = next((item for item in catalog if _coerce_str(item.get("id")) == split_id), None)
+    if not target:
+        raise HTTPException(status_code=404, detail="Split file not found")
+
+    path = _coerce_str(target.get("path"))
+    url = _coerce_str(target.get("url"))
+
+    # Local files can be served directly when present.
+    if path and os.path.isdir(SPLIT_PLUTO_DIR):
+        local_path = os.path.join(SPLIT_PLUTO_DIR, os.path.basename(path))
+        if os.path.isfile(local_path):
+            return FileResponse(local_path, media_type="application/json")
+
+    if not url:
+        raise HTTPException(status_code=404, detail="Split file URL not available")
+
+    try:
+        upstream = requests.get(url, timeout=60)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch split file: {exc}") from exc
+
+    if not upstream.ok:
+        raise HTTPException(status_code=502, detail=f"Upstream split file request failed ({upstream.status_code})")
+
+    return Response(content=upstream.content, media_type="application/json")
+
+
 @app.get("/api/lot/{borough}/{block}/{lot}")
 def get_lot_by_bbl_parts(borough: str, block: str, lot: str) -> Dict[str, Any]:
     boro_map = {"M": "1", "B": "2", "K": "3", "Q": "4", "S": "5"}

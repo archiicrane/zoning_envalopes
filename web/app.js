@@ -759,9 +759,19 @@ async function loadNeighborhoodById(id) {
   }
 
   setReport(`Loading neighborhood ${neighborhood.name}...`);
-  const res = await fetch(neighborhood.url);
-  if (!res.ok) {
-    throw new Error(`Failed to load ${neighborhood.name}.`);
+  let res;
+  try {
+    res = await fetch(neighborhood.url);
+    if (!res.ok) {
+      throw new Error(`Direct fetch failed (${res.status})`);
+    }
+  } catch (_err) {
+    // CORS-safe fallback through same-origin backend proxy.
+    console.log("[split-load] direct fetch failed, retrying via backend proxy:", neighborhood.id);
+    res = await fetch(`/api/data/split/${encodeURIComponent(neighborhood.id)}`);
+    if (!res.ok) {
+      throw new Error(`Failed to load ${neighborhood.name}.`);
+    }
   }
 
   const geojson = await res.json();
