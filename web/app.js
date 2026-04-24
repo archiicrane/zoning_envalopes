@@ -17,6 +17,7 @@ async function resolveMapboxToken() {
 }
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
+const ZONING_RULES_URL = "/zoning-rules.jsonld";
 
 let map = null;
 let activeLotPolygon = null;
@@ -24,6 +25,7 @@ let activeLotData = null;
 let activeNeighborhood = null;
 let activeNeighborhoodData = EMPTY_FC;
 let availableNeighborhoods = [];
+let zoningRuleIndex = new Map();
 
 const report = document.getElementById("report");
 const coverageInput = document.getElementById("coverage");
@@ -78,6 +80,28 @@ function formatNumber(value, digits = 0) {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   });
+}
+
+async function loadZoningRules() {
+  try {
+    const res = await fetch(ZONING_RULES_URL);
+    if (!res.ok) {
+      throw new Error(`Failed to load zoning rules: ${res.status}`);
+    }
+
+    const payload = await res.json();
+    const rules = Array.isArray(payload?.rules) ? payload.rules : [];
+    zoningRuleIndex = new Map(
+      rules
+        .filter((rule) => rule && rule.zoneCode)
+        .map((rule) => [normalizeZoneToken(rule.zoneCode), rule])
+    );
+
+    console.log("[zoning-rules] loaded", zoningRuleIndex.size, "rules from", ZONING_RULES_URL);
+  } catch (err) {
+    zoningRuleIndex = new Map();
+    console.warn("[zoning-rules] falling back to built-in heuristics:", err);
+  }
 }
 
 function coerceNumber(value) {
@@ -184,6 +208,12 @@ function normalizeNeighborhoodData(geojson, neighborhoodName) {
 }
 
 function computeEnvelopeHeight(props) {
+  const zoneRule = resolveZoneRule(props);
+  const ruleHeight = coerceNumber(zoneRule?.maximumBuildingHeightFt ?? zoneRule?.ridgeHeightFt);
+  if (ruleHeight && ruleHeight > 0) {
+    return ruleHeight;
+  }
+
   const maxHeight = coerceNumber(props.max_height ?? props.maxHeight);
   if (maxHeight && maxHeight > 0) {
     return maxHeight;
@@ -205,6 +235,30 @@ function computeEnvelopeHeight(props) {
 function normalizeZoneToken(value) {
   const raw = String(value || "").trim().toUpperCase();
   return raw.replace(/\s+/g, "");
+}
+
+function resolveZoneRule(propsOrZone) {
+  const zoneToken = normalizeZoneToken(
+    typeof propsOrZone === "string"
+      ? propsOrZone
+      : propsOrZone?.zonedist1 ?? propsOrZone?.ZoneDist1 ?? propsOrZone?.zone ?? propsOrZone?.ZoningDist ?? ""
+  );
+  if (!zoneToken) {
+    return null;
+  }
+
+  const direct = zoningRuleIndex.get(zoneToken);
+  if (!direct) {
+    return null;
+  }
+
+  const equivalent = normalizeZoneToken(direct.residentialEquivalent);
+  if (!equivalent) {
+    return direct;
+  }
+
+  const base = zoningRuleIndex.get(equivalent);
+  return base ? { ...base, ...direct, zoneCode: direct.zoneCode } : direct;
 }
 
 function pickZoneColor(props) {
@@ -232,19 +286,41 @@ function pickZoneColor(props) {
   return "#00c2ff";
 }
 
-// Returns setback in meters for a given lot's zoning props.
-// NYC typical setbacks (simplified uniform inset):
-//   R1–R2: ~3.7m (12ft) — large suburban lots
-//   R3–R5: ~2.5m (8ft) — medium residential
-//   R6+:   ~1.5m (5ft) — dense/no front yard req
-//   C/M:   ~2.0m (6ft) — commercial/manufacturing
 function computeSetback(props) {
+  const zoneRule = resolveZoneRule(props);
+  const insetFt = coerceNumber(
+    zoneRule?.simplifiedPlanInsetFt ??
+      zoneRule?.streetSetbackWideFt ??
+      zoneRule?.frontYardFt
+  );
+  if (insetFt && insetFt > 0) {
+    return insetFt * 0.3048;
+  }
+
   const zone = (props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? "").toString().toUpperCase();
   if (zone.startsWith("R1") || zone.startsWith("R2")) return 3.7;
   if (zone.startsWith("R3") || zone.startsWith("R4") || zone.startsWith("R5")) return 2.5;
   if (zone.startsWith("R")) return 1.5;
   if (zone.startsWith("C") || zone.startsWith("M")) return 2.0;
-  return 2.5; // default
+  return 2.5;
+}
+
+const STEPPED_BULK_REGIMES = new Set([
+  "base-and-setback",
+  "contextual",
+  "contextual-variant",
+  "sky-exposure-plane",
+  "sky-exposure-plane-or-tower",
+  "manufacturing-sky-exposure",
+]);
+
+function _tryBuffer(geometry, distanceMeters) {
+  if (distanceMeters <= 0) return null;
+  try {
+    const result = turf.buffer({ type: "Feature", geometry, properties: {} }, -distanceMeters, { units: "meters" });
+    if (result?.geometry?.coordinates?.length > 0) return result.geometry;
+  } catch (e) { /* fallback */ }
+  return null;
 }
 
 function buildZoningEnvelopeFeatures(geojson) {
@@ -258,6 +334,7 @@ function buildZoningEnvelopeFeatures(geojson) {
     }
 
     const props = extractProps(feature);
+    const zoneRule = resolveZoneRule(props);
     const envelopeHeight = computeEnvelopeHeight(props);
     const envelopeColor = pickZoneColor(props);
     const farVal = coerceNumber(props.FAR ?? props.far ?? props.resid_far ?? props.comm_far ?? props.facil_far);
@@ -272,26 +349,43 @@ function buildZoningEnvelopeFeatures(geojson) {
       });
     }
 
-    // Apply setback inset: shrink the lot polygon by zone-based setback distance
-    const setbackMeters = computeSetback(props);
-    let envelopeGeometry = geometry;
-    try {
-      const inset = turf.buffer({ type: "Feature", geometry, properties: {} }, -setbackMeters, { units: "meters" });
-      if (inset && inset.geometry && inset.geometry.coordinates && inset.geometry.coordinates.length > 0) {
-        envelopeGeometry = inset.geometry;
-      }
-    } catch (e) {
-      // fallback to original geometry if buffer fails
-    }
+    const bulkRegime = zoneRule?.bulkRegime ?? "";
+    const baseHeightFt = coerceNumber(zoneRule?.maximumBaseHeightFt);
+    const upperInsetFt = coerceNumber(zoneRule?.simplifiedPlanInsetFt ?? zoneRule?.streetSetbackWideFt);
+    const frontYardFt = coerceNumber(zoneRule?.frontYardFt);
 
-    features.push({
-      type: "Feature",
-      geometry: envelopeGeometry,
-      properties: {
-        envelopeHeight,
-        envelopeColor,
-      },
-    });
+    // Upper setback footprint (street-wall / sky-exposure-plane inset)
+    const upperSetbackM = upperInsetFt ? upperInsetFt * 0.3048 : computeSetback(props);
+    const upperGeometry = _tryBuffer(geometry, upperSetbackM) ?? geometry;
+
+    const isstepped = bulkRegime && STEPPED_BULK_REGIMES.has(bulkRegime)
+      && baseHeightFt && baseHeightFt > 0 && baseHeightFt < envelopeHeight;
+
+    if (isstepped) {
+      // Base segment: runs from ground to max-base-height at the lot line
+      // (with front-yard inset only, not the upper street-setback)
+      const baseGeometry = (frontYardFt && frontYardFt > 0)
+        ? (_tryBuffer(geometry, frontYardFt * 0.3048) ?? geometry)
+        : geometry;
+
+      features.push({
+        type: "Feature",
+        geometry: baseGeometry,
+        properties: { envelopeHeight: baseHeightFt, envelopeBase: 0, envelopeColor },
+      });
+      // Upper segment: runs from max-base-height to envelope top at the inset footprint
+      features.push({
+        type: "Feature",
+        geometry: upperGeometry,
+        properties: { envelopeHeight, envelopeBase: baseHeightFt, envelopeColor },
+      });
+    } else {
+      features.push({
+        type: "Feature",
+        geometry: upperGeometry,
+        properties: { envelopeHeight, envelopeBase: 0, envelopeColor },
+      });
+    }
   }
 
   return {
@@ -493,7 +587,7 @@ function ensureSourcesAndLayers() {
       paint: {
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#00c2ff"],
         "fill-extrusion-opacity": 0.35,
-        "fill-extrusion-base": 0,
+        "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
         "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
       },
     });
@@ -928,6 +1022,7 @@ neighborhoodSelect.addEventListener("change", async () => {
 
 (async function bootstrap() {
   try {
+    await loadZoningRules();
     const token = await resolveMapboxToken();
     await initMap(token);
     await loadNeighborhoodOptions();

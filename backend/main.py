@@ -28,6 +28,7 @@ app.add_middleware(
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 WEB_DIR = os.path.join(ROOT_DIR, "web")
 PUBLIC_DIR = os.path.join(ROOT_DIR, "public")
+ZONING_RULES_PATH = os.path.join(WEB_DIR, "zoning-rules.jsonld")
 SPLIT_PLUTO_DIR = os.path.join(ROOT_DIR, "split_pluto")
 SPLIT_PLUTO_MANIFEST = os.path.join(ROOT_DIR, "split_pluto_manifest.json")
 GEOJSON_INDEX_PATH = os.path.join(ROOT_DIR, "geojson-index.json")
@@ -43,62 +44,6 @@ if os.path.isdir(SPLIT_PLUTO_DIR):
 MAPPLUTO_QUERY_URL = (
     "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MapPLUTO/FeatureServer/0/query"
 )
-
-ZONE_RULES: Dict[str, Dict[str, float]] = {
-    "R1": {"far": 0.5, "max_height_ft": 35.0, "coverage": 0.35},
-    "R2": {"far": 0.5, "max_height_ft": 35.0, "coverage": 0.35},
-    "R3-1": {"far": 0.5, "max_height_ft": 35.0, "coverage": 0.45},
-    "R3A": {"far": 0.6, "max_height_ft": 35.0, "coverage": 0.45},
-    "R3X": {"far": 0.85, "max_height_ft": 35.0, "coverage": 0.5},
-    "R4": {"far": 0.75, "max_height_ft": 45.0, "coverage": 0.55},
-    "R4A": {"far": 0.9, "max_height_ft": 45.0, "coverage": 0.55},
-    "R4-1": {"far": 1.35, "max_height_ft": 55.0, "coverage": 0.65},
-    "R4B": {"far": 0.9, "max_height_ft": 45.0, "coverage": 0.6},
-    "R5": {"far": 1.25, "max_height_ft": 55.0, "coverage": 0.7},
-    "R5A": {"far": 1.1, "max_height_ft": 40.0, "coverage": 0.65},
-    "R5B": {"far": 1.35, "max_height_ft": 33.0, "coverage": 0.55},
-    "R5D": {"far": 2.0, "max_height_ft": 65.0, "coverage": 0.8},
-    "R6": {"far": 2.43, "max_height_ft": 70.0, "coverage": 0.8},
-    "R6A": {"far": 3.0, "max_height_ft": 70.0, "coverage": 0.8},
-    "R6B": {"far": 2.0, "max_height_ft": 50.0, "coverage": 0.7},
-    "R7-1": {"far": 3.44, "max_height_ft": 100.0, "coverage": 0.85},
-    "R7-2": {"far": 3.44, "max_height_ft": 100.0, "coverage": 0.85},
-    "R7A": {"far": 4.0, "max_height_ft": 80.0, "coverage": 0.82},
-    "R7B": {"far": 3.0, "max_height_ft": 75.0, "coverage": 0.75},
-    "R7D": {"far": 4.2, "max_height_ft": 100.0, "coverage": 0.85},
-    "R8": {"far": 6.02, "max_height_ft": 120.0, "coverage": 0.88},
-    "R8A": {"far": 6.02, "max_height_ft": 120.0, "coverage": 0.85},
-    "R8B": {"far": 4.0, "max_height_ft": 75.0, "coverage": 0.75},
-    "R9": {"far": 7.52, "max_height_ft": 145.0, "coverage": 0.88},
-    "R9A": {"far": 7.52, "max_height_ft": 120.0, "coverage": 0.85},
-    "R10": {"far": 10.0, "max_height_ft": 210.0, "coverage": 0.9},
-    "R10A": {"far": 10.0, "max_height_ft": 210.0, "coverage": 0.88},
-    "C3": {"far": 0.5, "max_height_ft": 35.0, "coverage": 0.4},
-    "C4-1": {"far": 3.4, "max_height_ft": 80.0, "coverage": 0.85},
-    "C4-2": {"far": 3.44, "max_height_ft": 80.0, "coverage": 0.85},
-    "C4-4": {"far": 3.44, "max_height_ft": 120.0, "coverage": 0.88},
-    "C4-4D": {"far": 4.2, "max_height_ft": 100.0, "coverage": 0.85},
-    "C4-5": {"far": 4.0, "max_height_ft": 125.0, "coverage": 0.9},
-    "C4-6": {"far": 10.0, "max_height_ft": 150.0, "coverage": 0.9},
-    "C4-7": {"far": 10.0, "max_height_ft": 210.0, "coverage": 0.92},
-    "C5-1": {"far": 5.0, "max_height_ft": 100.0, "coverage": 0.9},
-    "C5-2": {"far": 6.0, "max_height_ft": 150.0, "coverage": 0.92},
-    "C5-3": {"far": 9.0, "max_height_ft": 210.0, "coverage": 0.94},
-    "C5-5": {"far": 12.0, "max_height_ft": 420.0, "coverage": 0.95},
-    "C6-1": {"far": 6.0, "max_height_ft": 105.0, "coverage": 0.9},
-    "C6-2": {"far": 6.02, "max_height_ft": 120.0, "coverage": 0.9},
-    "C6-3": {"far": 7.52, "max_height_ft": 145.0, "coverage": 0.92},
-    "C6-4": {"far": 10.0, "max_height_ft": 210.0, "coverage": 0.94},
-    "C6-5": {"far": 12.0, "max_height_ft": 420.0, "coverage": 0.95},
-    "C6-9": {"far": 15.0, "max_height_ft": 600.0, "coverage": 0.96},
-    "M1-1": {"far": 1.0, "max_height_ft": 60.0, "coverage": 0.85},
-    "M1-2": {"far": 2.0, "max_height_ft": 85.0, "coverage": 0.88},
-    "M1-3": {"far": 5.0, "max_height_ft": 120.0, "coverage": 0.9},
-    "M1-4": {"far": 10.0, "max_height_ft": 210.0, "coverage": 0.92},
-    "M2-1": {"far": 2.0, "max_height_ft": 85.0, "coverage": 0.88},
-    "M2-2": {"far": 2.0, "max_height_ft": 120.0, "coverage": 0.9},
-    "M3-1": {"far": 2.0, "max_height_ft": 85.0, "coverage": 0.9},
-}
 
 DEFAULT_ZONE_RULE = {"far": 3.0, "max_height_ft": 85.0, "coverage": 0.8}
 
@@ -232,6 +177,23 @@ def _scale_ring(coords: List[List[float]], scale: float) -> List[List[float]]:
     return _close_ring(scaled)
 
 
+def _ring_inset_scale(coords: List[List[float]], inset_ft: float) -> float:
+    if inset_ft <= 0:
+        return 1.0
+
+    ring = _project_ring_to_feet(coords)
+    xs = [point[0] for point in ring[:-1]]
+    ys = [point[1] for point in ring[:-1]]
+    width = max(xs) - min(xs)
+    depth = max(ys) - min(ys)
+    if width <= 0 or depth <= 0:
+        return 1.0
+
+    scale_x = max(0.05, (width - (2 * inset_ft)) / width)
+    scale_y = max(0.05, (depth - (2 * inset_ft)) / depth)
+    return max(0.05, min(1.0, min(scale_x, scale_y)))
+
+
 def _extract_zone_tokens(*values: Optional[str]) -> List[str]:
     tokens: List[str] = []
     for value in values:
@@ -243,6 +205,86 @@ def _extract_zone_tokens(*values: Optional[str]) -> List[str]:
             if token and token[0] in {"R", "C", "M"} and token not in tokens:
                 tokens.append(token)
     return tokens
+
+
+def _normalize_zone_token(value: Optional[str]) -> str:
+    return str(value or "").strip().upper().replace(" ", "")
+
+
+@lru_cache(maxsize=1)
+def _load_zr_rules_index() -> Dict[str, Dict[str, Any]]:
+    path = Path(ZONING_RULES_PATH)
+    if not path.exists():
+        return {}
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+    rules = payload.get("rules") or []
+    index: Dict[str, Dict[str, Any]] = {}
+    for rule in rules:
+        zone_code = _normalize_zone_token(rule.get("zoneCode"))
+        if zone_code:
+            index[zone_code] = rule
+    return index
+
+
+def _resolve_zr_rule(zone: str) -> Optional[Dict[str, Any]]:
+    zone_token = _normalize_zone_token(zone)
+    if not zone_token:
+        return None
+
+    rules = _load_zr_rules_index()
+    direct = rules.get(zone_token)
+    if not direct:
+        return None
+
+    equivalent = _normalize_zone_token(direct.get("residentialEquivalent"))
+    if not equivalent:
+        return dict(direct)
+
+    base = rules.get(equivalent)
+    if not base:
+        return dict(direct)
+
+    merged = dict(base)
+    merged.update(direct)
+    merged["zoneCode"] = direct.get("zoneCode", zone_token)
+    return merged
+
+
+def _rule_far(rule: Dict[str, Any], use_type: str) -> Optional[float]:
+    qualifying_far = _coerce_float(rule.get("qualifyingFar"))
+    standard_far = _coerce_float(rule.get("standardFar"))
+    if use_type == "affordable" and qualifying_far and qualifying_far > 0:
+        return qualifying_far
+    return standard_far if standard_far and standard_far > 0 else qualifying_far
+
+
+def _rule_max_height_ft(rule: Dict[str, Any]) -> Optional[float]:
+    for key in ("maximumBuildingHeightFt", "ridgeHeightFt", "maximumFrontWallHeightFt"):
+        value = _coerce_float(rule.get(key))
+        if value and value > 0:
+            return value
+    return None
+
+
+def _rule_base_height_ft(rule: Dict[str, Any]) -> Optional[float]:
+    for key in ("maximumBaseHeightFt", "perimeterWallHeightFt", "maximumFrontWallHeightFt"):
+        value = _coerce_float(rule.get(key))
+        if value and value > 0:
+            return value
+    return None
+
+
+def _rule_street_setback_ft(rule: Dict[str, Any]) -> Optional[float]:
+    for key in ("streetSetbackWideFt", "frontYardFt", "simplifiedPlanInsetFt"):
+        value = _coerce_float(rule.get(key))
+        if value and value > 0:
+            return value
+    return None
 
 
 def _zone_priority(zone: str) -> Tuple[int, int]:
@@ -290,6 +332,10 @@ def _fallback_zone_rule(zone: str) -> Dict[str, float]:
     return dict(DEFAULT_ZONE_RULE)
 
 
+def _coverage_fallback(zone: str) -> float:
+    return _fallback_zone_rule(zone).get("coverage", DEFAULT_ZONE_RULE["coverage"])
+
+
 def _resolve_zoning_analysis(
     zonedist1: Optional[str],
     zonedist2: Optional[str],
@@ -307,10 +353,25 @@ def _resolve_zoning_analysis(
 ) -> Dict[str, Any]:
     candidates = _extract_zone_tokens(zonedist1, zonedist2)
     primary_zone = max(candidates, key=_zone_priority) if candidates else None
-    base_rule = dict(ZONE_RULES.get(primary_zone or "", _fallback_zone_rule(primary_zone or "")))
+    fallback_rule = _fallback_zone_rule(primary_zone or "")
+    zr_rule = _resolve_zr_rule(primary_zone or "")
+    base_rule: Dict[str, Any] = dict(fallback_rule)
+    if zr_rule:
+        rule_far = _rule_far(zr_rule, use_type)
+        if rule_far and rule_far > 0:
+            base_rule["far"] = rule_far
+        rule_height = _rule_max_height_ft(zr_rule)
+        if rule_height and rule_height > 0:
+            base_rule["max_height_ft"] = rule_height
+        base_rule["bulk_regime"] = zr_rule.get("bulkRegime")
+        base_rule["base_height_ft"] = _rule_base_height_ft(zr_rule)
+        base_rule["street_setback_ft"] = _rule_street_setback_ft(zr_rule)
+        simplified_inset_ft = _coerce_float(zr_rule.get("simplifiedPlanInsetFt"))
+        if simplified_inset_ft and simplified_inset_ft > 0:
+            base_rule["simplified_plan_inset_ft"] = simplified_inset_ft
+        base_rule["source_sections"] = zr_rule.get("sourceSections") or []
     overlays = _extract_zone_tokens(overlay1, overlay2)
 
-    affordable_multiplier = 1.2 if use_type == "affordable" and primary_zone and primary_zone.startswith("R") else 1.0
     far_candidates = [base_rule["far"]]
     if resid_far and resid_far > 0:
         far_candidates.append(resid_far)
@@ -322,13 +383,13 @@ def _resolve_zoning_analysis(
     scenario_far = requested_far if requested_far is not None else base_far
     if upzone:
         scenario_far = max(scenario_far, round(base_far * 1.35, 3))
-    scenario_far = max(0.1, scenario_far) * affordable_multiplier
+    scenario_far = max(0.1, scenario_far)
 
     max_height_ft = requested_height_ft if requested_height_ft is not None else base_rule["max_height_ft"]
     if upzone:
         max_height_ft = max(max_height_ft, base_rule["max_height_ft"] * 1.2)
 
-    coverage_ratio = lot_coverage if lot_coverage is not None else base_rule["coverage"]
+    coverage_ratio = lot_coverage if lot_coverage is not None else _coverage_fallback(primary_zone or "")
     coverage_ratio = max(0.2, min(1.0, coverage_ratio))
 
     return {
@@ -343,6 +404,11 @@ def _resolve_zoning_analysis(
         "scenario_far": round(scenario_far, 3),
         "max_height_ft": round(max_height_ft, 2),
         "coverage_ratio": round(coverage_ratio, 3),
+        "bulk_regime": base_rule.get("bulk_regime"),
+        "base_height_ft": round(_coerce_float(base_rule.get("base_height_ft")) or 0.0, 2),
+        "street_setback_ft": round(_coerce_float(base_rule.get("street_setback_ft")) or 0.0, 2),
+        "simplified_plan_inset_ft": round(_coerce_float(base_rule.get("simplified_plan_inset_ft")) or 0.0, 2),
+        "source_sections": base_rule.get("source_sections") or [],
         "use_type": use_type,
         "upzone": upzone,
     }
@@ -371,6 +437,7 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
     coverage_ratio = max(0.2, min(1.0, zoning["coverage_ratio"]))
     far_limited_height_ft = max(15.0, zoning["scenario_far"] * payload.floor_height_ft / coverage_ratio)
     zoning_height_ft = round(min(zoning["max_height_ft"], far_limited_height_ft), 2)
+    base_height_ft = max(0.0, min(zoning_height_ft, zoning.get("base_height_ft") or 0.0))
 
     existing_height_ft = _estimate_existing_building_height_ft(
         payload.numfloors,
@@ -381,6 +448,67 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
     existing_coverage = _estimate_existing_building_coverage(payload.numfloors, payload.bldgarea, lot_area_ft2)
     envelope_ring = _scale_ring(outer, math.sqrt(coverage_ratio)) if coverage_ratio < 0.98 else outer
     existing_ring = _scale_ring(outer, math.sqrt(existing_coverage)) if existing_coverage < 0.98 else outer
+    bulk_regime = zoning.get("bulk_regime") or ""
+    upper_inset_ft = zoning.get("street_setback_ft") or zoning.get("simplified_plan_inset_ft") or 0.0
+    upper_scale = _ring_inset_scale(outer, upper_inset_ft)
+    upper_ring = _scale_ring(outer, upper_scale) if upper_scale < 0.99 else outer
+
+    zoning_features: List[Dict[str, Any]] = []
+    stepped_regimes = {
+        "base-and-setback",
+        "contextual",
+        "contextual-variant",
+        "sky-exposure-plane",
+        "sky-exposure-plane-or-tower",
+        "manufacturing-sky-exposure",
+    }
+    if base_height_ft > 0 and base_height_ft < zoning_height_ft and bulk_regime in stepped_regimes:
+        zoning_features.extend(
+            [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "kind": "zoning_envelope",
+                        "height_ft": round(base_height_ft, 2),
+                        "base_ft": 0,
+                        "color": "#2563eb",
+                        "opacity": 0.34,
+                        "coverage_ratio": 1.0,
+                        "segment": "base",
+                    },
+                    "geometry": {"type": "Polygon", "coordinates": [outer]},
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "kind": "zoning_envelope",
+                        "height_ft": zoning_height_ft,
+                        "base_ft": round(base_height_ft, 2),
+                        "color": "#2563eb",
+                        "opacity": 0.42,
+                        "coverage_ratio": round(max(0.05, upper_scale * upper_scale), 3),
+                        "segment": "upper",
+                    },
+                    "geometry": {"type": "Polygon", "coordinates": [upper_ring]},
+                },
+            ]
+        )
+    else:
+        zoning_features.append(
+            {
+                "type": "Feature",
+                "properties": {
+                    "kind": "zoning_envelope",
+                    "height_ft": zoning_height_ft,
+                    "base_ft": 0,
+                    "color": "#2563eb",
+                    "opacity": 0.38,
+                    "coverage_ratio": round(coverage_ratio, 3),
+                    "segment": "single",
+                },
+                "geometry": {"type": "Polygon", "coordinates": [envelope_ring]},
+            }
+        )
 
     return {
         "type": "FeatureCollection",
@@ -408,18 +536,7 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
                 },
                 "geometry": {"type": "Polygon", "coordinates": [existing_ring]},
             },
-            {
-                "type": "Feature",
-                "properties": {
-                    "kind": "zoning_envelope",
-                    "height_ft": zoning_height_ft,
-                    "base_ft": 0,
-                    "color": "#2563eb",
-                    "opacity": 0.38,
-                    "coverage_ratio": round(coverage_ratio, 3),
-                },
-                "geometry": {"type": "Polygon", "coordinates": [envelope_ring]},
-            },
+            *zoning_features,
         ],
     }
 
@@ -881,7 +998,9 @@ def build_envelope(payload: EnvelopeRequest) -> Dict[str, Any]:
     geojson = _build_study_geojson(payload, lot_area_ft2, zoning)
 
     existing_feature = next(feature for feature in geojson["features"] if feature["properties"]["kind"] == "existing_building")
-    zoning_feature = next(feature for feature in geojson["features"] if feature["properties"]["kind"] == "zoning_envelope")
+    zoning_features = [feature for feature in geojson["features"] if feature["properties"]["kind"] == "zoning_envelope"]
+    full_envelope_height_ft = max((feature["properties"].get("height_ft") or 0.0) for feature in zoning_features)
+    full_envelope_coverage_ratio = max((feature["properties"].get("coverage_ratio") or 0.0) for feature in zoning_features)
 
     return {
         "inputs": payload.model_dump(),
@@ -891,8 +1010,8 @@ def build_envelope(payload: EnvelopeRequest) -> Dict[str, Any]:
             "lot_area_ft2": round(lot_area_ft2, 2),
             "existing_building_height_ft": existing_feature["properties"]["height_ft"],
             "existing_building_coverage_ratio": existing_feature["properties"]["coverage_ratio"],
-            "full_envelope_height_ft": zoning_feature["properties"]["height_ft"],
-            "full_envelope_coverage_ratio": zoning_feature["properties"]["coverage_ratio"],
+            "full_envelope_height_ft": round(full_envelope_height_ft, 2),
+            "full_envelope_coverage_ratio": round(full_envelope_coverage_ratio, 3),
         },
         "geojson": geojson,
     }
