@@ -30,6 +30,7 @@ WEB_DIR = os.path.join(ROOT_DIR, "web")
 PUBLIC_DIR = os.path.join(ROOT_DIR, "public")
 SPLIT_PLUTO_DIR = os.path.join(ROOT_DIR, "split_pluto")
 SPLIT_PLUTO_MANIFEST = os.path.join(ROOT_DIR, "split_pluto_manifest.json")
+GEOJSON_INDEX_PATH = os.path.join(ROOT_DIR, "geojson-index.json")
 SPLIT_PLUTO_BUCKET = os.getenv("SPLIT_PLUTO_BUCKET", "zoning-geojson")
 SPLIT_PLUTO_BASE_URL = os.getenv("SPLIT_PLUTO_BASE_URL", f"https://{SPLIT_PLUTO_BUCKET}.s3.amazonaws.com")
 app.mount("/web", StaticFiles(directory=WEB_DIR), name="web")
@@ -658,6 +659,26 @@ def list_split_files() -> Dict[str, Any]:
                     "path": rel,
                     "url": f"/split_pluto/{rel}",
                     "size_bytes": path.stat().st_size,
+                }
+            )
+        return {"files": files, "count": len(files)}
+    # Primary remote source: user-maintained S3 index file.
+    if os.path.isfile(GEOJSON_INDEX_PATH):
+        with open(GEOJSON_INDEX_PATH, "r", encoding="utf-8") as fh:
+            index_entries = json.load(fh)
+        files = []
+        for entry in index_entries or []:
+            filename = _coerce_str(entry.get("name")) or Path(_coerce_str(entry.get("key") or "")).name
+            if not filename:
+                continue
+            entry_stem = Path(filename).stem
+            files.append(
+                {
+                    "id": entry_stem,
+                    "name": _split_display_name(Path(filename)),
+                    "path": _coerce_str(entry.get("key")) or filename,
+                    "url": _coerce_str(entry.get("url")) or _remote_split_url(filename),
+                    "size_bytes": 0,
                 }
             )
         return {"files": files, "count": len(files)}

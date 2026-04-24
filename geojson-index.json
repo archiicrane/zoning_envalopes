@@ -1,0 +1,1307 @@
+﻿[
+    {
+        "name":  "pluto_Allerton.geojson",
+        "key":  "split_pluto/pluto_Allerton.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Allerton.geojson"
+    },
+    {
+        "name":  "pluto_Alley_Pond_Park.geojson",
+        "key":  "split_pluto/pluto_Alley_Pond_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Alley_Pond_Park.geojson"
+    },
+    {
+        "name":  "pluto_Annadale-Huguenot-Prince\u0027s_Bay-Woodrow.geojson",
+        "key":  "split_pluto/pluto_Annadale-Huguenot-Prince\u0027s_Bay-Woodrow.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Annadale-Huguenot-Prince\u0027s_Bay-Woodrow.geojson"
+    },
+    {
+        "name":  "pluto_Arden_Heights-Rossville.geojson",
+        "key":  "split_pluto/pluto_Arden_Heights-Rossville.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Arden_Heights-Rossville.geojson"
+    },
+    {
+        "name":  "pluto_Astoria_(Central).geojson",
+        "key":  "split_pluto/pluto_Astoria_(Central).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Astoria_(Central).geojson"
+    },
+    {
+        "name":  "pluto_Astoria_(East)-Woodside_(North).geojson",
+        "key":  "split_pluto/pluto_Astoria_(East)-Woodside_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Astoria_(East)-Woodside_(North).geojson"
+    },
+    {
+        "name":  "pluto_Astoria_(North)-Ditmars-Steinway.geojson",
+        "key":  "split_pluto/pluto_Astoria_(North)-Ditmars-Steinway.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Astoria_(North)-Ditmars-Steinway.geojson"
+    },
+    {
+        "name":  "pluto_Astoria_Park.geojson",
+        "key":  "split_pluto/pluto_Astoria_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Astoria_Park.geojson"
+    },
+    {
+        "name":  "pluto_Auburndale.geojson",
+        "key":  "split_pluto/pluto_Auburndale.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Auburndale.geojson"
+    },
+    {
+        "name":  "pluto_Baisley_Park.geojson",
+        "key":  "split_pluto/pluto_Baisley_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Baisley_Park.geojson"
+    },
+    {
+        "name":  "pluto_Barren_Island-Floyd_Bennett_Field.geojson",
+        "key":  "split_pluto/pluto_Barren_Island-Floyd_Bennett_Field.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Barren_Island-Floyd_Bennett_Field.geojson"
+    },
+    {
+        "name":  "pluto_Bath_Beach.geojson",
+        "key":  "split_pluto/pluto_Bath_Beach.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bath_Beach.geojson"
+    },
+    {
+        "name":  "pluto_Bay_Ridge.geojson",
+        "key":  "split_pluto/pluto_Bay_Ridge.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bay_Ridge.geojson"
+    },
+    {
+        "name":  "pluto_Bay_Terrace-Clearview.geojson",
+        "key":  "split_pluto/pluto_Bay_Terrace-Clearview.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bay_Terrace-Clearview.geojson"
+    },
+    {
+        "name":  "pluto_Bayside.geojson",
+        "key":  "split_pluto/pluto_Bayside.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bayside.geojson"
+    },
+    {
+        "name":  "pluto_Bedford-Stuyvesant_(East).geojson",
+        "key":  "split_pluto/pluto_Bedford-Stuyvesant_(East).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bedford-Stuyvesant_(East).geojson"
+    },
+    {
+        "name":  "pluto_Bedford-Stuyvesant_(West).geojson",
+        "key":  "split_pluto/pluto_Bedford-Stuyvesant_(West).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bedford-Stuyvesant_(West).geojson"
+    },
+    {
+        "name":  "pluto_Bedford_Park.geojson",
+        "key":  "split_pluto/pluto_Bedford_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bedford_Park.geojson"
+    },
+    {
+        "name":  "pluto_Bellerose.geojson",
+        "key":  "split_pluto/pluto_Bellerose.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bellerose.geojson"
+    },
+    {
+        "name":  "pluto_Belmont.geojson",
+        "key":  "split_pluto/pluto_Belmont.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Belmont.geojson"
+    },
+    {
+        "name":  "pluto_Bensonhurst.geojson",
+        "key":  "split_pluto/pluto_Bensonhurst.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bensonhurst.geojson"
+    },
+    {
+        "name":  "pluto_Borough_Park.geojson",
+        "key":  "split_pluto/pluto_Borough_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Borough_Park.geojson"
+    },
+    {
+        "name":  "pluto_Breezy_Point-Belle_Harbor-Rockaway_Park-Broad_Channel.geojson",
+        "key":  "split_pluto/pluto_Breezy_Point-Belle_Harbor-Rockaway_Park-Broad_Channel.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Breezy_Point-Belle_Harbor-Rockaway_Park-Broad_Channel.geojson"
+    },
+    {
+        "name":  "pluto_Brighton_Beach.geojson",
+        "key":  "split_pluto/pluto_Brighton_Beach.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Brighton_Beach.geojson"
+    },
+    {
+        "name":  "pluto_Bronx_Park.geojson",
+        "key":  "split_pluto/pluto_Bronx_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bronx_Park.geojson"
+    },
+    {
+        "name":  "pluto_Brooklyn_Heights.geojson",
+        "key":  "split_pluto/pluto_Brooklyn_Heights.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Brooklyn_Heights.geojson"
+    },
+    {
+        "name":  "pluto_Brooklyn_Navy_Yard.geojson",
+        "key":  "split_pluto/pluto_Brooklyn_Navy_Yard.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Brooklyn_Navy_Yard.geojson"
+    },
+    {
+        "name":  "pluto_Brownsville.geojson",
+        "key":  "split_pluto/pluto_Brownsville.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Brownsville.geojson"
+    },
+    {
+        "name":  "pluto_Bushwick_(East).geojson",
+        "key":  "split_pluto/pluto_Bushwick_(East).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bushwick_(East).geojson"
+    },
+    {
+        "name":  "pluto_Bushwick_(West).geojson",
+        "key":  "split_pluto/pluto_Bushwick_(West).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Bushwick_(West).geojson"
+    },
+    {
+        "name":  "pluto_Calvary_\u0026_Mount_Zion_Cemeteries.geojson",
+        "key":  "split_pluto/pluto_Calvary_\u0026_Mount_Zion_Cemeteries.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Calvary_\u0026_Mount_Zion_Cemeteries.geojson"
+    },
+    {
+        "name":  "pluto_Calvert_Vaux_Park.geojson",
+        "key":  "split_pluto/pluto_Calvert_Vaux_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Calvert_Vaux_Park.geojson"
+    },
+    {
+        "name":  "pluto_Cambria_Heights.geojson",
+        "key":  "split_pluto/pluto_Cambria_Heights.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Cambria_Heights.geojson"
+    },
+    {
+        "name":  "pluto_Canarsie.geojson",
+        "key":  "split_pluto/pluto_Canarsie.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Canarsie.geojson"
+    },
+    {
+        "name":  "pluto_Canarsie_Park_\u0026_Pier.geojson",
+        "key":  "split_pluto/pluto_Canarsie_Park_\u0026_Pier.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Canarsie_Park_\u0026_Pier.geojson"
+    },
+    {
+        "name":  "pluto_Carroll_Gardens-Cobble_Hill-Gowanus-Red_Hook.geojson",
+        "key":  "split_pluto/pluto_Carroll_Gardens-Cobble_Hill-Gowanus-Red_Hook.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Carroll_Gardens-Cobble_Hill-Gowanus-Red_Hook.geojson"
+    },
+    {
+        "name":  "pluto_Castle_Hill-Unionport.geojson",
+        "key":  "split_pluto/pluto_Castle_Hill-Unionport.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Castle_Hill-Unionport.geojson"
+    },
+    {
+        "name":  "pluto_Central_Park.geojson",
+        "key":  "split_pluto/pluto_Central_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Central_Park.geojson"
+    },
+    {
+        "name":  "pluto_Chelsea-Hudson_Yards.geojson",
+        "key":  "split_pluto/pluto_Chelsea-Hudson_Yards.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Chelsea-Hudson_Yards.geojson"
+    },
+    {
+        "name":  "pluto_Chinatown-Two_Bridges.geojson",
+        "key":  "split_pluto/pluto_Chinatown-Two_Bridges.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Chinatown-Two_Bridges.geojson"
+    },
+    {
+        "name":  "pluto_Claremont_Park.geojson",
+        "key":  "split_pluto/pluto_Claremont_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Claremont_Park.geojson"
+    },
+    {
+        "name":  "pluto_Claremont_Village-Claremont_(East).geojson",
+        "key":  "split_pluto/pluto_Claremont_Village-Claremont_(East).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Claremont_Village-Claremont_(East).geojson"
+    },
+    {
+        "name":  "pluto_Clinton_Hill.geojson",
+        "key":  "split_pluto/pluto_Clinton_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Clinton_Hill.geojson"
+    },
+    {
+        "name":  "pluto_Co-op_City.geojson",
+        "key":  "split_pluto/pluto_Co-op_City.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Co-op_City.geojson"
+    },
+    {
+        "name":  "pluto_College_Point.geojson",
+        "key":  "split_pluto/pluto_College_Point.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_College_Point.geojson"
+    },
+    {
+        "name":  "pluto_Concourse-Concourse_Village.geojson",
+        "key":  "split_pluto/pluto_Concourse-Concourse_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Concourse-Concourse_Village.geojson"
+    },
+    {
+        "name":  "pluto_Coney_Island-Sea_Gate.geojson",
+        "key":  "split_pluto/pluto_Coney_Island-Sea_Gate.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Coney_Island-Sea_Gate.geojson"
+    },
+    {
+        "name":  "pluto_Corona.geojson",
+        "key":  "split_pluto/pluto_Corona.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Corona.geojson"
+    },
+    {
+        "name":  "pluto_Crotona_Park.geojson",
+        "key":  "split_pluto/pluto_Crotona_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Crotona_Park.geojson"
+    },
+    {
+        "name":  "pluto_Crotona_Park_East.geojson",
+        "key":  "split_pluto/pluto_Crotona_Park_East.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Crotona_Park_East.geojson"
+    },
+    {
+        "name":  "pluto_Crown_Heights_(North).geojson",
+        "key":  "split_pluto/pluto_Crown_Heights_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Crown_Heights_(North).geojson"
+    },
+    {
+        "name":  "pluto_Crown_Heights_(South).geojson",
+        "key":  "split_pluto/pluto_Crown_Heights_(South).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Crown_Heights_(South).geojson"
+    },
+    {
+        "name":  "pluto_Cunningham_Park.geojson",
+        "key":  "split_pluto/pluto_Cunningham_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Cunningham_Park.geojson"
+    },
+    {
+        "name":  "pluto_Cypress_Hills.geojson",
+        "key":  "split_pluto/pluto_Cypress_Hills.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Cypress_Hills.geojson"
+    },
+    {
+        "name":  "pluto_Douglaston-Little_Neck.geojson",
+        "key":  "split_pluto/pluto_Douglaston-Little_Neck.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Douglaston-Little_Neck.geojson"
+    },
+    {
+        "name":  "pluto_Downtown_Brooklyn-DUMBO-Boerum_Hill.geojson",
+        "key":  "split_pluto/pluto_Downtown_Brooklyn-DUMBO-Boerum_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Downtown_Brooklyn-DUMBO-Boerum_Hill.geojson"
+    },
+    {
+        "name":  "pluto_Dyker_Beach_Park.geojson",
+        "key":  "split_pluto/pluto_Dyker_Beach_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Dyker_Beach_Park.geojson"
+    },
+    {
+        "name":  "pluto_Dyker_Heights.geojson",
+        "key":  "split_pluto/pluto_Dyker_Heights.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Dyker_Heights.geojson"
+    },
+    {
+        "name":  "pluto_East_Elmhurst.geojson",
+        "key":  "split_pluto/pluto_East_Elmhurst.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Elmhurst.geojson"
+    },
+    {
+        "name":  "pluto_East_Flatbush-Erasmus.geojson",
+        "key":  "split_pluto/pluto_East_Flatbush-Erasmus.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Flatbush-Erasmus.geojson"
+    },
+    {
+        "name":  "pluto_East_Flatbush-Farragut.geojson",
+        "key":  "split_pluto/pluto_East_Flatbush-Farragut.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Flatbush-Farragut.geojson"
+    },
+    {
+        "name":  "pluto_East_Flatbush-Remsen_Village.geojson",
+        "key":  "split_pluto/pluto_East_Flatbush-Remsen_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Flatbush-Remsen_Village.geojson"
+    },
+    {
+        "name":  "pluto_East_Flatbush-Rugby.geojson",
+        "key":  "split_pluto/pluto_East_Flatbush-Rugby.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Flatbush-Rugby.geojson"
+    },
+    {
+        "name":  "pluto_East_Flushing.geojson",
+        "key":  "split_pluto/pluto_East_Flushing.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Flushing.geojson"
+    },
+    {
+        "name":  "pluto_East_Harlem_(North).geojson",
+        "key":  "split_pluto/pluto_East_Harlem_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Harlem_(North).geojson"
+    },
+    {
+        "name":  "pluto_East_Harlem_(South).geojson",
+        "key":  "split_pluto/pluto_East_Harlem_(South).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Harlem_(South).geojson"
+    },
+    {
+        "name":  "pluto_East_Midtown-Turtle_Bay.geojson",
+        "key":  "split_pluto/pluto_East_Midtown-Turtle_Bay.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Midtown-Turtle_Bay.geojson"
+    },
+    {
+        "name":  "pluto_East_New_York-City_Line.geojson",
+        "key":  "split_pluto/pluto_East_New_York-City_Line.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_New_York-City_Line.geojson"
+    },
+    {
+        "name":  "pluto_East_New_York-New_Lots.geojson",
+        "key":  "split_pluto/pluto_East_New_York-New_Lots.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_New_York-New_Lots.geojson"
+    },
+    {
+        "name":  "pluto_East_New_York_(North).geojson",
+        "key":  "split_pluto/pluto_East_New_York_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_New_York_(North).geojson"
+    },
+    {
+        "name":  "pluto_East_Village.geojson",
+        "key":  "split_pluto/pluto_East_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Village.geojson"
+    },
+    {
+        "name":  "pluto_East_Williamsburg.geojson",
+        "key":  "split_pluto/pluto_East_Williamsburg.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_East_Williamsburg.geojson"
+    },
+    {
+        "name":  "pluto_Eastchester-Edenwald-Baychester.geojson",
+        "key":  "split_pluto/pluto_Eastchester-Edenwald-Baychester.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Eastchester-Edenwald-Baychester.geojson"
+    },
+    {
+        "name":  "pluto_Elmhurst.geojson",
+        "key":  "split_pluto/pluto_Elmhurst.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Elmhurst.geojson"
+    },
+    {
+        "name":  "pluto_Far_Rockaway-Bayswater.geojson",
+        "key":  "split_pluto/pluto_Far_Rockaway-Bayswater.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Far_Rockaway-Bayswater.geojson"
+    },
+    {
+        "name":  "pluto_Ferry_Point_Park-St._Raymond_Cemetery.geojson",
+        "key":  "split_pluto/pluto_Ferry_Point_Park-St._Raymond_Cemetery.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Ferry_Point_Park-St._Raymond_Cemetery.geojson"
+    },
+    {
+        "name":  "pluto_Financial_District-Battery_Park_City.geojson",
+        "key":  "split_pluto/pluto_Financial_District-Battery_Park_City.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Financial_District-Battery_Park_City.geojson"
+    },
+    {
+        "name":  "pluto_Flatbush.geojson",
+        "key":  "split_pluto/pluto_Flatbush.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Flatbush.geojson"
+    },
+    {
+        "name":  "pluto_Flatbush_(West)-Ditmas_Park-Parkville.geojson",
+        "key":  "split_pluto/pluto_Flatbush_(West)-Ditmas_Park-Parkville.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Flatbush_(West)-Ditmas_Park-Parkville.geojson"
+    },
+    {
+        "name":  "pluto_Flatlands.geojson",
+        "key":  "split_pluto/pluto_Flatlands.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Flatlands.geojson"
+    },
+    {
+        "name":  "pluto_Flushing-Willets_Point.geojson",
+        "key":  "split_pluto/pluto_Flushing-Willets_Point.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Flushing-Willets_Point.geojson"
+    },
+    {
+        "name":  "pluto_Flushing_Meadows-Corona_Park.geojson",
+        "key":  "split_pluto/pluto_Flushing_Meadows-Corona_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Flushing_Meadows-Corona_Park.geojson"
+    },
+    {
+        "name":  "pluto_Fordham_Heights.geojson",
+        "key":  "split_pluto/pluto_Fordham_Heights.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Fordham_Heights.geojson"
+    },
+    {
+        "name":  "pluto_Forest_Hills.geojson",
+        "key":  "split_pluto/pluto_Forest_Hills.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Forest_Hills.geojson"
+    },
+    {
+        "name":  "pluto_Forest_Park.geojson",
+        "key":  "split_pluto/pluto_Forest_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Forest_Park.geojson"
+    },
+    {
+        "name":  "pluto_Fort_Greene.geojson",
+        "key":  "split_pluto/pluto_Fort_Greene.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Fort_Greene.geojson"
+    },
+    {
+        "name":  "pluto_Fort_Hamilton.geojson",
+        "key":  "split_pluto/pluto_Fort_Hamilton.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Fort_Hamilton.geojson"
+    },
+    {
+        "name":  "pluto_Fort_Totten.geojson",
+        "key":  "split_pluto/pluto_Fort_Totten.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Fort_Totten.geojson"
+    },
+    {
+        "name":  "pluto_Fort_Wadsworth.geojson",
+        "key":  "split_pluto/pluto_Fort_Wadsworth.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Fort_Wadsworth.geojson"
+    },
+    {
+        "name":  "pluto_Fresh_Meadows-Utopia.geojson",
+        "key":  "split_pluto/pluto_Fresh_Meadows-Utopia.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Fresh_Meadows-Utopia.geojson"
+    },
+    {
+        "name":  "pluto_Freshkills_Park_(North).geojson",
+        "key":  "split_pluto/pluto_Freshkills_Park_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Freshkills_Park_(North).geojson"
+    },
+    {
+        "name":  "pluto_Freshkills_Park_(South).geojson",
+        "key":  "split_pluto/pluto_Freshkills_Park_(South).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Freshkills_Park_(South).geojson"
+    },
+    {
+        "name":  "pluto_Glen_Oaks-Floral_Park-New_Hyde_Park.geojson",
+        "key":  "split_pluto/pluto_Glen_Oaks-Floral_Park-New_Hyde_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Glen_Oaks-Floral_Park-New_Hyde_Park.geojson"
+    },
+    {
+        "name":  "pluto_Glendale.geojson",
+        "key":  "split_pluto/pluto_Glendale.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Glendale.geojson"
+    },
+    {
+        "name":  "pluto_Gramercy.geojson",
+        "key":  "split_pluto/pluto_Gramercy.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Gramercy.geojson"
+    },
+    {
+        "name":  "pluto_Grasmere-Arrochar-South_Beach-Dongan_Hills.geojson",
+        "key":  "split_pluto/pluto_Grasmere-Arrochar-South_Beach-Dongan_Hills.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Grasmere-Arrochar-South_Beach-Dongan_Hills.geojson"
+    },
+    {
+        "name":  "pluto_Gravesend_(East)-Homecrest.geojson",
+        "key":  "split_pluto/pluto_Gravesend_(East)-Homecrest.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Gravesend_(East)-Homecrest.geojson"
+    },
+    {
+        "name":  "pluto_Gravesend_(South).geojson",
+        "key":  "split_pluto/pluto_Gravesend_(South).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Gravesend_(South).geojson"
+    },
+    {
+        "name":  "pluto_Gravesend_(West).geojson",
+        "key":  "split_pluto/pluto_Gravesend_(West).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Gravesend_(West).geojson"
+    },
+    {
+        "name":  "pluto_Great_Kills-Eltingville.geojson",
+        "key":  "split_pluto/pluto_Great_Kills-Eltingville.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Great_Kills-Eltingville.geojson"
+    },
+    {
+        "name":  "pluto_Great_Kills_Park.geojson",
+        "key":  "split_pluto/pluto_Great_Kills_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Great_Kills_Park.geojson"
+    },
+    {
+        "name":  "pluto_Green-Wood_Cemetery.geojson",
+        "key":  "split_pluto/pluto_Green-Wood_Cemetery.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Green-Wood_Cemetery.geojson"
+    },
+    {
+        "name":  "pluto_Greenpoint.geojson",
+        "key":  "split_pluto/pluto_Greenpoint.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Greenpoint.geojson"
+    },
+    {
+        "name":  "pluto_Greenwich_Village.geojson",
+        "key":  "split_pluto/pluto_Greenwich_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Greenwich_Village.geojson"
+    },
+    {
+        "name":  "pluto_Hamilton_Heights-Sugar_Hill.geojson",
+        "key":  "split_pluto/pluto_Hamilton_Heights-Sugar_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Hamilton_Heights-Sugar_Hill.geojson"
+    },
+    {
+        "name":  "pluto_Harlem_(North).geojson",
+        "key":  "split_pluto/pluto_Harlem_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Harlem_(North).geojson"
+    },
+    {
+        "name":  "pluto_Harlem_(South).geojson",
+        "key":  "split_pluto/pluto_Harlem_(South).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Harlem_(South).geojson"
+    },
+    {
+        "name":  "pluto_Hart_Island.geojson",
+        "key":  "split_pluto/pluto_Hart_Island.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Hart_Island.geojson"
+    },
+    {
+        "name":  "pluto_Hell\u0027s_Kitchen.geojson",
+        "key":  "split_pluto/pluto_Hell\u0027s_Kitchen.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Hell\u0027s_Kitchen.geojson"
+    },
+    {
+        "name":  "pluto_Highbridge.geojson",
+        "key":  "split_pluto/pluto_Highbridge.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Highbridge.geojson"
+    },
+    {
+        "name":  "pluto_Highbridge_Park.geojson",
+        "key":  "split_pluto/pluto_Highbridge_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Highbridge_Park.geojson"
+    },
+    {
+        "name":  "pluto_Highland_Park-Cypress_Hills_Cemeteries_(North).geojson",
+        "key":  "split_pluto/pluto_Highland_Park-Cypress_Hills_Cemeteries_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Highland_Park-Cypress_Hills_Cemeteries_(North).geojson"
+    },
+    {
+        "name":  "pluto_Highland_Park-Cypress_Hills_Cemeteries_(South).geojson",
+        "key":  "split_pluto/pluto_Highland_Park-Cypress_Hills_Cemeteries_(South).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Highland_Park-Cypress_Hills_Cemeteries_(South).geojson"
+    },
+    {
+        "name":  "pluto_Hollis.geojson",
+        "key":  "split_pluto/pluto_Hollis.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Hollis.geojson"
+    },
+    {
+        "name":  "pluto_Holy_Cross_Cemetery.geojson",
+        "key":  "split_pluto/pluto_Holy_Cross_Cemetery.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Holy_Cross_Cemetery.geojson"
+    },
+    {
+        "name":  "pluto_Howard_Beach-Lindenwood.geojson",
+        "key":  "split_pluto/pluto_Howard_Beach-Lindenwood.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Howard_Beach-Lindenwood.geojson"
+    },
+    {
+        "name":  "pluto_Hunts_Point.geojson",
+        "key":  "split_pluto/pluto_Hunts_Point.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Hunts_Point.geojson"
+    },
+    {
+        "name":  "pluto_Hutchinson_Metro_Center.geojson",
+        "key":  "split_pluto/pluto_Hutchinson_Metro_Center.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Hutchinson_Metro_Center.geojson"
+    },
+    {
+        "name":  "pluto_Inwood.geojson",
+        "key":  "split_pluto/pluto_Inwood.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Inwood.geojson"
+    },
+    {
+        "name":  "pluto_Inwood_Hill_Park.geojson",
+        "key":  "split_pluto/pluto_Inwood_Hill_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Inwood_Hill_Park.geojson"
+    },
+    {
+        "name":  "pluto_Jackson_Heights.geojson",
+        "key":  "split_pluto/pluto_Jackson_Heights.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Jackson_Heights.geojson"
+    },
+    {
+        "name":  "pluto_Jacob_Riis_Park-Fort_Tilden-Breezy_Point_Tip.geojson",
+        "key":  "split_pluto/pluto_Jacob_Riis_Park-Fort_Tilden-Breezy_Point_Tip.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Jacob_Riis_Park-Fort_Tilden-Breezy_Point_Tip.geojson"
+    },
+    {
+        "name":  "pluto_Jamaica.geojson",
+        "key":  "split_pluto/pluto_Jamaica.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Jamaica.geojson"
+    },
+    {
+        "name":  "pluto_Jamaica_Bay_(East).geojson",
+        "key":  "split_pluto/pluto_Jamaica_Bay_(East).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Jamaica_Bay_(East).geojson"
+    },
+    {
+        "name":  "pluto_Jamaica_Bay_(West).geojson",
+        "key":  "split_pluto/pluto_Jamaica_Bay_(West).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Jamaica_Bay_(West).geojson"
+    },
+    {
+        "name":  "pluto_Jamaica_Estates-Holliswood.geojson",
+        "key":  "split_pluto/pluto_Jamaica_Estates-Holliswood.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Jamaica_Estates-Holliswood.geojson"
+    },
+    {
+        "name":  "pluto_Jamaica_Hills-Briarwood.geojson",
+        "key":  "split_pluto/pluto_Jamaica_Hills-Briarwood.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Jamaica_Hills-Briarwood.geojson"
+    },
+    {
+        "name":  "pluto_John_F._Kennedy_International_Airport.geojson",
+        "key":  "split_pluto/pluto_John_F._Kennedy_International_Airport.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_John_F._Kennedy_International_Airport.geojson"
+    },
+    {
+        "name":  "pluto_Kensington.geojson",
+        "key":  "split_pluto/pluto_Kensington.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Kensington.geojson"
+    },
+    {
+        "name":  "pluto_Kew_Gardens.geojson",
+        "key":  "split_pluto/pluto_Kew_Gardens.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Kew_Gardens.geojson"
+    },
+    {
+        "name":  "pluto_Kew_Gardens_Hills.geojson",
+        "key":  "split_pluto/pluto_Kew_Gardens_Hills.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Kew_Gardens_Hills.geojson"
+    },
+    {
+        "name":  "pluto_Kingsbridge-Marble_Hill.geojson",
+        "key":  "split_pluto/pluto_Kingsbridge-Marble_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Kingsbridge-Marble_Hill.geojson"
+    },
+    {
+        "name":  "pluto_Kingsbridge_Heights-Van_Cortlandt_Village.geojson",
+        "key":  "split_pluto/pluto_Kingsbridge_Heights-Van_Cortlandt_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Kingsbridge_Heights-Van_Cortlandt_Village.geojson"
+    },
+    {
+        "name":  "pluto_Kissena_Park.geojson",
+        "key":  "split_pluto/pluto_Kissena_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Kissena_Park.geojson"
+    },
+    {
+        "name":  "pluto_LaGuardia_Airport.geojson",
+        "key":  "split_pluto/pluto_LaGuardia_Airport.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_LaGuardia_Airport.geojson"
+    },
+    {
+        "name":  "pluto_Laurelton.geojson",
+        "key":  "split_pluto/pluto_Laurelton.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Laurelton.geojson"
+    },
+    {
+        "name":  "pluto_Lincoln_Terrace_Park.geojson",
+        "key":  "split_pluto/pluto_Lincoln_Terrace_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Lincoln_Terrace_Park.geojson"
+    },
+    {
+        "name":  "pluto_Long_Island_City-Hunters_Point.geojson",
+        "key":  "split_pluto/pluto_Long_Island_City-Hunters_Point.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Long_Island_City-Hunters_Point.geojson"
+    },
+    {
+        "name":  "pluto_Longwood.geojson",
+        "key":  "split_pluto/pluto_Longwood.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Longwood.geojson"
+    },
+    {
+        "name":  "pluto_Lower_East_Side.geojson",
+        "key":  "split_pluto/pluto_Lower_East_Side.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Lower_East_Side.geojson"
+    },
+    {
+        "name":  "pluto_Madison.geojson",
+        "key":  "split_pluto/pluto_Madison.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Madison.geojson"
+    },
+    {
+        "name":  "pluto_Manhattanville-West_Harlem.geojson",
+        "key":  "split_pluto/pluto_Manhattanville-West_Harlem.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Manhattanville-West_Harlem.geojson"
+    },
+    {
+        "name":  "pluto_Mapleton-Midwood_(West).geojson",
+        "key":  "split_pluto/pluto_Mapleton-Midwood_(West).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Mapleton-Midwood_(West).geojson"
+    },
+    {
+        "name":  "pluto_Marine_Park-Mill_Basin-Bergen_Beach.geojson",
+        "key":  "split_pluto/pluto_Marine_Park-Mill_Basin-Bergen_Beach.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Marine_Park-Mill_Basin-Bergen_Beach.geojson"
+    },
+    {
+        "name":  "pluto_Marine_Park-Plumb_Island.geojson",
+        "key":  "split_pluto/pluto_Marine_Park-Plumb_Island.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Marine_Park-Plumb_Island.geojson"
+    },
+    {
+        "name":  "pluto_Mariner\u0027s_Harbor-Arlington-Graniteville.geojson",
+        "key":  "split_pluto/pluto_Mariner\u0027s_Harbor-Arlington-Graniteville.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Mariner\u0027s_Harbor-Arlington-Graniteville.geojson"
+    },
+    {
+        "name":  "pluto_Maspeth.geojson",
+        "key":  "split_pluto/pluto_Maspeth.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Maspeth.geojson"
+    },
+    {
+        "name":  "pluto_McGuire_Fields.geojson",
+        "key":  "split_pluto/pluto_McGuire_Fields.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_McGuire_Fields.geojson"
+    },
+    {
+        "name":  "pluto_Melrose.geojson",
+        "key":  "split_pluto/pluto_Melrose.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Melrose.geojson"
+    },
+    {
+        "name":  "pluto_Middle_Village.geojson",
+        "key":  "split_pluto/pluto_Middle_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Middle_Village.geojson"
+    },
+    {
+        "name":  "pluto_Middle_Village_Cemetery.geojson",
+        "key":  "split_pluto/pluto_Middle_Village_Cemetery.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Middle_Village_Cemetery.geojson"
+    },
+    {
+        "name":  "pluto_Midtown-Times_Square.geojson",
+        "key":  "split_pluto/pluto_Midtown-Times_Square.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Midtown-Times_Square.geojson"
+    },
+    {
+        "name":  "pluto_Midtown_South-Flatiron-Union_Square.geojson",
+        "key":  "split_pluto/pluto_Midtown_South-Flatiron-Union_Square.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Midtown_South-Flatiron-Union_Square.geojson"
+    },
+    {
+        "name":  "pluto_Midwood.geojson",
+        "key":  "split_pluto/pluto_Midwood.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Midwood.geojson"
+    },
+    {
+        "name":  "pluto_Miller_Field.geojson",
+        "key":  "split_pluto/pluto_Miller_Field.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Miller_Field.geojson"
+    },
+    {
+        "name":  "pluto_Montefiore_Cemetery.geojson",
+        "key":  "split_pluto/pluto_Montefiore_Cemetery.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Montefiore_Cemetery.geojson"
+    },
+    {
+        "name":  "pluto_Morningside_Heights.geojson",
+        "key":  "split_pluto/pluto_Morningside_Heights.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Morningside_Heights.geojson"
+    },
+    {
+        "name":  "pluto_Morris_Park.geojson",
+        "key":  "split_pluto/pluto_Morris_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Morris_Park.geojson"
+    },
+    {
+        "name":  "pluto_Morrisania.geojson",
+        "key":  "split_pluto/pluto_Morrisania.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Morrisania.geojson"
+    },
+    {
+        "name":  "pluto_Mott_Haven-Port_Morris.geojson",
+        "key":  "split_pluto/pluto_Mott_Haven-Port_Morris.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Mott_Haven-Port_Morris.geojson"
+    },
+    {
+        "name":  "pluto_Mount_Eden-Claremont_(West).geojson",
+        "key":  "split_pluto/pluto_Mount_Eden-Claremont_(West).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Mount_Eden-Claremont_(West).geojson"
+    },
+    {
+        "name":  "pluto_Mount_Hebron_\u0026_Cedar_Grove_Cemeteries.geojson",
+        "key":  "split_pluto/pluto_Mount_Hebron_\u0026_Cedar_Grove_Cemeteries.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Mount_Hebron_\u0026_Cedar_Grove_Cemeteries.geojson"
+    },
+    {
+        "name":  "pluto_Mount_Hope.geojson",
+        "key":  "split_pluto/pluto_Mount_Hope.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Mount_Hope.geojson"
+    },
+    {
+        "name":  "pluto_Mount_Olivet_\u0026_All_Faiths_Cemeteries.geojson",
+        "key":  "split_pluto/pluto_Mount_Olivet_\u0026_All_Faiths_Cemeteries.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Mount_Olivet_\u0026_All_Faiths_Cemeteries.geojson"
+    },
+    {
+        "name":  "pluto_Murray_Hill-Broadway_Flushing.geojson",
+        "key":  "split_pluto/pluto_Murray_Hill-Broadway_Flushing.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Murray_Hill-Broadway_Flushing.geojson"
+    },
+    {
+        "name":  "pluto_Murray_Hill-Kips_Bay.geojson",
+        "key":  "split_pluto/pluto_Murray_Hill-Kips_Bay.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Murray_Hill-Kips_Bay.geojson"
+    },
+    {
+        "name":  "pluto_New_Dorp-Midland_Beach.geojson",
+        "key":  "split_pluto/pluto_New_Dorp-Midland_Beach.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_New_Dorp-Midland_Beach.geojson"
+    },
+    {
+        "name":  "pluto_New_Springville-Willowbrook-Bulls_Head-Travis.geojson",
+        "key":  "split_pluto/pluto_New_Springville-Willowbrook-Bulls_Head-Travis.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_New_Springville-Willowbrook-Bulls_Head-Travis.geojson"
+    },
+    {
+        "name":  "pluto_North_\u0026_South_Brother_Islands.geojson",
+        "key":  "split_pluto/pluto_North_\u0026_South_Brother_Islands.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_North_\u0026_South_Brother_Islands.geojson"
+    },
+    {
+        "name":  "pluto_North_Corona.geojson",
+        "key":  "split_pluto/pluto_North_Corona.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_North_Corona.geojson"
+    },
+    {
+        "name":  "pluto_Norwood.geojson",
+        "key":  "split_pluto/pluto_Norwood.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Norwood.geojson"
+    },
+    {
+        "name":  "pluto_Oakland_Gardens-Hollis_Hills.geojson",
+        "key":  "split_pluto/pluto_Oakland_Gardens-Hollis_Hills.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Oakland_Gardens-Hollis_Hills.geojson"
+    },
+    {
+        "name":  "pluto_Oakwood-Richmondtown.geojson",
+        "key":  "split_pluto/pluto_Oakwood-Richmondtown.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Oakwood-Richmondtown.geojson"
+    },
+    {
+        "name":  "pluto_Ocean_Hill.geojson",
+        "key":  "split_pluto/pluto_Ocean_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Ocean_Hill.geojson"
+    },
+    {
+        "name":  "pluto_Old_Astoria-Hallets_Point.geojson",
+        "key":  "split_pluto/pluto_Old_Astoria-Hallets_Point.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Old_Astoria-Hallets_Point.geojson"
+    },
+    {
+        "name":  "pluto_Ozone_Park.geojson",
+        "key":  "split_pluto/pluto_Ozone_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Ozone_Park.geojson"
+    },
+    {
+        "name":  "pluto_Ozone_Park_(North).geojson",
+        "key":  "split_pluto/pluto_Ozone_Park_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Ozone_Park_(North).geojson"
+    },
+    {
+        "name":  "pluto_Park_Slope.geojson",
+        "key":  "split_pluto/pluto_Park_Slope.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Park_Slope.geojson"
+    },
+    {
+        "name":  "pluto_Parkchester.geojson",
+        "key":  "split_pluto/pluto_Parkchester.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Parkchester.geojson"
+    },
+    {
+        "name":  "pluto_Pelham_Bay-Country_Club-City_Island.geojson",
+        "key":  "split_pluto/pluto_Pelham_Bay-Country_Club-City_Island.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Pelham_Bay-Country_Club-City_Island.geojson"
+    },
+    {
+        "name":  "pluto_Pelham_Bay_Park.geojson",
+        "key":  "split_pluto/pluto_Pelham_Bay_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Pelham_Bay_Park.geojson"
+    },
+    {
+        "name":  "pluto_Pelham_Gardens.geojson",
+        "key":  "split_pluto/pluto_Pelham_Gardens.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Pelham_Gardens.geojson"
+    },
+    {
+        "name":  "pluto_Pelham_Parkway-Van_Nest.geojson",
+        "key":  "split_pluto/pluto_Pelham_Parkway-Van_Nest.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Pelham_Parkway-Van_Nest.geojson"
+    },
+    {
+        "name":  "pluto_Pomonok-Electchester-Hillcrest.geojson",
+        "key":  "split_pluto/pluto_Pomonok-Electchester-Hillcrest.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Pomonok-Electchester-Hillcrest.geojson"
+    },
+    {
+        "name":  "pluto_Port_Richmond.geojson",
+        "key":  "split_pluto/pluto_Port_Richmond.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Port_Richmond.geojson"
+    },
+    {
+        "name":  "pluto_Prospect_Heights.geojson",
+        "key":  "split_pluto/pluto_Prospect_Heights.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Prospect_Heights.geojson"
+    },
+    {
+        "name":  "pluto_Prospect_Lefferts_Gardens-Wingate.geojson",
+        "key":  "split_pluto/pluto_Prospect_Lefferts_Gardens-Wingate.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Prospect_Lefferts_Gardens-Wingate.geojson"
+    },
+    {
+        "name":  "pluto_Prospect_Park.geojson",
+        "key":  "split_pluto/pluto_Prospect_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Prospect_Park.geojson"
+    },
+    {
+        "name":  "pluto_Queens_Village.geojson",
+        "key":  "split_pluto/pluto_Queens_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Queens_Village.geojson"
+    },
+    {
+        "name":  "pluto_Queensboro_Hill.geojson",
+        "key":  "split_pluto/pluto_Queensboro_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Queensboro_Hill.geojson"
+    },
+    {
+        "name":  "pluto_Queensbridge-Ravenswood-Dutch_Kills.geojson",
+        "key":  "split_pluto/pluto_Queensbridge-Ravenswood-Dutch_Kills.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Queensbridge-Ravenswood-Dutch_Kills.geojson"
+    },
+    {
+        "name":  "pluto_Randall\u0027s_Island.geojson",
+        "key":  "split_pluto/pluto_Randall\u0027s_Island.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Randall\u0027s_Island.geojson"
+    },
+    {
+        "name":  "pluto_Rego_Park.geojson",
+        "key":  "split_pluto/pluto_Rego_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Rego_Park.geojson"
+    },
+    {
+        "name":  "pluto_Richmond_Hill.geojson",
+        "key":  "split_pluto/pluto_Richmond_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Richmond_Hill.geojson"
+    },
+    {
+        "name":  "pluto_Ridgewood.geojson",
+        "key":  "split_pluto/pluto_Ridgewood.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Ridgewood.geojson"
+    },
+    {
+        "name":  "pluto_Rikers_Island.geojson",
+        "key":  "split_pluto/pluto_Rikers_Island.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Rikers_Island.geojson"
+    },
+    {
+        "name":  "pluto_Riverdale-Spuyten_Duyvil.geojson",
+        "key":  "split_pluto/pluto_Riverdale-Spuyten_Duyvil.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Riverdale-Spuyten_Duyvil.geojson"
+    },
+    {
+        "name":  "pluto_Rockaway_Beach-Arverne-Edgemere.geojson",
+        "key":  "split_pluto/pluto_Rockaway_Beach-Arverne-Edgemere.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Rockaway_Beach-Arverne-Edgemere.geojson"
+    },
+    {
+        "name":  "pluto_Rockaway_Community_Park.geojson",
+        "key":  "split_pluto/pluto_Rockaway_Community_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Rockaway_Community_Park.geojson"
+    },
+    {
+        "name":  "pluto_Rosebank-Shore_Acres-Park_Hill.geojson",
+        "key":  "split_pluto/pluto_Rosebank-Shore_Acres-Park_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Rosebank-Shore_Acres-Park_Hill.geojson"
+    },
+    {
+        "name":  "pluto_Rosedale.geojson",
+        "key":  "split_pluto/pluto_Rosedale.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Rosedale.geojson"
+    },
+    {
+        "name":  "pluto_Sheepshead_Bay-Manhattan_Beach-Gerritsen_Beach.geojson",
+        "key":  "split_pluto/pluto_Sheepshead_Bay-Manhattan_Beach-Gerritsen_Beach.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Sheepshead_Bay-Manhattan_Beach-Gerritsen_Beach.geojson"
+    },
+    {
+        "name":  "pluto_Shirley_Chisholm_State_Park.geojson",
+        "key":  "split_pluto/pluto_Shirley_Chisholm_State_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Shirley_Chisholm_State_Park.geojson"
+    },
+    {
+        "name":  "pluto_Snug_Harbor.geojson",
+        "key":  "split_pluto/pluto_Snug_Harbor.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Snug_Harbor.geojson"
+    },
+    {
+        "name":  "pluto_SoHo-Little_Italy-Hudson_Square.geojson",
+        "key":  "split_pluto/pluto_SoHo-Little_Italy-Hudson_Square.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_SoHo-Little_Italy-Hudson_Square.geojson"
+    },
+    {
+        "name":  "pluto_Soundview-Bruckner-Bronx_River.geojson",
+        "key":  "split_pluto/pluto_Soundview-Bruckner-Bronx_River.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Soundview-Bruckner-Bronx_River.geojson"
+    },
+    {
+        "name":  "pluto_Soundview-Clason_Point.geojson",
+        "key":  "split_pluto/pluto_Soundview-Clason_Point.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Soundview-Clason_Point.geojson"
+    },
+    {
+        "name":  "pluto_Soundview_Park.geojson",
+        "key":  "split_pluto/pluto_Soundview_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Soundview_Park.geojson"
+    },
+    {
+        "name":  "pluto_South_Jamaica.geojson",
+        "key":  "split_pluto/pluto_South_Jamaica.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_South_Jamaica.geojson"
+    },
+    {
+        "name":  "pluto_South_Ozone_Park.geojson",
+        "key":  "split_pluto/pluto_South_Ozone_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_South_Ozone_Park.geojson"
+    },
+    {
+        "name":  "pluto_South_Richmond_Hill.geojson",
+        "key":  "split_pluto/pluto_South_Richmond_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_South_Richmond_Hill.geojson"
+    },
+    {
+        "name":  "pluto_South_Williamsburg.geojson",
+        "key":  "split_pluto/pluto_South_Williamsburg.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_South_Williamsburg.geojson"
+    },
+    {
+        "name":  "pluto_Spring_Creek-Starrett_City.geojson",
+        "key":  "split_pluto/pluto_Spring_Creek-Starrett_City.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Spring_Creek-Starrett_City.geojson"
+    },
+    {
+        "name":  "pluto_Spring_Creek_Park.geojson",
+        "key":  "split_pluto/pluto_Spring_Creek_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Spring_Creek_Park.geojson"
+    },
+    {
+        "name":  "pluto_Springfield_Gardens_(North)-Rochdale_Village.geojson",
+        "key":  "split_pluto/pluto_Springfield_Gardens_(North)-Rochdale_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Springfield_Gardens_(North)-Rochdale_Village.geojson"
+    },
+    {
+        "name":  "pluto_Springfield_Gardens_(South)-Brookville.geojson",
+        "key":  "split_pluto/pluto_Springfield_Gardens_(South)-Brookville.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Springfield_Gardens_(South)-Brookville.geojson"
+    },
+    {
+        "name":  "pluto_St._Albans.geojson",
+        "key":  "split_pluto/pluto_St._Albans.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_St._Albans.geojson"
+    },
+    {
+        "name":  "pluto_St._George-New_Brighton.geojson",
+        "key":  "split_pluto/pluto_St._George-New_Brighton.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_St._George-New_Brighton.geojson"
+    },
+    {
+        "name":  "pluto_St._John_Cemetery.geojson",
+        "key":  "split_pluto/pluto_St._John_Cemetery.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_St._John_Cemetery.geojson"
+    },
+    {
+        "name":  "pluto_St._Michael\u0027s_Cemetery.geojson",
+        "key":  "split_pluto/pluto_St._Michael\u0027s_Cemetery.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_St._Michael\u0027s_Cemetery.geojson"
+    },
+    {
+        "name":  "pluto_Stuyvesant_Town-Peter_Cooper_Village.geojson",
+        "key":  "split_pluto/pluto_Stuyvesant_Town-Peter_Cooper_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Stuyvesant_Town-Peter_Cooper_Village.geojson"
+    },
+    {
+        "name":  "pluto_Sunnyside.geojson",
+        "key":  "split_pluto/pluto_Sunnyside.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Sunnyside.geojson"
+    },
+    {
+        "name":  "pluto_Sunnyside_Yards_(North).geojson",
+        "key":  "split_pluto/pluto_Sunnyside_Yards_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Sunnyside_Yards_(North).geojson"
+    },
+    {
+        "name":  "pluto_Sunnyside_Yards_(South).geojson",
+        "key":  "split_pluto/pluto_Sunnyside_Yards_(South).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Sunnyside_Yards_(South).geojson"
+    },
+    {
+        "name":  "pluto_Sunset_Park_(Central).geojson",
+        "key":  "split_pluto/pluto_Sunset_Park_(Central).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Sunset_Park_(Central).geojson"
+    },
+    {
+        "name":  "pluto_Sunset_Park_(East)-Borough_Park_(West).geojson",
+        "key":  "split_pluto/pluto_Sunset_Park_(East)-Borough_Park_(West).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Sunset_Park_(East)-Borough_Park_(West).geojson"
+    },
+    {
+        "name":  "pluto_Sunset_Park_(West).geojson",
+        "key":  "split_pluto/pluto_Sunset_Park_(West).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Sunset_Park_(West).geojson"
+    },
+    {
+        "name":  "pluto_The_Battery-Governors_Island-Ellis_Island-Liberty_Island.geojson",
+        "key":  "split_pluto/pluto_The_Battery-Governors_Island-Ellis_Island-Liberty_Island.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_The_Battery-Governors_Island-Ellis_Island-Liberty_Island.geojson"
+    },
+    {
+        "name":  "pluto_The_Evergreens_Cemetery.geojson",
+        "key":  "split_pluto/pluto_The_Evergreens_Cemetery.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_The_Evergreens_Cemetery.geojson"
+    },
+    {
+        "name":  "pluto_Throgs_Neck-Schuylerville.geojson",
+        "key":  "split_pluto/pluto_Throgs_Neck-Schuylerville.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Throgs_Neck-Schuylerville.geojson"
+    },
+    {
+        "name":  "pluto_Todt_Hill-Emerson_Hill-Lighthouse_Hill-Manor_Heights.geojson",
+        "key":  "split_pluto/pluto_Todt_Hill-Emerson_Hill-Lighthouse_Hill-Manor_Heights.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Todt_Hill-Emerson_Hill-Lighthouse_Hill-Manor_Heights.geojson"
+    },
+    {
+        "name":  "pluto_Tompkinsville-Stapleton-Clifton-Fox_Hills.geojson",
+        "key":  "split_pluto/pluto_Tompkinsville-Stapleton-Clifton-Fox_Hills.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Tompkinsville-Stapleton-Clifton-Fox_Hills.geojson"
+    },
+    {
+        "name":  "pluto_Tottenville-Charleston.geojson",
+        "key":  "split_pluto/pluto_Tottenville-Charleston.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Tottenville-Charleston.geojson"
+    },
+    {
+        "name":  "pluto_Tremont.geojson",
+        "key":  "split_pluto/pluto_Tremont.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Tremont.geojson"
+    },
+    {
+        "name":  "pluto_Tribeca-Civic_Center.geojson",
+        "key":  "split_pluto/pluto_Tribeca-Civic_Center.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Tribeca-Civic_Center.geojson"
+    },
+    {
+        "name":  "pluto_United_Nations.geojson",
+        "key":  "split_pluto/pluto_United_Nations.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_United_Nations.geojson"
+    },
+    {
+        "name":  "pluto_University_Heights_(North)-Fordham.geojson",
+        "key":  "split_pluto/pluto_University_Heights_(North)-Fordham.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_University_Heights_(North)-Fordham.geojson"
+    },
+    {
+        "name":  "pluto_University_Heights_(South)-Morris_Heights.geojson",
+        "key":  "split_pluto/pluto_University_Heights_(South)-Morris_Heights.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_University_Heights_(South)-Morris_Heights.geojson"
+    },
+    {
+        "name":  "pluto_Upper_East_Side-Carnegie_Hill.geojson",
+        "key":  "split_pluto/pluto_Upper_East_Side-Carnegie_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Upper_East_Side-Carnegie_Hill.geojson"
+    },
+    {
+        "name":  "pluto_Upper_East_Side-Lenox_Hill-Roosevelt_Island.geojson",
+        "key":  "split_pluto/pluto_Upper_East_Side-Lenox_Hill-Roosevelt_Island.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Upper_East_Side-Lenox_Hill-Roosevelt_Island.geojson"
+    },
+    {
+        "name":  "pluto_Upper_East_Side-Yorkville.geojson",
+        "key":  "split_pluto/pluto_Upper_East_Side-Yorkville.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Upper_East_Side-Yorkville.geojson"
+    },
+    {
+        "name":  "pluto_Upper_West_Side-Lincoln_Square.geojson",
+        "key":  "split_pluto/pluto_Upper_West_Side-Lincoln_Square.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Upper_West_Side-Lincoln_Square.geojson"
+    },
+    {
+        "name":  "pluto_Upper_West_Side-Manhattan_Valley.geojson",
+        "key":  "split_pluto/pluto_Upper_West_Side-Manhattan_Valley.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Upper_West_Side-Manhattan_Valley.geojson"
+    },
+    {
+        "name":  "pluto_Upper_West_Side_(Central).geojson",
+        "key":  "split_pluto/pluto_Upper_West_Side_(Central).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Upper_West_Side_(Central).geojson"
+    },
+    {
+        "name":  "pluto_Van_Cortlandt_Park.geojson",
+        "key":  "split_pluto/pluto_Van_Cortlandt_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Van_Cortlandt_Park.geojson"
+    },
+    {
+        "name":  "pluto_Wakefield-Woodlawn.geojson",
+        "key":  "split_pluto/pluto_Wakefield-Woodlawn.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Wakefield-Woodlawn.geojson"
+    },
+    {
+        "name":  "pluto_Washington_Heights_(North).geojson",
+        "key":  "split_pluto/pluto_Washington_Heights_(North).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Washington_Heights_(North).geojson"
+    },
+    {
+        "name":  "pluto_Washington_Heights_(South).geojson",
+        "key":  "split_pluto/pluto_Washington_Heights_(South).geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Washington_Heights_(South).geojson"
+    },
+    {
+        "name":  "pluto_West_Farms.geojson",
+        "key":  "split_pluto/pluto_West_Farms.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_West_Farms.geojson"
+    },
+    {
+        "name":  "pluto_West_New_Brighton-Silver_Lake-Grymes_Hill.geojson",
+        "key":  "split_pluto/pluto_West_New_Brighton-Silver_Lake-Grymes_Hill.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_West_New_Brighton-Silver_Lake-Grymes_Hill.geojson"
+    },
+    {
+        "name":  "pluto_West_Village.geojson",
+        "key":  "split_pluto/pluto_West_Village.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_West_Village.geojson"
+    },
+    {
+        "name":  "pluto_Westchester_Square.geojson",
+        "key":  "split_pluto/pluto_Westchester_Square.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Westchester_Square.geojson"
+    },
+    {
+        "name":  "pluto_Westerleigh-Castleton_Corners.geojson",
+        "key":  "split_pluto/pluto_Westerleigh-Castleton_Corners.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Westerleigh-Castleton_Corners.geojson"
+    },
+    {
+        "name":  "pluto_Whitestone-Beechhurst.geojson",
+        "key":  "split_pluto/pluto_Whitestone-Beechhurst.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Whitestone-Beechhurst.geojson"
+    },
+    {
+        "name":  "pluto_Williamsbridge-Olinville.geojson",
+        "key":  "split_pluto/pluto_Williamsbridge-Olinville.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Williamsbridge-Olinville.geojson"
+    },
+    {
+        "name":  "pluto_Williamsburg.geojson",
+        "key":  "split_pluto/pluto_Williamsburg.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Williamsburg.geojson"
+    },
+    {
+        "name":  "pluto_Windsor_Terrace-South_Slope.geojson",
+        "key":  "split_pluto/pluto_Windsor_Terrace-South_Slope.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Windsor_Terrace-South_Slope.geojson"
+    },
+    {
+        "name":  "pluto_Woodhaven.geojson",
+        "key":  "split_pluto/pluto_Woodhaven.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Woodhaven.geojson"
+    },
+    {
+        "name":  "pluto_Woodlawn_Cemetery.geojson",
+        "key":  "split_pluto/pluto_Woodlawn_Cemetery.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Woodlawn_Cemetery.geojson"
+    },
+    {
+        "name":  "pluto_Woodside.geojson",
+        "key":  "split_pluto/pluto_Woodside.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Woodside.geojson"
+    },
+    {
+        "name":  "pluto_Yankee_Stadium-Macombs_Dam_Park.geojson",
+        "key":  "split_pluto/pluto_Yankee_Stadium-Macombs_Dam_Park.geojson",
+        "url":  "https://zoning-geojson.s3.us-east-1.amazonaws.com/split_pluto/pluto_Yankee_Stadium-Macombs_Dam_Park.geojson"
+    }
+]
