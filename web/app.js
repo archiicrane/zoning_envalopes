@@ -23,6 +23,11 @@ let map = null;
 let activeLotPolygon = null;
 let activeLotData = null;
 let activeZoneOverride = null;
+let activeOriginalZone = null;
+let baselineEnvelopeGeojson = null;
+let baselineEnvelopeResults = null;
+let scenarioEnvelopeGeojson = null;
+let scenarioEnvelopeResults = null;
 let activeNeighborhood = null;
 let activeNeighborhoodData = EMPTY_FC;
 let availableNeighborhoods = [];
@@ -645,7 +650,12 @@ function ensureSourcesAndLayers() {
         "fill-extrusion-color": ["coalesce", ["get", "color"], "#2563eb"],
         "fill-extrusion-height": ["coalesce", ["get", "height_ft"], 0],
         "fill-extrusion-base": ["coalesce", ["get", "base_ft"], 0],
-        "fill-extrusion-opacity": 0.38,
+        "fill-extrusion-opacity": [
+          "case",
+          ["==", ["get", "compare_variant"], "baseline"],
+          0.2,
+          0.42,
+        ],
       },
     });
 
@@ -728,12 +738,29 @@ function updateSelectionVisual(polygon, shouldRefocus = true) {
 
 function updateStudyModel(geojson) {
   ensureSourcesAndLayers();
-  const filtered = {
-    type: "FeatureCollection",
-    features: (geojson?.features || []).filter((feature) => feature.properties?.kind !== "existing_building"),
-  };
-  map.getSource("study-model").setData(filtered);
+  map.getSource("study-model").setData(geojson || EMPTY_FC);
   syncLayerVisibility();
+}
+
+function _extractCompareEnvelopeFeatures(geojson, color, variant) {
+  return (geojson?.features || [])
+    .filter((feature) => feature?.properties?.kind === "zoning_envelope")
+    .map((feature) => ({
+      ...feature,
+      properties: {
+        ...feature.properties,
+        color,
+        compare_variant: variant,
+      },
+    }));
+}
+
+function refreshSelectedLotComparisonModel() {
+  const features = [
+    ..._extractCompareEnvelopeFeatures(baselineEnvelopeGeojson, "#64748b", "baseline"),
+    ..._extractCompareEnvelopeFeatures(scenarioEnvelopeGeojson, "#2563eb", "scenario"),
+  ];
+  updateStudyModel({ type: "FeatureCollection", features });
 }
 
 function updateBblInputsFromLotData(data) {
@@ -821,6 +848,8 @@ function updateLotSummary(data, envelopeResults) {
   const zoning = (envelopeResults && envelopeResults.zoning_analysis) || data.zoning_analysis || {};
   const existingHeight = envelopeResults?.existing_building_height_ft ?? data.existing_height_ft;
   const envelopeHeight = envelopeResults?.full_envelope_height_ft;
+  const baselineHeight = baselineEnvelopeResults?.full_envelope_height_ft;
+  const scenarioHeight = scenarioEnvelopeResults?.full_envelope_height_ft;
   const effectiveZone = activeZoneOverride || zoning.primary_zone || data.zone || data.zonedist1 || "";
   const zoneOptions = getAvailableZoningOptions();
   const zoneSelect = zoneOptions.length
@@ -835,14 +864,16 @@ function updateLotSummary(data, envelopeResults) {
     <div class="summary-row"><span>Neighborhood</span><strong>${data.neighborhood_name || activeNeighborhood?.name || "n/a"}</strong></div>
     <div class="summary-row"><span>Address</span><strong>${data.address || "n/a"}</strong></div>
     <div class="summary-row"><span>BBL</span><strong>${data.bbl || "n/a"}</strong></div>
-    <div class="summary-row summary-row--zone"><span>Zoning District</span>${zoneSelect}</div>
+    <div class="summary-row"><span>Original Zone</span><strong>${activeOriginalZone || "n/a"}</strong></div>
+    <div class="summary-row summary-row--zone"><span>Scenario Zone</span>${zoneSelect}</div>
     <div class="summary-row"><span>Code FAR</span><strong>${formatNumber(zoning.base_far, 2)}</strong></div>
     <div class="summary-row"><span>Existing FAR</span><strong>${formatNumber(data.built_far ?? zoning.existing_far, 2)}</strong></div>
     <div class="summary-row"><span>Scenario FAR</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
     <div class="summary-section-head">Envelope Study</div>
     <div class="summary-row"><span>Max Height</span><strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong></div>
     <div class="summary-row"><span>Existing Height</span><strong>${formatNumber(existingHeight, 0)} ft</strong></div>
-    <div class="summary-row"><span>Envelope Height</span><strong>${formatNumber(envelopeHeight, 0)} ft</strong></div>
+    <div class="summary-row"><span>Baseline Envelope</span><strong>${formatNumber(baselineHeight, 0)} ft</strong></div>
+    <div class="summary-row"><span>Scenario Envelope</span><strong>${formatNumber(scenarioHeight ?? envelopeHeight, 0)} ft</strong></div>
     ${_buildZoningReqRows(zoning)}
   `;
 }
@@ -867,8 +898,13 @@ function clearActiveEnvelope() {
   activeLotPolygon = null;
   activeLotData = null;
   activeZoneOverride = null;
+  activeOriginalZone = null;
+  baselineEnvelopeGeojson = null;
+  baselineEnvelopeResults = null;
+  scenarioEnvelopeGeojson = null;
+  scenarioEnvelopeResults = null;
   updateSelectionVisual(null, false);
-  updateStudyModel(EMPTY_FC);
+  refreshSelectedLotComparisonModel();
   updateLotSummary(null);
 }
 
@@ -905,6 +941,81 @@ function applySelectedZoneOverride(zoneCode) {
     farInput.value = standardFar;
     farVal.textContent = Number(farInput.value).toFixed(2);
   }
+}
+
+async function requestEnvelopeForZone(zoneCode) {
+  if (!activeLotPolygon || !activeLotData) {
+    throw new Error("Select a lot inside the active neighborhood first.");
+  }
+
+  const zoningDefaults = activeLotData.zoning_analysis || {};
+  const payload = {
+    lot_polygon: activeLotPolygon,
+    use_type: document.getElementById("useType").value,
+    far_mode: document.getElementById("farMode").checked,
+    lot_coverage: Number(document.getElementById("coverage").value) / 100,
+    floor_height_ft: Number(document.getElementById("floorHeight").value),
+    zoning_far: Number(farInput.value),
+    max_height_ft: Number(zoningDefaults.max_height_ft || 120),
+    zonedist1: zoneCode || activeLotData.zonedist1,
+    zonedist2: activeLotData.zonedist2,
+    overlay1: activeLotData.overlay1,
+    overlay2: activeLotData.overlay2,
+    lot_area: activeLotData.lot_area,
+    bldgarea: activeLotData.bldgarea,
+    numfloors: activeLotData.numfloors,
+    built_far: activeLotData.built_far,
+    resid_far: activeLotData.resid_far,
+    comm_far: activeLotData.comm_far,
+    facil_far: activeLotData.facil_far,
+    bbl: activeLotData.bbl,
+    upzone: document.getElementById("upzoneToggle").checked,
+  };
+
+  const res = await fetch("/api/envelope", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Envelope request failed: ${txt}`);
+  }
+
+  return res.json();
+}
+
+async function generateBaselineEnvelope() {
+  if (!activeOriginalZone) {
+    return;
+  }
+  const data = await requestEnvelopeForZone(activeOriginalZone);
+  baselineEnvelopeGeojson = data.geojson;
+  baselineEnvelopeResults = data.results;
+  refreshSelectedLotComparisonModel();
+}
+
+async function generateScenarioEnvelope() {
+  const scenarioZone = activeZoneOverride || activeOriginalZone || activeLotData?.zonedist1;
+  if (!scenarioZone) {
+    return;
+  }
+
+  if (activeOriginalZone && normalizeZoneToken(scenarioZone) === normalizeZoneToken(activeOriginalZone)) {
+    scenarioEnvelopeGeojson = null;
+    scenarioEnvelopeResults = null;
+    refreshSelectedLotComparisonModel();
+    updateLotSummary(activeLotData, baselineEnvelopeResults);
+    return;
+  }
+
+  const data = await requestEnvelopeForZone(scenarioZone);
+  scenarioEnvelopeGeojson = data.geojson;
+  scenarioEnvelopeResults = data.results;
+  refreshSelectedLotComparisonModel();
+  updateLotSummary(activeLotData, scenarioEnvelopeResults);
+  setReport(JSON.stringify(data.results, null, 2));
 }
 
 async function loadNeighborhoodOptions() {
@@ -1018,11 +1129,22 @@ async function lookupLot() {
 
   activeLotPolygon = data.lot_polygon;
   activeLotData = data;
+  activeOriginalZone = normalizeZoneToken(data.zonedist1 || data.zonedist2 || "");
+  activeZoneOverride = activeOriginalZone;
+  baselineEnvelopeGeojson = null;
+  baselineEnvelopeResults = null;
+  scenarioEnvelopeGeojson = null;
+  scenarioEnvelopeResults = null;
   updateBblInputsFromLotData(data);
   updateSelectionVisual(activeLotPolygon);
   syncControlsFromLotData(data);
   updateLotSummary(data);
   setReport(JSON.stringify(data, null, 2));
+
+  generateBaselineEnvelope()
+    .then(() => updateLotSummary(activeLotData, baselineEnvelopeResults))
+    .catch((err) => setReport(String(err)));
+
   return data;
 }
 
@@ -1034,7 +1156,12 @@ function selectLotFeature(feature) {
 
   activeLotPolygon = data.lot_polygon;
   activeLotData = data;
-  activeZoneOverride = normalizeZoneToken(data.zonedist1 || data.zonedist2 || "");
+  activeOriginalZone = normalizeZoneToken(data.zonedist1 || data.zonedist2 || "");
+  activeZoneOverride = activeOriginalZone;
+  baselineEnvelopeGeojson = null;
+  baselineEnvelopeResults = null;
+  scenarioEnvelopeGeojson = null;
+  scenarioEnvelopeResults = null;
   updateBblInputsFromLotData(data);
   updateSelectionVisual(activeLotPolygon);
   syncControlsFromLotData(data);
@@ -1044,6 +1171,10 @@ function selectLotFeature(feature) {
   setReport(
     `Selected ${data.address || "lot"}\nNeighborhood: ${data.neighborhood_name || activeNeighborhood?.name || "n/a"}\nBBL: ${data.bbl || "n/a"}\nBorough/Block/Lot: ${data.borough || "?"}/${data.block || "?"}/${data.lot || "?"}${zoneText}`
   );
+
+  generateBaselineEnvelope()
+    .then(() => updateLotSummary(activeLotData, baselineEnvelopeResults))
+    .catch((err) => setReport(String(err)));
 
   return data;
 }
@@ -1062,51 +1193,10 @@ async function handleMapClick(ev) {
 }
 
 async function generateEnvelopes() {
-  if (!activeLotPolygon || !activeLotData) {
-    throw new Error("Select a lot inside the active neighborhood first.");
+  if (!baselineEnvelopeGeojson) {
+    await generateBaselineEnvelope();
   }
-
-  const zoningDefaults = activeLotData.zoning_analysis || {};
-  const payload = {
-    lot_polygon: activeLotPolygon,
-    use_type: document.getElementById("useType").value,
-    far_mode: document.getElementById("farMode").checked,
-    lot_coverage: Number(document.getElementById("coverage").value) / 100,
-    floor_height_ft: Number(document.getElementById("floorHeight").value),
-    zoning_far: Number(farInput.value),
-    max_height_ft: Number(zoningDefaults.max_height_ft || 120),
-    zonedist1: activeZoneOverride || activeLotData.zonedist1,
-    zonedist2: activeLotData.zonedist2,
-    overlay1: activeLotData.overlay1,
-    overlay2: activeLotData.overlay2,
-    lot_area: activeLotData.lot_area,
-    bldgarea: activeLotData.bldgarea,
-    numfloors: activeLotData.numfloors,
-    built_far: activeLotData.built_far,
-    resid_far: activeLotData.resid_far,
-    comm_far: activeLotData.comm_far,
-    facil_far: activeLotData.facil_far,
-    bbl: activeLotData.bbl,
-    upzone: document.getElementById("upzoneToggle").checked,
-  };
-
-  setReport(payload.upzone ? "Generating upzoned envelope..." : "Generating zoning envelope...");
-
-  const res = await fetch("/api/envelope", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Envelope request failed: ${txt}`);
-  }
-
-  const data = await res.json();
-  updateStudyModel(data.geojson);
-  updateLotSummary(activeLotData, data.results);
-  setReport(JSON.stringify(data.results, null, 2));
+  await generateScenarioEnvelope();
 }
 
 lotSummary.addEventListener("change", async (event) => {
