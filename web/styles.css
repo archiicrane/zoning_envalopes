@@ -192,6 +192,19 @@ hr {
   font-size: 13px;
 }
 
+.summary-row--zone {
+  align-items: center;
+}
+
+.summary-zone-select {
+  width: 140px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.8);
+  background: #fff;
+  font-size: 12px;
+}
+
 .summary-row:last-child {
   border-bottom: none;
 }

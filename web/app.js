@@ -22,6 +22,7 @@ const ZONING_RULES_URL = "/zoning-rules.jsonld";
 let map = null;
 let activeLotPolygon = null;
 let activeLotData = null;
+let activeZoneOverride = null;
 let activeNeighborhood = null;
 let activeNeighborhoodData = EMPTY_FC;
 let availableNeighborhoods = [];
@@ -259,6 +260,10 @@ function resolveZoneRule(propsOrZone) {
 
   const base = zoningRuleIndex.get(equivalent);
   return base ? { ...base, ...direct, zoneCode: direct.zoneCode } : direct;
+}
+
+function getAvailableZoningOptions() {
+  return Array.from(zoningRuleIndex.keys()).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
 function pickZoneColor(props) {
@@ -816,6 +821,13 @@ function updateLotSummary(data, envelopeResults) {
   const zoning = (envelopeResults && envelopeResults.zoning_analysis) || data.zoning_analysis || {};
   const existingHeight = envelopeResults?.existing_building_height_ft ?? data.existing_height_ft;
   const envelopeHeight = envelopeResults?.full_envelope_height_ft;
+  const effectiveZone = activeZoneOverride || zoning.primary_zone || data.zone || data.zonedist1 || "";
+  const zoneOptions = getAvailableZoningOptions();
+  const zoneSelect = zoneOptions.length
+    ? `<select id="zoneOverrideSelect" class="summary-zone-select">${zoneOptions
+      .map((zone) => `<option value="${zone}" ${zone === effectiveZone ? "selected" : ""}>${zone}</option>`)
+      .join("")}</select>`
+    : `<strong>${effectiveZone || "n/a"}</strong>`;
 
   lotSummary.className = "lot-summary";
   lotSummary.innerHTML = `
@@ -823,7 +835,7 @@ function updateLotSummary(data, envelopeResults) {
     <div class="summary-row"><span>Neighborhood</span><strong>${data.neighborhood_name || activeNeighborhood?.name || "n/a"}</strong></div>
     <div class="summary-row"><span>Address</span><strong>${data.address || "n/a"}</strong></div>
     <div class="summary-row"><span>BBL</span><strong>${data.bbl || "n/a"}</strong></div>
-    <div class="summary-row"><span>Zoning District</span><strong>${zoning.primary_zone || data.zone || data.zonedist1 || "n/a"}</strong></div>
+    <div class="summary-row summary-row--zone"><span>Zoning District</span>${zoneSelect}</div>
     <div class="summary-row"><span>Code FAR</span><strong>${formatNumber(zoning.base_far, 2)}</strong></div>
     <div class="summary-row"><span>Existing FAR</span><strong>${formatNumber(data.built_far ?? zoning.existing_far, 2)}</strong></div>
     <div class="summary-row"><span>Scenario FAR</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
@@ -854,9 +866,45 @@ function buildClientLotData(feature) {
 function clearActiveEnvelope() {
   activeLotPolygon = null;
   activeLotData = null;
+  activeZoneOverride = null;
   updateSelectionVisual(null, false);
   updateStudyModel(EMPTY_FC);
   updateLotSummary(null);
+}
+
+function applySelectedZoneOverride(zoneCode) {
+  if (!activeLotData) {
+    return;
+  }
+
+  const zone = normalizeZoneToken(zoneCode);
+  if (!zone) {
+    return;
+  }
+
+  activeZoneOverride = zone;
+  activeLotData.zonedist1 = zone;
+  activeLotData.zone = zone;
+
+  const rule = resolveZoneRule(zone);
+  const standardFar = coerceNumber(rule?.standardFar);
+  const maxHeightFt = coerceNumber(rule?.maximumBuildingHeightFt ?? rule?.ridgeHeightFt);
+  const baseHeightFt = coerceNumber(rule?.maximumBaseHeightFt);
+
+  activeLotData.zoning_analysis = {
+    ...(activeLotData.zoning_analysis || {}),
+    primary_zone: zone,
+    base_far: standardFar ?? activeLotData.zoning_analysis?.base_far ?? 0,
+    scenario_far: standardFar ?? activeLotData.zoning_analysis?.scenario_far ?? 0,
+    max_height_ft: maxHeightFt ?? activeLotData.zoning_analysis?.max_height_ft ?? 120,
+    base_height_ft: baseHeightFt ?? activeLotData.zoning_analysis?.base_height_ft ?? null,
+    bulk_regime: rule?.bulkRegime || activeLotData.zoning_analysis?.bulk_regime || null,
+  };
+
+  if (standardFar && standardFar > 0) {
+    farInput.value = standardFar;
+    farVal.textContent = Number(farInput.value).toFixed(2);
+  }
 }
 
 async function loadNeighborhoodOptions() {
@@ -986,6 +1034,7 @@ function selectLotFeature(feature) {
 
   activeLotPolygon = data.lot_polygon;
   activeLotData = data;
+  activeZoneOverride = normalizeZoneToken(data.zonedist1 || data.zonedist2 || "");
   updateBblInputsFromLotData(data);
   updateSelectionVisual(activeLotPolygon);
   syncControlsFromLotData(data);
@@ -1026,7 +1075,7 @@ async function generateEnvelopes() {
     floor_height_ft: Number(document.getElementById("floorHeight").value),
     zoning_far: Number(farInput.value),
     max_height_ft: Number(zoningDefaults.max_height_ft || 120),
-    zonedist1: activeLotData.zonedist1,
+    zonedist1: activeZoneOverride || activeLotData.zonedist1,
     zonedist2: activeLotData.zonedist2,
     overlay1: activeLotData.overlay1,
     overlay2: activeLotData.overlay2,
@@ -1059,6 +1108,21 @@ async function generateEnvelopes() {
   updateLotSummary(activeLotData, data.results);
   setReport(JSON.stringify(data.results, null, 2));
 }
+
+lotSummary.addEventListener("change", async (event) => {
+  const target = event.target;
+  if (!target || target.id !== "zoneOverrideSelect") {
+    return;
+  }
+
+  try {
+    applySelectedZoneOverride(target.value);
+    updateLotSummary(activeLotData);
+    await generateEnvelopes();
+  } catch (err) {
+    setReport(String(err));
+  }
+});
 
 document.getElementById("lookupBtn").addEventListener("click", async () => {
   try {
