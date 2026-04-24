@@ -67,7 +67,7 @@ envelopeOpacitySlider.addEventListener("input", () => {
       [
         "case",
         ["==", ["get", "compare_variant"], "baseline"],
-        opacityValue * 0.48,
+        opacityValue * 0.35,
         opacityValue,
       ]
     );
