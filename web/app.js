@@ -755,6 +755,57 @@ function syncControlsFromLotData(data) {
   covVal.textContent = `${coverageInput.value}%`;
 }
 
+function _ft(val) {
+  const n = formatNumber(val, 0);
+  return n !== "—" ? `${n} ft` : "—";
+}
+
+function _buildZoningReqRows(zoning) {
+  if (!zoning || !zoning.primary_zone) return "";
+
+  const rule = resolveZoneRule(zoning.primary_zone);
+  if (!rule) return "";
+
+  const regime = zoning.bulk_regime || rule.bulkRegime || "";
+  const rows = [];
+
+  rows.push(`<div class="summary-section-head">Zoning District Requirements</div>`);
+  rows.push(`<div class="summary-row"><span>Bulk Regime</span><strong>${regime || "—"}</strong></div>`);
+
+  const standardFar = rule.standardFar ?? null;
+  const qualifyingFar = rule.qualifyingFar ?? null;
+  if (standardFar != null) rows.push(`<div class="summary-row"><span>Standard FAR</span><strong>${formatNumber(standardFar, 2)}</strong></div>`);
+  if (qualifyingFar != null && qualifyingFar !== standardFar) rows.push(`<div class="summary-row"><span>Qualifying FAR</span><strong>${formatNumber(qualifyingFar, 2)}</strong></div>`);
+
+  const maxBase = rule.maximumBaseHeightFt ?? null;
+  const minBase = rule.minimumBaseHeightFt ?? null;
+  const maxHeight = rule.maximumBuildingHeightFt ?? rule.ridgeHeightFt ?? null;
+  const frontWall = rule.maximumFrontWallHeightFt ?? null;
+  if (minBase != null) rows.push(`<div class="summary-row"><span>Min Base Height</span><strong>${_ft(minBase)}</strong></div>`);
+  if (maxBase != null) rows.push(`<div class="summary-row"><span>Max Base Height</span><strong>${_ft(maxBase)}</strong></div>`);
+  if (maxHeight != null) rows.push(`<div class="summary-row"><span>Max Building Height</span><strong>${_ft(maxHeight)}</strong></div>`);
+  if (frontWall != null && maxHeight == null) rows.push(`<div class="summary-row"><span>Max Front Wall</span><strong>${_ft(frontWall)}</strong></div>`);
+
+  const frontYard = rule.frontYardFt ?? null;
+  const sideYard = rule.sideYardEachFt ?? null;
+  const rearYard = rule.rearYardFt ?? null;
+  const streetSetback = rule.streetSetbackWideFt ?? null;
+  if (frontYard != null) rows.push(`<div class="summary-row"><span>Front Yard</span><strong>${_ft(frontYard)}</strong></div>`);
+  if (sideYard != null) rows.push(`<div class="summary-row"><span>Side Yard (each)</span><strong>${_ft(sideYard)}</strong></div>`);
+  if (rearYard != null) rows.push(`<div class="summary-row"><span>Rear Yard</span><strong>${_ft(rearYard)}</strong></div>`);
+  if (streetSetback != null) rows.push(`<div class="summary-row"><span>Street Setback</span><strong>${_ft(streetSetback)}</strong></div>`);
+
+  const sources = rule.sourceSections;
+  if (Array.isArray(sources) && sources.length) {
+    const links = sources
+      .map((id) => `<a href="https://zr.planning.nyc.gov/" target="_blank" rel="noopener">${id}</a>`)
+      .join(", ");
+    rows.push(`<div class="summary-row summary-row--source"><span>ZR Sections</span><span>${links}</span></div>`);
+  }
+
+  return rows.join("");
+}
+
 function updateLotSummary(data, envelopeResults) {
   if (!data) {
     lotSummary.className = "lot-summary empty";
@@ -768,16 +819,19 @@ function updateLotSummary(data, envelopeResults) {
 
   lotSummary.className = "lot-summary";
   lotSummary.innerHTML = `
+    <div class="summary-section-head">Lot</div>
     <div class="summary-row"><span>Neighborhood</span><strong>${data.neighborhood_name || activeNeighborhood?.name || "n/a"}</strong></div>
     <div class="summary-row"><span>Address</span><strong>${data.address || "n/a"}</strong></div>
     <div class="summary-row"><span>BBL</span><strong>${data.bbl || "n/a"}</strong></div>
-    <div class="summary-row"><span>Zoning</span><strong>${zoning.primary_zone || data.zone || data.zonedist1 || "n/a"}</strong></div>
+    <div class="summary-row"><span>Zoning District</span><strong>${zoning.primary_zone || data.zone || data.zonedist1 || "n/a"}</strong></div>
     <div class="summary-row"><span>Code FAR</span><strong>${formatNumber(zoning.base_far, 2)}</strong></div>
     <div class="summary-row"><span>Existing FAR</span><strong>${formatNumber(data.built_far ?? zoning.existing_far, 2)}</strong></div>
     <div class="summary-row"><span>Scenario FAR</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
+    <div class="summary-section-head">Envelope Study</div>
     <div class="summary-row"><span>Max Height</span><strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong></div>
-    <div class="summary-row"><span>Existing</span><strong>${formatNumber(existingHeight, 0)} ft</strong></div>
-    <div class="summary-row"><span>Envelope</span><strong>${formatNumber(envelopeHeight, 0)} ft</strong></div>
+    <div class="summary-row"><span>Existing Height</span><strong>${formatNumber(existingHeight, 0)} ft</strong></div>
+    <div class="summary-row"><span>Envelope Height</span><strong>${formatNumber(envelopeHeight, 0)} ft</strong></div>
+    ${_buildZoningReqRows(zoning)}
   `;
 }
 

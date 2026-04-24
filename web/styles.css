@@ -196,6 +196,31 @@ hr {
   border-bottom: none;
 }
 
+.summary-section-head {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-2);
+  padding: 10px 0 4px;
+  border-bottom: 2px solid var(--accent-2);
+  margin-bottom: 2px;
+}
+
+.summary-row--source {
+  font-size: 11px;
+  color: rgba(31,41,55,0.6);
+}
+
+.summary-row--source a {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.summary-row--source a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
