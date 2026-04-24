@@ -258,6 +258,46 @@ function refreshZoningEnvelopeFromNeighborhood() {
   console.log("[zoning-envelope] sample FAR/height values:", built.samples);
 }
 
+function refreshExistingBuildingsForNeighborhood() {
+  if (!map || !map.getLayer("existing-buildings-mapbox")) {
+    return;
+  }
+
+  const bounds = computeNeighborhoodBounds(activeNeighborhoodData || EMPTY_FC);
+  if (!bounds || bounds.isEmpty()) {
+    map.setFilter("existing-buildings-mapbox", ["==", "extrude", "true"]);
+    console.log("[existing-buildings] no active neighborhood bounds, using default citywide filter");
+    return;
+  }
+
+  const west = bounds.getWest();
+  const south = bounds.getSouth();
+  const east = bounds.getEast();
+  const north = bounds.getNorth();
+
+  const neighborhoodBoundsPolygon = {
+    type: "Polygon",
+    coordinates: [
+      [
+        [west, south],
+        [east, south],
+        [east, north],
+        [west, north],
+        [west, south],
+      ],
+    ],
+  };
+
+  map.setFilter("existing-buildings-mapbox", [
+    "all",
+    ["==", "extrude", "true"],
+    ["within", neighborhoodBoundsPolygon],
+  ]);
+  console.log("[existing-buildings] selected neighborhood:", activeNeighborhood?.name || "n/a");
+  console.log("[existing-buildings] lots loaded:", (activeNeighborhoodData?.features || []).length);
+  console.log("[existing-buildings] applied neighborhood bounds filter");
+}
+
 function initMap(token) {
   return new Promise((resolve) => {
     mapboxgl.accessToken = token;
@@ -600,6 +640,7 @@ async function loadNeighborhoodById(id) {
   activeNeighborhoodData = normalizeNeighborhoodData(geojson, neighborhood.name);
   map.getSource("neighborhood-lots").setData(activeNeighborhoodData);
   clearActiveEnvelope();
+  refreshExistingBuildingsForNeighborhood();
   refreshZoningEnvelopeFromNeighborhood();
   syncLayerVisibility();
 
