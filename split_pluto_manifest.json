@@ -1,0 +1,1571 @@
+﻿{
+    "files":  [
+                  {
+                      "id":  "pluto_Allerton",
+                      "name":  "Allerton",
+                      "filename":  "pluto_Allerton.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Allerton.geojson"
+                  },
+                  {
+                      "id":  "pluto_Alley_Pond_Park",
+                      "name":  "Alley Pond Park",
+                      "filename":  "pluto_Alley_Pond_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Alley_Pond_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Annadale-Huguenot-Prince\u0027s_Bay-Woodrow",
+                      "name":  "Annadale-Huguenot-Prince\u0027s Bay-Woodrow",
+                      "filename":  "pluto_Annadale-Huguenot-Prince\u0027s_Bay-Woodrow.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Annadale-Huguenot-Prince\u0027s_Bay-Woodrow.geojson"
+                  },
+                  {
+                      "id":  "pluto_Arden_Heights-Rossville",
+                      "name":  "Arden Heights-Rossville",
+                      "filename":  "pluto_Arden_Heights-Rossville.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Arden_Heights-Rossville.geojson"
+                  },
+                  {
+                      "id":  "pluto_Astoria_(Central)",
+                      "name":  "Astoria (Central)",
+                      "filename":  "pluto_Astoria_(Central).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Astoria_(Central).geojson"
+                  },
+                  {
+                      "id":  "pluto_Astoria_(East)-Woodside_(North)",
+                      "name":  "Astoria (East)-Woodside (North)",
+                      "filename":  "pluto_Astoria_(East)-Woodside_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Astoria_(East)-Woodside_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_Astoria_(North)-Ditmars-Steinway",
+                      "name":  "Astoria (North)-Ditmars-Steinway",
+                      "filename":  "pluto_Astoria_(North)-Ditmars-Steinway.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Astoria_(North)-Ditmars-Steinway.geojson"
+                  },
+                  {
+                      "id":  "pluto_Astoria_Park",
+                      "name":  "Astoria Park",
+                      "filename":  "pluto_Astoria_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Astoria_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Auburndale",
+                      "name":  "Auburndale",
+                      "filename":  "pluto_Auburndale.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Auburndale.geojson"
+                  },
+                  {
+                      "id":  "pluto_Baisley_Park",
+                      "name":  "Baisley Park",
+                      "filename":  "pluto_Baisley_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Baisley_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Barren_Island-Floyd_Bennett_Field",
+                      "name":  "Barren Island-Floyd Bennett Field",
+                      "filename":  "pluto_Barren_Island-Floyd_Bennett_Field.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Barren_Island-Floyd_Bennett_Field.geojson"
+                  },
+                  {
+                      "id":  "pluto_Bath_Beach",
+                      "name":  "Bath Beach",
+                      "filename":  "pluto_Bath_Beach.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bath_Beach.geojson"
+                  },
+                  {
+                      "id":  "pluto_Bay_Ridge",
+                      "name":  "Bay Ridge",
+                      "filename":  "pluto_Bay_Ridge.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bay_Ridge.geojson"
+                  },
+                  {
+                      "id":  "pluto_Bay_Terrace-Clearview",
+                      "name":  "Bay Terrace-Clearview",
+                      "filename":  "pluto_Bay_Terrace-Clearview.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bay_Terrace-Clearview.geojson"
+                  },
+                  {
+                      "id":  "pluto_Bayside",
+                      "name":  "Bayside",
+                      "filename":  "pluto_Bayside.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bayside.geojson"
+                  },
+                  {
+                      "id":  "pluto_Bedford_Park",
+                      "name":  "Bedford Park",
+                      "filename":  "pluto_Bedford_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bedford_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Bedford-Stuyvesant_(East)",
+                      "name":  "Bedford-Stuyvesant (East)",
+                      "filename":  "pluto_Bedford-Stuyvesant_(East).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bedford-Stuyvesant_(East).geojson"
+                  },
+                  {
+                      "id":  "pluto_Bedford-Stuyvesant_(West)",
+                      "name":  "Bedford-Stuyvesant (West)",
+                      "filename":  "pluto_Bedford-Stuyvesant_(West).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bedford-Stuyvesant_(West).geojson"
+                  },
+                  {
+                      "id":  "pluto_Bellerose",
+                      "name":  "Bellerose",
+                      "filename":  "pluto_Bellerose.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bellerose.geojson"
+                  },
+                  {
+                      "id":  "pluto_Belmont",
+                      "name":  "Belmont",
+                      "filename":  "pluto_Belmont.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Belmont.geojson"
+                  },
+                  {
+                      "id":  "pluto_Bensonhurst",
+                      "name":  "Bensonhurst",
+                      "filename":  "pluto_Bensonhurst.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bensonhurst.geojson"
+                  },
+                  {
+                      "id":  "pluto_Borough_Park",
+                      "name":  "Borough Park",
+                      "filename":  "pluto_Borough_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Borough_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Breezy_Point-Belle_Harbor-Rockaway_Park-Broad_Channel",
+                      "name":  "Breezy Point-Belle Harbor-Rockaway Park-Broad Channel",
+                      "filename":  "pluto_Breezy_Point-Belle_Harbor-Rockaway_Park-Broad_Channel.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Breezy_Point-Belle_Harbor-Rockaway_Park-Broad_Channel.geojson"
+                  },
+                  {
+                      "id":  "pluto_Brighton_Beach",
+                      "name":  "Brighton Beach",
+                      "filename":  "pluto_Brighton_Beach.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Brighton_Beach.geojson"
+                  },
+                  {
+                      "id":  "pluto_Bronx_Park",
+                      "name":  "Bronx Park",
+                      "filename":  "pluto_Bronx_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bronx_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Brooklyn_Heights",
+                      "name":  "Brooklyn Heights",
+                      "filename":  "pluto_Brooklyn_Heights.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Brooklyn_Heights.geojson"
+                  },
+                  {
+                      "id":  "pluto_Brooklyn_Navy_Yard",
+                      "name":  "Brooklyn Navy Yard",
+                      "filename":  "pluto_Brooklyn_Navy_Yard.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Brooklyn_Navy_Yard.geojson"
+                  },
+                  {
+                      "id":  "pluto_Brownsville",
+                      "name":  "Brownsville",
+                      "filename":  "pluto_Brownsville.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Brownsville.geojson"
+                  },
+                  {
+                      "id":  "pluto_Bushwick_(East)",
+                      "name":  "Bushwick (East)",
+                      "filename":  "pluto_Bushwick_(East).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bushwick_(East).geojson"
+                  },
+                  {
+                      "id":  "pluto_Bushwick_(West)",
+                      "name":  "Bushwick (West)",
+                      "filename":  "pluto_Bushwick_(West).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Bushwick_(West).geojson"
+                  },
+                  {
+                      "id":  "pluto_Calvary_\u0026_Mount_Zion_Cemeteries",
+                      "name":  "Calvary \u0026 Mount Zion Cemeteries",
+                      "filename":  "pluto_Calvary_\u0026_Mount_Zion_Cemeteries.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Calvary_\u0026_Mount_Zion_Cemeteries.geojson"
+                  },
+                  {
+                      "id":  "pluto_Calvert_Vaux_Park",
+                      "name":  "Calvert Vaux Park",
+                      "filename":  "pluto_Calvert_Vaux_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Calvert_Vaux_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Cambria_Heights",
+                      "name":  "Cambria Heights",
+                      "filename":  "pluto_Cambria_Heights.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Cambria_Heights.geojson"
+                  },
+                  {
+                      "id":  "pluto_Canarsie",
+                      "name":  "Canarsie",
+                      "filename":  "pluto_Canarsie.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Canarsie.geojson"
+                  },
+                  {
+                      "id":  "pluto_Canarsie_Park_\u0026_Pier",
+                      "name":  "Canarsie Park \u0026 Pier",
+                      "filename":  "pluto_Canarsie_Park_\u0026_Pier.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Canarsie_Park_\u0026_Pier.geojson"
+                  },
+                  {
+                      "id":  "pluto_Carroll_Gardens-Cobble_Hill-Gowanus-Red_Hook",
+                      "name":  "Carroll Gardens-Cobble Hill-Gowanus-Red Hook",
+                      "filename":  "pluto_Carroll_Gardens-Cobble_Hill-Gowanus-Red_Hook.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Carroll_Gardens-Cobble_Hill-Gowanus-Red_Hook.geojson"
+                  },
+                  {
+                      "id":  "pluto_Castle_Hill-Unionport",
+                      "name":  "Castle Hill-Unionport",
+                      "filename":  "pluto_Castle_Hill-Unionport.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Castle_Hill-Unionport.geojson"
+                  },
+                  {
+                      "id":  "pluto_Central_Park",
+                      "name":  "Central Park",
+                      "filename":  "pluto_Central_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Central_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Chelsea-Hudson_Yards",
+                      "name":  "Chelsea-Hudson Yards",
+                      "filename":  "pluto_Chelsea-Hudson_Yards.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Chelsea-Hudson_Yards.geojson"
+                  },
+                  {
+                      "id":  "pluto_Chinatown-Two_Bridges",
+                      "name":  "Chinatown-Two Bridges",
+                      "filename":  "pluto_Chinatown-Two_Bridges.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Chinatown-Two_Bridges.geojson"
+                  },
+                  {
+                      "id":  "pluto_Claremont_Park",
+                      "name":  "Claremont Park",
+                      "filename":  "pluto_Claremont_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Claremont_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Claremont_Village-Claremont_(East)",
+                      "name":  "Claremont Village-Claremont (East)",
+                      "filename":  "pluto_Claremont_Village-Claremont_(East).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Claremont_Village-Claremont_(East).geojson"
+                  },
+                  {
+                      "id":  "pluto_Clinton_Hill",
+                      "name":  "Clinton Hill",
+                      "filename":  "pluto_Clinton_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Clinton_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_College_Point",
+                      "name":  "College Point",
+                      "filename":  "pluto_College_Point.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_College_Point.geojson"
+                  },
+                  {
+                      "id":  "pluto_Concourse-Concourse_Village",
+                      "name":  "Concourse-Concourse Village",
+                      "filename":  "pluto_Concourse-Concourse_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Concourse-Concourse_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_Coney_Island-Sea_Gate",
+                      "name":  "Coney Island-Sea Gate",
+                      "filename":  "pluto_Coney_Island-Sea_Gate.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Coney_Island-Sea_Gate.geojson"
+                  },
+                  {
+                      "id":  "pluto_Co-op_City",
+                      "name":  "Co-op City",
+                      "filename":  "pluto_Co-op_City.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Co-op_City.geojson"
+                  },
+                  {
+                      "id":  "pluto_Corona",
+                      "name":  "Corona",
+                      "filename":  "pluto_Corona.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Corona.geojson"
+                  },
+                  {
+                      "id":  "pluto_Crotona_Park",
+                      "name":  "Crotona Park",
+                      "filename":  "pluto_Crotona_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Crotona_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Crotona_Park_East",
+                      "name":  "Crotona Park East",
+                      "filename":  "pluto_Crotona_Park_East.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Crotona_Park_East.geojson"
+                  },
+                  {
+                      "id":  "pluto_Crown_Heights_(North)",
+                      "name":  "Crown Heights (North)",
+                      "filename":  "pluto_Crown_Heights_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Crown_Heights_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_Crown_Heights_(South)",
+                      "name":  "Crown Heights (South)",
+                      "filename":  "pluto_Crown_Heights_(South).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Crown_Heights_(South).geojson"
+                  },
+                  {
+                      "id":  "pluto_Cunningham_Park",
+                      "name":  "Cunningham Park",
+                      "filename":  "pluto_Cunningham_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Cunningham_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Cypress_Hills",
+                      "name":  "Cypress Hills",
+                      "filename":  "pluto_Cypress_Hills.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Cypress_Hills.geojson"
+                  },
+                  {
+                      "id":  "pluto_Douglaston-Little_Neck",
+                      "name":  "Douglaston-Little Neck",
+                      "filename":  "pluto_Douglaston-Little_Neck.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Douglaston-Little_Neck.geojson"
+                  },
+                  {
+                      "id":  "pluto_Downtown_Brooklyn-DUMBO-Boerum_Hill",
+                      "name":  "Downtown Brooklyn-DUMBO-Boerum Hill",
+                      "filename":  "pluto_Downtown_Brooklyn-DUMBO-Boerum_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Downtown_Brooklyn-DUMBO-Boerum_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_Dyker_Beach_Park",
+                      "name":  "Dyker Beach Park",
+                      "filename":  "pluto_Dyker_Beach_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Dyker_Beach_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Dyker_Heights",
+                      "name":  "Dyker Heights",
+                      "filename":  "pluto_Dyker_Heights.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Dyker_Heights.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Elmhurst",
+                      "name":  "East Elmhurst",
+                      "filename":  "pluto_East_Elmhurst.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Elmhurst.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Flatbush-Erasmus",
+                      "name":  "East Flatbush-Erasmus",
+                      "filename":  "pluto_East_Flatbush-Erasmus.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Flatbush-Erasmus.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Flatbush-Farragut",
+                      "name":  "East Flatbush-Farragut",
+                      "filename":  "pluto_East_Flatbush-Farragut.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Flatbush-Farragut.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Flatbush-Remsen_Village",
+                      "name":  "East Flatbush-Remsen Village",
+                      "filename":  "pluto_East_Flatbush-Remsen_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Flatbush-Remsen_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Flatbush-Rugby",
+                      "name":  "East Flatbush-Rugby",
+                      "filename":  "pluto_East_Flatbush-Rugby.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Flatbush-Rugby.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Flushing",
+                      "name":  "East Flushing",
+                      "filename":  "pluto_East_Flushing.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Flushing.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Harlem_(North)",
+                      "name":  "East Harlem (North)",
+                      "filename":  "pluto_East_Harlem_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Harlem_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Harlem_(South)",
+                      "name":  "East Harlem (South)",
+                      "filename":  "pluto_East_Harlem_(South).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Harlem_(South).geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Midtown-Turtle_Bay",
+                      "name":  "East Midtown-Turtle Bay",
+                      "filename":  "pluto_East_Midtown-Turtle_Bay.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Midtown-Turtle_Bay.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_New_York_(North)",
+                      "name":  "East New York (North)",
+                      "filename":  "pluto_East_New_York_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_New_York_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_East_New_York-City_Line",
+                      "name":  "East New York-City Line",
+                      "filename":  "pluto_East_New_York-City_Line.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_New_York-City_Line.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_New_York-New_Lots",
+                      "name":  "East New York-New Lots",
+                      "filename":  "pluto_East_New_York-New_Lots.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_New_York-New_Lots.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Village",
+                      "name":  "East Village",
+                      "filename":  "pluto_East_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_East_Williamsburg",
+                      "name":  "East Williamsburg",
+                      "filename":  "pluto_East_Williamsburg.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_East_Williamsburg.geojson"
+                  },
+                  {
+                      "id":  "pluto_Eastchester-Edenwald-Baychester",
+                      "name":  "Eastchester-Edenwald-Baychester",
+                      "filename":  "pluto_Eastchester-Edenwald-Baychester.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Eastchester-Edenwald-Baychester.geojson"
+                  },
+                  {
+                      "id":  "pluto_Elmhurst",
+                      "name":  "Elmhurst",
+                      "filename":  "pluto_Elmhurst.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Elmhurst.geojson"
+                  },
+                  {
+                      "id":  "pluto_Far_Rockaway-Bayswater",
+                      "name":  "Far Rockaway-Bayswater",
+                      "filename":  "pluto_Far_Rockaway-Bayswater.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Far_Rockaway-Bayswater.geojson"
+                  },
+                  {
+                      "id":  "pluto_Ferry_Point_Park-St._Raymond_Cemetery",
+                      "name":  "Ferry Point Park-St. Raymond Cemetery",
+                      "filename":  "pluto_Ferry_Point_Park-St._Raymond_Cemetery.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Ferry_Point_Park-St._Raymond_Cemetery.geojson"
+                  },
+                  {
+                      "id":  "pluto_Financial_District-Battery_Park_City",
+                      "name":  "Financial District-Battery Park City",
+                      "filename":  "pluto_Financial_District-Battery_Park_City.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Financial_District-Battery_Park_City.geojson"
+                  },
+                  {
+                      "id":  "pluto_Flatbush",
+                      "name":  "Flatbush",
+                      "filename":  "pluto_Flatbush.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Flatbush.geojson"
+                  },
+                  {
+                      "id":  "pluto_Flatbush_(West)-Ditmas_Park-Parkville",
+                      "name":  "Flatbush (West)-Ditmas Park-Parkville",
+                      "filename":  "pluto_Flatbush_(West)-Ditmas_Park-Parkville.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Flatbush_(West)-Ditmas_Park-Parkville.geojson"
+                  },
+                  {
+                      "id":  "pluto_Flatlands",
+                      "name":  "Flatlands",
+                      "filename":  "pluto_Flatlands.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Flatlands.geojson"
+                  },
+                  {
+                      "id":  "pluto_Flushing_Meadows-Corona_Park",
+                      "name":  "Flushing Meadows-Corona Park",
+                      "filename":  "pluto_Flushing_Meadows-Corona_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Flushing_Meadows-Corona_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Flushing-Willets_Point",
+                      "name":  "Flushing-Willets Point",
+                      "filename":  "pluto_Flushing-Willets_Point.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Flushing-Willets_Point.geojson"
+                  },
+                  {
+                      "id":  "pluto_Fordham_Heights",
+                      "name":  "Fordham Heights",
+                      "filename":  "pluto_Fordham_Heights.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Fordham_Heights.geojson"
+                  },
+                  {
+                      "id":  "pluto_Forest_Hills",
+                      "name":  "Forest Hills",
+                      "filename":  "pluto_Forest_Hills.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Forest_Hills.geojson"
+                  },
+                  {
+                      "id":  "pluto_Forest_Park",
+                      "name":  "Forest Park",
+                      "filename":  "pluto_Forest_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Forest_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Fort_Greene",
+                      "name":  "Fort Greene",
+                      "filename":  "pluto_Fort_Greene.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Fort_Greene.geojson"
+                  },
+                  {
+                      "id":  "pluto_Fort_Hamilton",
+                      "name":  "Fort Hamilton",
+                      "filename":  "pluto_Fort_Hamilton.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Fort_Hamilton.geojson"
+                  },
+                  {
+                      "id":  "pluto_Fort_Totten",
+                      "name":  "Fort Totten",
+                      "filename":  "pluto_Fort_Totten.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Fort_Totten.geojson"
+                  },
+                  {
+                      "id":  "pluto_Fort_Wadsworth",
+                      "name":  "Fort Wadsworth",
+                      "filename":  "pluto_Fort_Wadsworth.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Fort_Wadsworth.geojson"
+                  },
+                  {
+                      "id":  "pluto_Fresh_Meadows-Utopia",
+                      "name":  "Fresh Meadows-Utopia",
+                      "filename":  "pluto_Fresh_Meadows-Utopia.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Fresh_Meadows-Utopia.geojson"
+                  },
+                  {
+                      "id":  "pluto_Freshkills_Park_(North)",
+                      "name":  "Freshkills Park (North)",
+                      "filename":  "pluto_Freshkills_Park_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Freshkills_Park_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_Freshkills_Park_(South)",
+                      "name":  "Freshkills Park (South)",
+                      "filename":  "pluto_Freshkills_Park_(South).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Freshkills_Park_(South).geojson"
+                  },
+                  {
+                      "id":  "pluto_Glen_Oaks-Floral_Park-New_Hyde_Park",
+                      "name":  "Glen Oaks-Floral Park-New Hyde Park",
+                      "filename":  "pluto_Glen_Oaks-Floral_Park-New_Hyde_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Glen_Oaks-Floral_Park-New_Hyde_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Glendale",
+                      "name":  "Glendale",
+                      "filename":  "pluto_Glendale.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Glendale.geojson"
+                  },
+                  {
+                      "id":  "pluto_Gramercy",
+                      "name":  "Gramercy",
+                      "filename":  "pluto_Gramercy.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Gramercy.geojson"
+                  },
+                  {
+                      "id":  "pluto_Grasmere-Arrochar-South_Beach-Dongan_Hills",
+                      "name":  "Grasmere-Arrochar-South Beach-Dongan Hills",
+                      "filename":  "pluto_Grasmere-Arrochar-South_Beach-Dongan_Hills.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Grasmere-Arrochar-South_Beach-Dongan_Hills.geojson"
+                  },
+                  {
+                      "id":  "pluto_Gravesend_(East)-Homecrest",
+                      "name":  "Gravesend (East)-Homecrest",
+                      "filename":  "pluto_Gravesend_(East)-Homecrest.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Gravesend_(East)-Homecrest.geojson"
+                  },
+                  {
+                      "id":  "pluto_Gravesend_(South)",
+                      "name":  "Gravesend (South)",
+                      "filename":  "pluto_Gravesend_(South).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Gravesend_(South).geojson"
+                  },
+                  {
+                      "id":  "pluto_Gravesend_(West)",
+                      "name":  "Gravesend (West)",
+                      "filename":  "pluto_Gravesend_(West).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Gravesend_(West).geojson"
+                  },
+                  {
+                      "id":  "pluto_Great_Kills_Park",
+                      "name":  "Great Kills Park",
+                      "filename":  "pluto_Great_Kills_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Great_Kills_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Great_Kills-Eltingville",
+                      "name":  "Great Kills-Eltingville",
+                      "filename":  "pluto_Great_Kills-Eltingville.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Great_Kills-Eltingville.geojson"
+                  },
+                  {
+                      "id":  "pluto_Greenpoint",
+                      "name":  "Greenpoint",
+                      "filename":  "pluto_Greenpoint.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Greenpoint.geojson"
+                  },
+                  {
+                      "id":  "pluto_Greenwich_Village",
+                      "name":  "Greenwich Village",
+                      "filename":  "pluto_Greenwich_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Greenwich_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_Green-Wood_Cemetery",
+                      "name":  "Green-Wood Cemetery",
+                      "filename":  "pluto_Green-Wood_Cemetery.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Green-Wood_Cemetery.geojson"
+                  },
+                  {
+                      "id":  "pluto_Hamilton_Heights-Sugar_Hill",
+                      "name":  "Hamilton Heights-Sugar Hill",
+                      "filename":  "pluto_Hamilton_Heights-Sugar_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Hamilton_Heights-Sugar_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_Harlem_(North)",
+                      "name":  "Harlem (North)",
+                      "filename":  "pluto_Harlem_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Harlem_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_Harlem_(South)",
+                      "name":  "Harlem (South)",
+                      "filename":  "pluto_Harlem_(South).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Harlem_(South).geojson"
+                  },
+                  {
+                      "id":  "pluto_Hart_Island",
+                      "name":  "Hart Island",
+                      "filename":  "pluto_Hart_Island.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Hart_Island.geojson"
+                  },
+                  {
+                      "id":  "pluto_Hell\u0027s_Kitchen",
+                      "name":  "Hell\u0027s Kitchen",
+                      "filename":  "pluto_Hell\u0027s_Kitchen.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Hell\u0027s_Kitchen.geojson"
+                  },
+                  {
+                      "id":  "pluto_Highbridge",
+                      "name":  "Highbridge",
+                      "filename":  "pluto_Highbridge.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Highbridge.geojson"
+                  },
+                  {
+                      "id":  "pluto_Highbridge_Park",
+                      "name":  "Highbridge Park",
+                      "filename":  "pluto_Highbridge_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Highbridge_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Highland_Park-Cypress_Hills_Cemeteries_(North)",
+                      "name":  "Highland Park-Cypress Hills Cemeteries (North)",
+                      "filename":  "pluto_Highland_Park-Cypress_Hills_Cemeteries_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Highland_Park-Cypress_Hills_Cemeteries_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_Highland_Park-Cypress_Hills_Cemeteries_(South)",
+                      "name":  "Highland Park-Cypress Hills Cemeteries (South)",
+                      "filename":  "pluto_Highland_Park-Cypress_Hills_Cemeteries_(South).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Highland_Park-Cypress_Hills_Cemeteries_(South).geojson"
+                  },
+                  {
+                      "id":  "pluto_Hollis",
+                      "name":  "Hollis",
+                      "filename":  "pluto_Hollis.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Hollis.geojson"
+                  },
+                  {
+                      "id":  "pluto_Holy_Cross_Cemetery",
+                      "name":  "Holy Cross Cemetery",
+                      "filename":  "pluto_Holy_Cross_Cemetery.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Holy_Cross_Cemetery.geojson"
+                  },
+                  {
+                      "id":  "pluto_Howard_Beach-Lindenwood",
+                      "name":  "Howard Beach-Lindenwood",
+                      "filename":  "pluto_Howard_Beach-Lindenwood.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Howard_Beach-Lindenwood.geojson"
+                  },
+                  {
+                      "id":  "pluto_Hunts_Point",
+                      "name":  "Hunts Point",
+                      "filename":  "pluto_Hunts_Point.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Hunts_Point.geojson"
+                  },
+                  {
+                      "id":  "pluto_Hutchinson_Metro_Center",
+                      "name":  "Hutchinson Metro Center",
+                      "filename":  "pluto_Hutchinson_Metro_Center.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Hutchinson_Metro_Center.geojson"
+                  },
+                  {
+                      "id":  "pluto_Inwood",
+                      "name":  "Inwood",
+                      "filename":  "pluto_Inwood.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Inwood.geojson"
+                  },
+                  {
+                      "id":  "pluto_Inwood_Hill_Park",
+                      "name":  "Inwood Hill Park",
+                      "filename":  "pluto_Inwood_Hill_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Inwood_Hill_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Jackson_Heights",
+                      "name":  "Jackson Heights",
+                      "filename":  "pluto_Jackson_Heights.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Jackson_Heights.geojson"
+                  },
+                  {
+                      "id":  "pluto_Jacob_Riis_Park-Fort_Tilden-Breezy_Point_Tip",
+                      "name":  "Jacob Riis Park-Fort Tilden-Breezy Point Tip",
+                      "filename":  "pluto_Jacob_Riis_Park-Fort_Tilden-Breezy_Point_Tip.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Jacob_Riis_Park-Fort_Tilden-Breezy_Point_Tip.geojson"
+                  },
+                  {
+                      "id":  "pluto_Jamaica",
+                      "name":  "Jamaica",
+                      "filename":  "pluto_Jamaica.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Jamaica.geojson"
+                  },
+                  {
+                      "id":  "pluto_Jamaica_Bay_(East)",
+                      "name":  "Jamaica Bay (East)",
+                      "filename":  "pluto_Jamaica_Bay_(East).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Jamaica_Bay_(East).geojson"
+                  },
+                  {
+                      "id":  "pluto_Jamaica_Bay_(West)",
+                      "name":  "Jamaica Bay (West)",
+                      "filename":  "pluto_Jamaica_Bay_(West).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Jamaica_Bay_(West).geojson"
+                  },
+                  {
+                      "id":  "pluto_Jamaica_Estates-Holliswood",
+                      "name":  "Jamaica Estates-Holliswood",
+                      "filename":  "pluto_Jamaica_Estates-Holliswood.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Jamaica_Estates-Holliswood.geojson"
+                  },
+                  {
+                      "id":  "pluto_Jamaica_Hills-Briarwood",
+                      "name":  "Jamaica Hills-Briarwood",
+                      "filename":  "pluto_Jamaica_Hills-Briarwood.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Jamaica_Hills-Briarwood.geojson"
+                  },
+                  {
+                      "id":  "pluto_John_F._Kennedy_International_Airport",
+                      "name":  "John F. Kennedy International Airport",
+                      "filename":  "pluto_John_F._Kennedy_International_Airport.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_John_F._Kennedy_International_Airport.geojson"
+                  },
+                  {
+                      "id":  "pluto_Kensington",
+                      "name":  "Kensington",
+                      "filename":  "pluto_Kensington.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Kensington.geojson"
+                  },
+                  {
+                      "id":  "pluto_Kew_Gardens",
+                      "name":  "Kew Gardens",
+                      "filename":  "pluto_Kew_Gardens.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Kew_Gardens.geojson"
+                  },
+                  {
+                      "id":  "pluto_Kew_Gardens_Hills",
+                      "name":  "Kew Gardens Hills",
+                      "filename":  "pluto_Kew_Gardens_Hills.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Kew_Gardens_Hills.geojson"
+                  },
+                  {
+                      "id":  "pluto_Kingsbridge_Heights-Van_Cortlandt_Village",
+                      "name":  "Kingsbridge Heights-Van Cortlandt Village",
+                      "filename":  "pluto_Kingsbridge_Heights-Van_Cortlandt_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Kingsbridge_Heights-Van_Cortlandt_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_Kingsbridge-Marble_Hill",
+                      "name":  "Kingsbridge-Marble Hill",
+                      "filename":  "pluto_Kingsbridge-Marble_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Kingsbridge-Marble_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_Kissena_Park",
+                      "name":  "Kissena Park",
+                      "filename":  "pluto_Kissena_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Kissena_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_LaGuardia_Airport",
+                      "name":  "LaGuardia Airport",
+                      "filename":  "pluto_LaGuardia_Airport.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_LaGuardia_Airport.geojson"
+                  },
+                  {
+                      "id":  "pluto_Laurelton",
+                      "name":  "Laurelton",
+                      "filename":  "pluto_Laurelton.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Laurelton.geojson"
+                  },
+                  {
+                      "id":  "pluto_Lincoln_Terrace_Park",
+                      "name":  "Lincoln Terrace Park",
+                      "filename":  "pluto_Lincoln_Terrace_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Lincoln_Terrace_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Long_Island_City-Hunters_Point",
+                      "name":  "Long Island City-Hunters Point",
+                      "filename":  "pluto_Long_Island_City-Hunters_Point.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Long_Island_City-Hunters_Point.geojson"
+                  },
+                  {
+                      "id":  "pluto_Longwood",
+                      "name":  "Longwood",
+                      "filename":  "pluto_Longwood.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Longwood.geojson"
+                  },
+                  {
+                      "id":  "pluto_Lower_East_Side",
+                      "name":  "Lower East Side",
+                      "filename":  "pluto_Lower_East_Side.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Lower_East_Side.geojson"
+                  },
+                  {
+                      "id":  "pluto_Madison",
+                      "name":  "Madison",
+                      "filename":  "pluto_Madison.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Madison.geojson"
+                  },
+                  {
+                      "id":  "pluto_Manhattanville-West_Harlem",
+                      "name":  "Manhattanville-West Harlem",
+                      "filename":  "pluto_Manhattanville-West_Harlem.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Manhattanville-West_Harlem.geojson"
+                  },
+                  {
+                      "id":  "pluto_Mapleton-Midwood_(West)",
+                      "name":  "Mapleton-Midwood (West)",
+                      "filename":  "pluto_Mapleton-Midwood_(West).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Mapleton-Midwood_(West).geojson"
+                  },
+                  {
+                      "id":  "pluto_Marine_Park-Mill_Basin-Bergen_Beach",
+                      "name":  "Marine Park-Mill Basin-Bergen Beach",
+                      "filename":  "pluto_Marine_Park-Mill_Basin-Bergen_Beach.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Marine_Park-Mill_Basin-Bergen_Beach.geojson"
+                  },
+                  {
+                      "id":  "pluto_Marine_Park-Plumb_Island",
+                      "name":  "Marine Park-Plumb Island",
+                      "filename":  "pluto_Marine_Park-Plumb_Island.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Marine_Park-Plumb_Island.geojson"
+                  },
+                  {
+                      "id":  "pluto_Mariner\u0027s_Harbor-Arlington-Graniteville",
+                      "name":  "Mariner\u0027s Harbor-Arlington-Graniteville",
+                      "filename":  "pluto_Mariner\u0027s_Harbor-Arlington-Graniteville.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Mariner\u0027s_Harbor-Arlington-Graniteville.geojson"
+                  },
+                  {
+                      "id":  "pluto_Maspeth",
+                      "name":  "Maspeth",
+                      "filename":  "pluto_Maspeth.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Maspeth.geojson"
+                  },
+                  {
+                      "id":  "pluto_McGuire_Fields",
+                      "name":  "McGuire Fields",
+                      "filename":  "pluto_McGuire_Fields.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_McGuire_Fields.geojson"
+                  },
+                  {
+                      "id":  "pluto_Melrose",
+                      "name":  "Melrose",
+                      "filename":  "pluto_Melrose.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Melrose.geojson"
+                  },
+                  {
+                      "id":  "pluto_Middle_Village",
+                      "name":  "Middle Village",
+                      "filename":  "pluto_Middle_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Middle_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_Middle_Village_Cemetery",
+                      "name":  "Middle Village Cemetery",
+                      "filename":  "pluto_Middle_Village_Cemetery.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Middle_Village_Cemetery.geojson"
+                  },
+                  {
+                      "id":  "pluto_Midtown_South-Flatiron-Union_Square",
+                      "name":  "Midtown South-Flatiron-Union Square",
+                      "filename":  "pluto_Midtown_South-Flatiron-Union_Square.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Midtown_South-Flatiron-Union_Square.geojson"
+                  },
+                  {
+                      "id":  "pluto_Midtown-Times_Square",
+                      "name":  "Midtown-Times Square",
+                      "filename":  "pluto_Midtown-Times_Square.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Midtown-Times_Square.geojson"
+                  },
+                  {
+                      "id":  "pluto_Midwood",
+                      "name":  "Midwood",
+                      "filename":  "pluto_Midwood.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Midwood.geojson"
+                  },
+                  {
+                      "id":  "pluto_Miller_Field",
+                      "name":  "Miller Field",
+                      "filename":  "pluto_Miller_Field.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Miller_Field.geojson"
+                  },
+                  {
+                      "id":  "pluto_Montefiore_Cemetery",
+                      "name":  "Montefiore Cemetery",
+                      "filename":  "pluto_Montefiore_Cemetery.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Montefiore_Cemetery.geojson"
+                  },
+                  {
+                      "id":  "pluto_Morningside_Heights",
+                      "name":  "Morningside Heights",
+                      "filename":  "pluto_Morningside_Heights.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Morningside_Heights.geojson"
+                  },
+                  {
+                      "id":  "pluto_Morris_Park",
+                      "name":  "Morris Park",
+                      "filename":  "pluto_Morris_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Morris_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Morrisania",
+                      "name":  "Morrisania",
+                      "filename":  "pluto_Morrisania.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Morrisania.geojson"
+                  },
+                  {
+                      "id":  "pluto_Mott_Haven-Port_Morris",
+                      "name":  "Mott Haven-Port Morris",
+                      "filename":  "pluto_Mott_Haven-Port_Morris.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Mott_Haven-Port_Morris.geojson"
+                  },
+                  {
+                      "id":  "pluto_Mount_Eden-Claremont_(West)",
+                      "name":  "Mount Eden-Claremont (West)",
+                      "filename":  "pluto_Mount_Eden-Claremont_(West).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Mount_Eden-Claremont_(West).geojson"
+                  },
+                  {
+                      "id":  "pluto_Mount_Hebron_\u0026_Cedar_Grove_Cemeteries",
+                      "name":  "Mount Hebron \u0026 Cedar Grove Cemeteries",
+                      "filename":  "pluto_Mount_Hebron_\u0026_Cedar_Grove_Cemeteries.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Mount_Hebron_\u0026_Cedar_Grove_Cemeteries.geojson"
+                  },
+                  {
+                      "id":  "pluto_Mount_Hope",
+                      "name":  "Mount Hope",
+                      "filename":  "pluto_Mount_Hope.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Mount_Hope.geojson"
+                  },
+                  {
+                      "id":  "pluto_Mount_Olivet_\u0026_All_Faiths_Cemeteries",
+                      "name":  "Mount Olivet \u0026 All Faiths Cemeteries",
+                      "filename":  "pluto_Mount_Olivet_\u0026_All_Faiths_Cemeteries.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Mount_Olivet_\u0026_All_Faiths_Cemeteries.geojson"
+                  },
+                  {
+                      "id":  "pluto_Murray_Hill-Broadway_Flushing",
+                      "name":  "Murray Hill-Broadway Flushing",
+                      "filename":  "pluto_Murray_Hill-Broadway_Flushing.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Murray_Hill-Broadway_Flushing.geojson"
+                  },
+                  {
+                      "id":  "pluto_Murray_Hill-Kips_Bay",
+                      "name":  "Murray Hill-Kips Bay",
+                      "filename":  "pluto_Murray_Hill-Kips_Bay.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Murray_Hill-Kips_Bay.geojson"
+                  },
+                  {
+                      "id":  "pluto_New_Dorp-Midland_Beach",
+                      "name":  "New Dorp-Midland Beach",
+                      "filename":  "pluto_New_Dorp-Midland_Beach.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_New_Dorp-Midland_Beach.geojson"
+                  },
+                  {
+                      "id":  "pluto_New_Springville-Willowbrook-Bulls_Head-Travis",
+                      "name":  "New Springville-Willowbrook-Bulls Head-Travis",
+                      "filename":  "pluto_New_Springville-Willowbrook-Bulls_Head-Travis.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_New_Springville-Willowbrook-Bulls_Head-Travis.geojson"
+                  },
+                  {
+                      "id":  "pluto_North_\u0026_South_Brother_Islands",
+                      "name":  "North \u0026 South Brother Islands",
+                      "filename":  "pluto_North_\u0026_South_Brother_Islands.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_North_\u0026_South_Brother_Islands.geojson"
+                  },
+                  {
+                      "id":  "pluto_North_Corona",
+                      "name":  "North Corona",
+                      "filename":  "pluto_North_Corona.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_North_Corona.geojson"
+                  },
+                  {
+                      "id":  "pluto_Norwood",
+                      "name":  "Norwood",
+                      "filename":  "pluto_Norwood.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Norwood.geojson"
+                  },
+                  {
+                      "id":  "pluto_Oakland_Gardens-Hollis_Hills",
+                      "name":  "Oakland Gardens-Hollis Hills",
+                      "filename":  "pluto_Oakland_Gardens-Hollis_Hills.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Oakland_Gardens-Hollis_Hills.geojson"
+                  },
+                  {
+                      "id":  "pluto_Oakwood-Richmondtown",
+                      "name":  "Oakwood-Richmondtown",
+                      "filename":  "pluto_Oakwood-Richmondtown.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Oakwood-Richmondtown.geojson"
+                  },
+                  {
+                      "id":  "pluto_Ocean_Hill",
+                      "name":  "Ocean Hill",
+                      "filename":  "pluto_Ocean_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Ocean_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_Old_Astoria-Hallets_Point",
+                      "name":  "Old Astoria-Hallets Point",
+                      "filename":  "pluto_Old_Astoria-Hallets_Point.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Old_Astoria-Hallets_Point.geojson"
+                  },
+                  {
+                      "id":  "pluto_Ozone_Park",
+                      "name":  "Ozone Park",
+                      "filename":  "pluto_Ozone_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Ozone_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Ozone_Park_(North)",
+                      "name":  "Ozone Park (North)",
+                      "filename":  "pluto_Ozone_Park_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Ozone_Park_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_Park_Slope",
+                      "name":  "Park Slope",
+                      "filename":  "pluto_Park_Slope.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Park_Slope.geojson"
+                  },
+                  {
+                      "id":  "pluto_Parkchester",
+                      "name":  "Parkchester",
+                      "filename":  "pluto_Parkchester.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Parkchester.geojson"
+                  },
+                  {
+                      "id":  "pluto_Pelham_Bay_Park",
+                      "name":  "Pelham Bay Park",
+                      "filename":  "pluto_Pelham_Bay_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Pelham_Bay_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Pelham_Bay-Country_Club-City_Island",
+                      "name":  "Pelham Bay-Country Club-City Island",
+                      "filename":  "pluto_Pelham_Bay-Country_Club-City_Island.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Pelham_Bay-Country_Club-City_Island.geojson"
+                  },
+                  {
+                      "id":  "pluto_Pelham_Gardens",
+                      "name":  "Pelham Gardens",
+                      "filename":  "pluto_Pelham_Gardens.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Pelham_Gardens.geojson"
+                  },
+                  {
+                      "id":  "pluto_Pelham_Parkway-Van_Nest",
+                      "name":  "Pelham Parkway-Van Nest",
+                      "filename":  "pluto_Pelham_Parkway-Van_Nest.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Pelham_Parkway-Van_Nest.geojson"
+                  },
+                  {
+                      "id":  "pluto_Pomonok-Electchester-Hillcrest",
+                      "name":  "Pomonok-Electchester-Hillcrest",
+                      "filename":  "pluto_Pomonok-Electchester-Hillcrest.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Pomonok-Electchester-Hillcrest.geojson"
+                  },
+                  {
+                      "id":  "pluto_Port_Richmond",
+                      "name":  "Port Richmond",
+                      "filename":  "pluto_Port_Richmond.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Port_Richmond.geojson"
+                  },
+                  {
+                      "id":  "pluto_Prospect_Heights",
+                      "name":  "Prospect Heights",
+                      "filename":  "pluto_Prospect_Heights.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Prospect_Heights.geojson"
+                  },
+                  {
+                      "id":  "pluto_Prospect_Lefferts_Gardens-Wingate",
+                      "name":  "Prospect Lefferts Gardens-Wingate",
+                      "filename":  "pluto_Prospect_Lefferts_Gardens-Wingate.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Prospect_Lefferts_Gardens-Wingate.geojson"
+                  },
+                  {
+                      "id":  "pluto_Prospect_Park",
+                      "name":  "Prospect Park",
+                      "filename":  "pluto_Prospect_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Prospect_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Queens_Village",
+                      "name":  "Queens Village",
+                      "filename":  "pluto_Queens_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Queens_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_Queensboro_Hill",
+                      "name":  "Queensboro Hill",
+                      "filename":  "pluto_Queensboro_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Queensboro_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_Queensbridge-Ravenswood-Dutch_Kills",
+                      "name":  "Queensbridge-Ravenswood-Dutch Kills",
+                      "filename":  "pluto_Queensbridge-Ravenswood-Dutch_Kills.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Queensbridge-Ravenswood-Dutch_Kills.geojson"
+                  },
+                  {
+                      "id":  "pluto_Randall\u0027s_Island",
+                      "name":  "Randall\u0027s Island",
+                      "filename":  "pluto_Randall\u0027s_Island.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Randall\u0027s_Island.geojson"
+                  },
+                  {
+                      "id":  "pluto_Rego_Park",
+                      "name":  "Rego Park",
+                      "filename":  "pluto_Rego_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Rego_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Richmond_Hill",
+                      "name":  "Richmond Hill",
+                      "filename":  "pluto_Richmond_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Richmond_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_Ridgewood",
+                      "name":  "Ridgewood",
+                      "filename":  "pluto_Ridgewood.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Ridgewood.geojson"
+                  },
+                  {
+                      "id":  "pluto_Rikers_Island",
+                      "name":  "Rikers Island",
+                      "filename":  "pluto_Rikers_Island.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Rikers_Island.geojson"
+                  },
+                  {
+                      "id":  "pluto_Riverdale-Spuyten_Duyvil",
+                      "name":  "Riverdale-Spuyten Duyvil",
+                      "filename":  "pluto_Riverdale-Spuyten_Duyvil.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Riverdale-Spuyten_Duyvil.geojson"
+                  },
+                  {
+                      "id":  "pluto_Rockaway_Beach-Arverne-Edgemere",
+                      "name":  "Rockaway Beach-Arverne-Edgemere",
+                      "filename":  "pluto_Rockaway_Beach-Arverne-Edgemere.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Rockaway_Beach-Arverne-Edgemere.geojson"
+                  },
+                  {
+                      "id":  "pluto_Rockaway_Community_Park",
+                      "name":  "Rockaway Community Park",
+                      "filename":  "pluto_Rockaway_Community_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Rockaway_Community_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Rosebank-Shore_Acres-Park_Hill",
+                      "name":  "Rosebank-Shore Acres-Park Hill",
+                      "filename":  "pluto_Rosebank-Shore_Acres-Park_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Rosebank-Shore_Acres-Park_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_Rosedale",
+                      "name":  "Rosedale",
+                      "filename":  "pluto_Rosedale.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Rosedale.geojson"
+                  },
+                  {
+                      "id":  "pluto_Sheepshead_Bay-Manhattan_Beach-Gerritsen_Beach",
+                      "name":  "Sheepshead Bay-Manhattan Beach-Gerritsen Beach",
+                      "filename":  "pluto_Sheepshead_Bay-Manhattan_Beach-Gerritsen_Beach.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Sheepshead_Bay-Manhattan_Beach-Gerritsen_Beach.geojson"
+                  },
+                  {
+                      "id":  "pluto_Shirley_Chisholm_State_Park",
+                      "name":  "Shirley Chisholm State Park",
+                      "filename":  "pluto_Shirley_Chisholm_State_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Shirley_Chisholm_State_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Snug_Harbor",
+                      "name":  "Snug Harbor",
+                      "filename":  "pluto_Snug_Harbor.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Snug_Harbor.geojson"
+                  },
+                  {
+                      "id":  "pluto_SoHo-Little_Italy-Hudson_Square",
+                      "name":  "SoHo-Little Italy-Hudson Square",
+                      "filename":  "pluto_SoHo-Little_Italy-Hudson_Square.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_SoHo-Little_Italy-Hudson_Square.geojson"
+                  },
+                  {
+                      "id":  "pluto_Soundview_Park",
+                      "name":  "Soundview Park",
+                      "filename":  "pluto_Soundview_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Soundview_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Soundview-Bruckner-Bronx_River",
+                      "name":  "Soundview-Bruckner-Bronx River",
+                      "filename":  "pluto_Soundview-Bruckner-Bronx_River.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Soundview-Bruckner-Bronx_River.geojson"
+                  },
+                  {
+                      "id":  "pluto_Soundview-Clason_Point",
+                      "name":  "Soundview-Clason Point",
+                      "filename":  "pluto_Soundview-Clason_Point.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Soundview-Clason_Point.geojson"
+                  },
+                  {
+                      "id":  "pluto_South_Jamaica",
+                      "name":  "South Jamaica",
+                      "filename":  "pluto_South_Jamaica.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_South_Jamaica.geojson"
+                  },
+                  {
+                      "id":  "pluto_South_Ozone_Park",
+                      "name":  "South Ozone Park",
+                      "filename":  "pluto_South_Ozone_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_South_Ozone_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_South_Richmond_Hill",
+                      "name":  "South Richmond Hill",
+                      "filename":  "pluto_South_Richmond_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_South_Richmond_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_South_Williamsburg",
+                      "name":  "South Williamsburg",
+                      "filename":  "pluto_South_Williamsburg.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_South_Williamsburg.geojson"
+                  },
+                  {
+                      "id":  "pluto_Spring_Creek_Park",
+                      "name":  "Spring Creek Park",
+                      "filename":  "pluto_Spring_Creek_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Spring_Creek_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Spring_Creek-Starrett_City",
+                      "name":  "Spring Creek-Starrett City",
+                      "filename":  "pluto_Spring_Creek-Starrett_City.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Spring_Creek-Starrett_City.geojson"
+                  },
+                  {
+                      "id":  "pluto_Springfield_Gardens_(North)-Rochdale_Village",
+                      "name":  "Springfield Gardens (North)-Rochdale Village",
+                      "filename":  "pluto_Springfield_Gardens_(North)-Rochdale_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Springfield_Gardens_(North)-Rochdale_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_Springfield_Gardens_(South)-Brookville",
+                      "name":  "Springfield Gardens (South)-Brookville",
+                      "filename":  "pluto_Springfield_Gardens_(South)-Brookville.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Springfield_Gardens_(South)-Brookville.geojson"
+                  },
+                  {
+                      "id":  "pluto_St._Albans",
+                      "name":  "St. Albans",
+                      "filename":  "pluto_St._Albans.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_St._Albans.geojson"
+                  },
+                  {
+                      "id":  "pluto_St._George-New_Brighton",
+                      "name":  "St. George-New Brighton",
+                      "filename":  "pluto_St._George-New_Brighton.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_St._George-New_Brighton.geojson"
+                  },
+                  {
+                      "id":  "pluto_St._John_Cemetery",
+                      "name":  "St. John Cemetery",
+                      "filename":  "pluto_St._John_Cemetery.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_St._John_Cemetery.geojson"
+                  },
+                  {
+                      "id":  "pluto_St._Michael\u0027s_Cemetery",
+                      "name":  "St. Michael\u0027s Cemetery",
+                      "filename":  "pluto_St._Michael\u0027s_Cemetery.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_St._Michael\u0027s_Cemetery.geojson"
+                  },
+                  {
+                      "id":  "pluto_Stuyvesant_Town-Peter_Cooper_Village",
+                      "name":  "Stuyvesant Town-Peter Cooper Village",
+                      "filename":  "pluto_Stuyvesant_Town-Peter_Cooper_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Stuyvesant_Town-Peter_Cooper_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_Sunnyside",
+                      "name":  "Sunnyside",
+                      "filename":  "pluto_Sunnyside.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Sunnyside.geojson"
+                  },
+                  {
+                      "id":  "pluto_Sunnyside_Yards_(North)",
+                      "name":  "Sunnyside Yards (North)",
+                      "filename":  "pluto_Sunnyside_Yards_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Sunnyside_Yards_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_Sunnyside_Yards_(South)",
+                      "name":  "Sunnyside Yards (South)",
+                      "filename":  "pluto_Sunnyside_Yards_(South).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Sunnyside_Yards_(South).geojson"
+                  },
+                  {
+                      "id":  "pluto_Sunset_Park_(Central)",
+                      "name":  "Sunset Park (Central)",
+                      "filename":  "pluto_Sunset_Park_(Central).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Sunset_Park_(Central).geojson"
+                  },
+                  {
+                      "id":  "pluto_Sunset_Park_(East)-Borough_Park_(West)",
+                      "name":  "Sunset Park (East)-Borough Park (West)",
+                      "filename":  "pluto_Sunset_Park_(East)-Borough_Park_(West).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Sunset_Park_(East)-Borough_Park_(West).geojson"
+                  },
+                  {
+                      "id":  "pluto_Sunset_Park_(West)",
+                      "name":  "Sunset Park (West)",
+                      "filename":  "pluto_Sunset_Park_(West).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Sunset_Park_(West).geojson"
+                  },
+                  {
+                      "id":  "pluto_The_Battery-Governors_Island-Ellis_Island-Liberty_Island",
+                      "name":  "The Battery-Governors Island-Ellis Island-Liberty Island",
+                      "filename":  "pluto_The_Battery-Governors_Island-Ellis_Island-Liberty_Island.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_The_Battery-Governors_Island-Ellis_Island-Liberty_Island.geojson"
+                  },
+                  {
+                      "id":  "pluto_The_Evergreens_Cemetery",
+                      "name":  "The Evergreens Cemetery",
+                      "filename":  "pluto_The_Evergreens_Cemetery.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_The_Evergreens_Cemetery.geojson"
+                  },
+                  {
+                      "id":  "pluto_Throgs_Neck-Schuylerville",
+                      "name":  "Throgs Neck-Schuylerville",
+                      "filename":  "pluto_Throgs_Neck-Schuylerville.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Throgs_Neck-Schuylerville.geojson"
+                  },
+                  {
+                      "id":  "pluto_Todt_Hill-Emerson_Hill-Lighthouse_Hill-Manor_Heights",
+                      "name":  "Todt Hill-Emerson Hill-Lighthouse Hill-Manor Heights",
+                      "filename":  "pluto_Todt_Hill-Emerson_Hill-Lighthouse_Hill-Manor_Heights.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Todt_Hill-Emerson_Hill-Lighthouse_Hill-Manor_Heights.geojson"
+                  },
+                  {
+                      "id":  "pluto_Tompkinsville-Stapleton-Clifton-Fox_Hills",
+                      "name":  "Tompkinsville-Stapleton-Clifton-Fox Hills",
+                      "filename":  "pluto_Tompkinsville-Stapleton-Clifton-Fox_Hills.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Tompkinsville-Stapleton-Clifton-Fox_Hills.geojson"
+                  },
+                  {
+                      "id":  "pluto_Tottenville-Charleston",
+                      "name":  "Tottenville-Charleston",
+                      "filename":  "pluto_Tottenville-Charleston.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Tottenville-Charleston.geojson"
+                  },
+                  {
+                      "id":  "pluto_Tremont",
+                      "name":  "Tremont",
+                      "filename":  "pluto_Tremont.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Tremont.geojson"
+                  },
+                  {
+                      "id":  "pluto_Tribeca-Civic_Center",
+                      "name":  "Tribeca-Civic Center",
+                      "filename":  "pluto_Tribeca-Civic_Center.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Tribeca-Civic_Center.geojson"
+                  },
+                  {
+                      "id":  "pluto_United_Nations",
+                      "name":  "United Nations",
+                      "filename":  "pluto_United_Nations.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_United_Nations.geojson"
+                  },
+                  {
+                      "id":  "pluto_University_Heights_(North)-Fordham",
+                      "name":  "University Heights (North)-Fordham",
+                      "filename":  "pluto_University_Heights_(North)-Fordham.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_University_Heights_(North)-Fordham.geojson"
+                  },
+                  {
+                      "id":  "pluto_University_Heights_(South)-Morris_Heights",
+                      "name":  "University Heights (South)-Morris Heights",
+                      "filename":  "pluto_University_Heights_(South)-Morris_Heights.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_University_Heights_(South)-Morris_Heights.geojson"
+                  },
+                  {
+                      "id":  "pluto_Upper_East_Side-Carnegie_Hill",
+                      "name":  "Upper East Side-Carnegie Hill",
+                      "filename":  "pluto_Upper_East_Side-Carnegie_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Upper_East_Side-Carnegie_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_Upper_East_Side-Lenox_Hill-Roosevelt_Island",
+                      "name":  "Upper East Side-Lenox Hill-Roosevelt Island",
+                      "filename":  "pluto_Upper_East_Side-Lenox_Hill-Roosevelt_Island.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Upper_East_Side-Lenox_Hill-Roosevelt_Island.geojson"
+                  },
+                  {
+                      "id":  "pluto_Upper_East_Side-Yorkville",
+                      "name":  "Upper East Side-Yorkville",
+                      "filename":  "pluto_Upper_East_Side-Yorkville.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Upper_East_Side-Yorkville.geojson"
+                  },
+                  {
+                      "id":  "pluto_Upper_West_Side_(Central)",
+                      "name":  "Upper West Side (Central)",
+                      "filename":  "pluto_Upper_West_Side_(Central).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Upper_West_Side_(Central).geojson"
+                  },
+                  {
+                      "id":  "pluto_Upper_West_Side-Lincoln_Square",
+                      "name":  "Upper West Side-Lincoln Square",
+                      "filename":  "pluto_Upper_West_Side-Lincoln_Square.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Upper_West_Side-Lincoln_Square.geojson"
+                  },
+                  {
+                      "id":  "pluto_Upper_West_Side-Manhattan_Valley",
+                      "name":  "Upper West Side-Manhattan Valley",
+                      "filename":  "pluto_Upper_West_Side-Manhattan_Valley.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Upper_West_Side-Manhattan_Valley.geojson"
+                  },
+                  {
+                      "id":  "pluto_Van_Cortlandt_Park",
+                      "name":  "Van Cortlandt Park",
+                      "filename":  "pluto_Van_Cortlandt_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Van_Cortlandt_Park.geojson"
+                  },
+                  {
+                      "id":  "pluto_Wakefield-Woodlawn",
+                      "name":  "Wakefield-Woodlawn",
+                      "filename":  "pluto_Wakefield-Woodlawn.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Wakefield-Woodlawn.geojson"
+                  },
+                  {
+                      "id":  "pluto_Washington_Heights_(North)",
+                      "name":  "Washington Heights (North)",
+                      "filename":  "pluto_Washington_Heights_(North).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Washington_Heights_(North).geojson"
+                  },
+                  {
+                      "id":  "pluto_Washington_Heights_(South)",
+                      "name":  "Washington Heights (South)",
+                      "filename":  "pluto_Washington_Heights_(South).geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Washington_Heights_(South).geojson"
+                  },
+                  {
+                      "id":  "pluto_West_Farms",
+                      "name":  "West Farms",
+                      "filename":  "pluto_West_Farms.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_West_Farms.geojson"
+                  },
+                  {
+                      "id":  "pluto_West_New_Brighton-Silver_Lake-Grymes_Hill",
+                      "name":  "West New Brighton-Silver Lake-Grymes Hill",
+                      "filename":  "pluto_West_New_Brighton-Silver_Lake-Grymes_Hill.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_West_New_Brighton-Silver_Lake-Grymes_Hill.geojson"
+                  },
+                  {
+                      "id":  "pluto_West_Village",
+                      "name":  "West Village",
+                      "filename":  "pluto_West_Village.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_West_Village.geojson"
+                  },
+                  {
+                      "id":  "pluto_Westchester_Square",
+                      "name":  "Westchester Square",
+                      "filename":  "pluto_Westchester_Square.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Westchester_Square.geojson"
+                  },
+                  {
+                      "id":  "pluto_Westerleigh-Castleton_Corners",
+                      "name":  "Westerleigh-Castleton Corners",
+                      "filename":  "pluto_Westerleigh-Castleton_Corners.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Westerleigh-Castleton_Corners.geojson"
+                  },
+                  {
+                      "id":  "pluto_Whitestone-Beechhurst",
+                      "name":  "Whitestone-Beechhurst",
+                      "filename":  "pluto_Whitestone-Beechhurst.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Whitestone-Beechhurst.geojson"
+                  },
+                  {
+                      "id":  "pluto_Williamsbridge-Olinville",
+                      "name":  "Williamsbridge-Olinville",
+                      "filename":  "pluto_Williamsbridge-Olinville.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Williamsbridge-Olinville.geojson"
+                  },
+                  {
+                      "id":  "pluto_Williamsburg",
+                      "name":  "Williamsburg",
+                      "filename":  "pluto_Williamsburg.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Williamsburg.geojson"
+                  },
+                  {
+                      "id":  "pluto_Windsor_Terrace-South_Slope",
+                      "name":  "Windsor Terrace-South Slope",
+                      "filename":  "pluto_Windsor_Terrace-South_Slope.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Windsor_Terrace-South_Slope.geojson"
+                  },
+                  {
+                      "id":  "pluto_Woodhaven",
+                      "name":  "Woodhaven",
+                      "filename":  "pluto_Woodhaven.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Woodhaven.geojson"
+                  },
+                  {
+                      "id":  "pluto_Woodlawn_Cemetery",
+                      "name":  "Woodlawn Cemetery",
+                      "filename":  "pluto_Woodlawn_Cemetery.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Woodlawn_Cemetery.geojson"
+                  },
+                  {
+                      "id":  "pluto_Woodside",
+                      "name":  "Woodside",
+                      "filename":  "pluto_Woodside.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Woodside.geojson"
+                  },
+                  {
+                      "id":  "pluto_Yankee_Stadium-Macombs_Dam_Park",
+                      "name":  "Yankee Stadium-Macombs Dam Park",
+                      "filename":  "pluto_Yankee_Stadium-Macombs_Dam_Park.geojson",
+                      "url":  "https://raw.githubusercontent.com/archiicrane/zoning_envalopes/main/split_pluto/pluto_Yankee_Stadium-Macombs_Dam_Park.geojson"
+                  }
+              ],
+    "count":  261
+}

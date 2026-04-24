@@ -29,9 +29,13 @@ ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 WEB_DIR = os.path.join(ROOT_DIR, "web")
 PUBLIC_DIR = os.path.join(ROOT_DIR, "public")
 SPLIT_PLUTO_DIR = os.path.join(ROOT_DIR, "split_pluto")
+SPLIT_PLUTO_MANIFEST = os.path.join(ROOT_DIR, "split_pluto_manifest.json")
+SPLIT_PLUTO_BUCKET = os.getenv("SPLIT_PLUTO_BUCKET", "zoning-geojson")
+SPLIT_PLUTO_BASE_URL = os.getenv("SPLIT_PLUTO_BASE_URL", f"https://{SPLIT_PLUTO_BUCKET}.s3.amazonaws.com")
 app.mount("/web", StaticFiles(directory=WEB_DIR), name="web")
 app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
-app.mount("/split_pluto", StaticFiles(directory=SPLIT_PLUTO_DIR), name="split_pluto")
+if os.path.isdir(SPLIT_PLUTO_DIR):
+    app.mount("/split_pluto", StaticFiles(directory=SPLIT_PLUTO_DIR), name="split_pluto")
 
 MAPPLUTO_QUERY_URL = (
     "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MapPLUTO/FeatureServer/0/query"
@@ -464,6 +468,10 @@ def _split_display_name(path: Path) -> str:
     return name.replace("_", " ")
 
 
+def _remote_split_url(filename: str) -> str:
+    return f"{SPLIT_PLUTO_BASE_URL.rstrip('/')}/{filename}"
+
+
 @lru_cache(maxsize=128)
 def _load_geojson_file(path_str: str) -> Dict[str, Any]:
     with open(path_str, "r", encoding="utf-8") as handle:
@@ -638,19 +646,37 @@ def frontend_config() -> Dict[str, str]:
 
 @app.get("/api/data/splits")
 def list_split_files() -> Dict[str, Any]:
-    files = []
-    for path in _split_geojson_paths():
-        rel = path.relative_to(SPLIT_PLUTO_DIR).as_posix()
-        files.append(
+    local_paths = _split_geojson_paths()
+    if local_paths:
+        files = []
+        for path in local_paths:
+            rel = path.relative_to(SPLIT_PLUTO_DIR).as_posix()
+            files.append(
+                {
+                    "id": path.stem,
+                    "name": _split_display_name(path),
+                    "path": rel,
+                    "url": f"/split_pluto/{rel}",
+                    "size_bytes": path.stat().st_size,
+                }
+            )
+        return {"files": files, "count": len(files)}
+    # Fallback: read the pre-built manifest (used on Vercel where split_pluto/ is excluded)
+    if os.path.isfile(SPLIT_PLUTO_MANIFEST):
+        with open(SPLIT_PLUTO_MANIFEST, "r", encoding="utf-8") as fh:
+            manifest = json.load(fh)
+        files = [
             {
-                "id": path.stem,
-                "name": _split_display_name(path),
-                "path": rel,
-                "url": f"/split_pluto/{rel}",
-                "size_bytes": path.stat().st_size,
+                "id": entry["id"],
+                "name": entry["name"],
+                "path": entry["filename"],
+                "url": _remote_split_url(entry["filename"]),
+                "size_bytes": 0,
             }
-        )
-    return {"files": files, "count": len(files)}
+            for entry in (manifest.get("files") or [])
+        ]
+        return {"files": files, "count": len(files)}
+    return {"files": [], "count": 0}
 
 
 @app.get("/api/lot/{borough}/{block}/{lot}")
