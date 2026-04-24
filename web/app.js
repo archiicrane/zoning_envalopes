@@ -202,6 +202,36 @@ function computeEnvelopeHeight(props) {
   return 45;
 }
 
+function normalizeZoneToken(value) {
+  const raw = String(value || "").trim().toUpperCase();
+  return raw.replace(/\s+/g, "");
+}
+
+function pickZoneColor(props) {
+  const zone = normalizeZoneToken(props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? props.ZoningDist ?? "");
+
+  const explicit = {
+    "R7": "#2563eb",
+    "R7-2": "#60a5fa",
+    "R6": "#ec4899",
+  };
+  if (explicit[zone]) {
+    return explicit[zone];
+  }
+
+  if (zone.startsWith("R")) {
+    return "#3b82f6";
+  }
+  if (zone.startsWith("C")) {
+    return "#14b8a6";
+  }
+  if (zone.startsWith("M")) {
+    return "#f59e0b";
+  }
+
+  return "#00c2ff";
+}
+
 function buildZoningEnvelopeFeatures(geojson) {
   const features = [];
   const samples = [];
@@ -214,12 +244,15 @@ function buildZoningEnvelopeFeatures(geojson) {
 
     const props = extractProps(feature);
     const envelopeHeight = computeEnvelopeHeight(props);
+    const envelopeColor = pickZoneColor(props);
     const farVal = coerceNumber(props.FAR ?? props.far ?? props.resid_far ?? props.comm_far ?? props.facil_far);
 
     if (samples.length < 5) {
       samples.push({
         bbl: props.bbl || props.BBL || "n/a",
+        zone: props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? "n/a",
         far: farVal,
+        envelopeColor,
         envelopeHeight,
       });
     }
@@ -229,6 +262,7 @@ function buildZoningEnvelopeFeatures(geojson) {
       geometry,
       properties: {
         envelopeHeight,
+        envelopeColor,
       },
     });
   }
@@ -481,7 +515,7 @@ function ensureSourcesAndLayers() {
       type: "fill-extrusion",
       source: "zoning-envelope-source",
       paint: {
-        "fill-extrusion-color": "#00c2ff",
+        "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#00c2ff"],
         "fill-extrusion-opacity": 0.35,
         "fill-extrusion-base": 0,
         "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
