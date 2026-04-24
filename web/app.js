@@ -265,8 +265,8 @@ function refreshExistingBuildingsForNeighborhood() {
 
   const bounds = computeNeighborhoodBounds(activeNeighborhoodData || EMPTY_FC);
   if (!bounds || bounds.isEmpty()) {
-    map.setFilter("existing-buildings-mapbox", ["==", "extrude", "true"]);
-    console.log("[existing-buildings] no active neighborhood bounds, using default citywide filter");
+    map.setFilter("existing-buildings-mapbox", ["==", "extrude", "__none__"]);
+    console.log("[existing-buildings] no active neighborhood bounds, hiding existing buildings until neighborhood loads");
     return;
   }
 
@@ -298,6 +298,21 @@ function refreshExistingBuildingsForNeighborhood() {
   console.log("[existing-buildings] applied neighborhood bounds filter");
 }
 
+function disableDefaultMapboxBuildingExtrusions() {
+  const layers = map?.getStyle()?.layers || [];
+  for (const layer of layers) {
+    if (
+      layer.id !== "existing-buildings-mapbox"
+      && layer.type === "fill-extrusion"
+      && layer.source === "composite"
+      && layer["source-layer"] === "building"
+    ) {
+      map.setLayoutProperty(layer.id, "visibility", "none");
+      console.log("[existing-buildings] hid default basemap building extrusion layer:", layer.id);
+    }
+  }
+}
+
 function initMap(token) {
   return new Promise((resolve) => {
     mapboxgl.accessToken = token;
@@ -322,6 +337,8 @@ function initMap(token) {
 }
 
 function ensureSourcesAndLayers() {
+  disableDefaultMapboxBuildingExtrusions();
+
   if (!map.getSource("neighborhood-lots")) {
     map.addSource("neighborhood-lots", { type: "geojson", data: EMPTY_FC });
 
@@ -370,6 +387,8 @@ function ensureSourcesAndLayers() {
       },
       labelLayerId
     );
+    map.setFilter("existing-buildings-mapbox", ["==", "extrude", "__none__"]);
+    console.log("[existing-buildings] added mapbox layer and initialized hidden filter");
   }
 
   if (map.getLayer("neighborhood-building-fill")) {
