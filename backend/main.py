@@ -679,10 +679,18 @@ def list_split_files() -> Dict[str, Any]:
         return {"files": files, "count": len(files)}
     # Primary remote source: user-maintained S3 index file.
     if os.path.isfile(GEOJSON_INDEX_PATH):
-        with open(GEOJSON_INDEX_PATH, "r", encoding="utf-8") as fh:
-            index_entries = json.load(fh)
+        with open(GEOJSON_INDEX_PATH, "r", encoding="utf-8-sig") as fh:
+            index_payload = json.load(fh)
+        if isinstance(index_payload, dict):
+            index_entries = index_payload.get("files") or []
+        elif isinstance(index_payload, list):
+            index_entries = index_payload
+        else:
+            index_entries = []
         files = []
         for entry in index_entries or []:
+            if not isinstance(entry, dict):
+                continue
             filename = _coerce_str(entry.get("name")) or Path(_coerce_str(entry.get("key") or "")).name
             if not filename:
                 continue

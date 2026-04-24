@@ -280,7 +280,7 @@ function ensureSourcesAndLayers() {
         "fill-extrusion-color": ["coalesce", ["get", "color"], "#2563eb"],
         "fill-extrusion-height": ["coalesce", ["get", "height_ft"], 0],
         "fill-extrusion-base": ["coalesce", ["get", "base_ft"], 0],
-        "fill-extrusion-opacity": ["coalesce", ["get", "opacity"], 0.38],
+        "fill-extrusion-opacity": 0.38,
       },
     });
 
