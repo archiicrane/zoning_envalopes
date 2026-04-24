@@ -286,33 +286,25 @@ function pickZoneColor(props) {
   return "#00c2ff";
 }
 
-// Returns the SIDE-yard setback in meters (small value applied to all sides for base prism).
+// Returns the SIDE-yard setback in meters.
+// Returns 0 when the zone rule has no sideYardEachFt — meaning no side yard is required
+// (e.g. attached-building contextual districts like R6A, R7A, R8A, C4, M zones).
 function computeSideSetback(props) {
   const zoneRule = resolveZoneRule(props);
   const sideYardFt = coerceNumber(zoneRule?.sideYardEachFt);
-  if (sideYardFt && sideYardFt > 0) {
-    return sideYardFt * 0.3048;
-  }
-  // Fallback: side yards are small — 5 ft default for most NYC zones
-  return 5 * 0.3048; // 1.52 m
+  // Only inset when the rule explicitly requires a side yard
+  return (sideYardFt && sideYardFt > 0) ? sideYardFt * 0.3048 : 0;
 }
 
 // Returns the STREET-wall / upper-step setback in meters (applied at base height break).
+// Returns 0 when the zone rule has no street setback requirement.
 function computeStreetSetback(props) {
   const zoneRule = resolveZoneRule(props);
   const insetFt = coerceNumber(
     zoneRule?.streetSetbackWideFt ??
       zoneRule?.simplifiedPlanInsetFt
   );
-  if (insetFt && insetFt > 0) {
-    return insetFt * 0.3048;
-  }
-  const zone = (props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? "").toString().toUpperCase();
-  if (zone.startsWith("R1") || zone.startsWith("R2")) return 3.7;
-  if (zone.startsWith("R3") || zone.startsWith("R4") || zone.startsWith("R5")) return 2.5;
-  if (zone.startsWith("R")) return 1.5;
-  if (zone.startsWith("C") || zone.startsWith("M")) return 2.0;
-  return 2.0;
+  return (insetFt && insetFt > 0) ? insetFt * 0.3048 : 0;
 }
 
 // Legacy alias used by older call sites
@@ -367,32 +359,37 @@ function buildZoningEnvelopeFeatures(geojson) {
     const bulkRegime = zoneRule?.bulkRegime ?? "";
     const baseHeightFt = coerceNumber(zoneRule?.maximumBaseHeightFt);
 
-    // Base prism: use SIDE-yard setback (small, ~5 ft) so the footprint stays wide
+    // Side-yard inset: only non-zero when the rule explicitly requires a side yard.
+    // Zones like R6A, R7A, R8A, C4, M1 have no side yard requirement → 0 → full lot width.
     const sideSetbackM = computeSideSetback(props);
-    const baseGeometry = _tryBuffer(geometry, sideSetbackM) ?? geometry;
+    const baseGeometry = (sideSetbackM > 0)
+      ? (_tryBuffer(geometry, sideSetbackM) ?? geometry)
+      : geometry;
 
-    // Upper step: inset further by the STREET-wall setback above base height
+    // Street-wall / upper-step setback: only non-zero when the rule specifies one.
     const streetSetbackM = computeStreetSetback(props);
-    const upperGeometry = _tryBuffer(geometry, streetSetbackM) ?? geometry;
+    const upperGeometry = (streetSetbackM > 0)
+      ? (_tryBuffer(geometry, streetSetbackM) ?? geometry)
+      : geometry;
 
     const isStepped = bulkRegime && STEPPED_BULK_REGIMES.has(bulkRegime)
       && baseHeightFt && baseHeightFt > 0 && baseHeightFt < envelopeHeight;
 
     if (isStepped) {
-      // Base segment: ground → max-base-height, wide footprint (side yard only)
+      // Base segment: ground → max-base-height at required side-yard footprint
       features.push({
         type: "Feature",
         geometry: baseGeometry,
         properties: { envelopeHeight: baseHeightFt, envelopeBase: 0, envelopeColor },
       });
-      // Upper segment: base-height → envelope top, narrower footprint (street setback)
+      // Upper segment: base-height → top at street-setback-inset footprint
       features.push({
         type: "Feature",
         geometry: upperGeometry,
         properties: { envelopeHeight, envelopeBase: baseHeightFt, envelopeColor },
       });
     } else {
-      // Single prism: apply side-yard inset only (no step)
+      // Single prism: only inset when side yards are required
       features.push({
         type: "Feature",
         geometry: baseGeometry,
