@@ -259,43 +259,63 @@ function refreshZoningEnvelopeFromNeighborhood() {
 }
 
 function refreshExistingBuildingsForNeighborhood() {
-  if (!map || !map.getLayer("existing-buildings-mapbox")) {
+  if (!map || !map.getLayer("existing-buildings-mapbox") || !map.getSource("existing-buildings-source")) {
     return;
   }
 
   const bounds = computeNeighborhoodBounds(activeNeighborhoodData || EMPTY_FC);
   if (!bounds || bounds.isEmpty()) {
-    map.setFilter("existing-buildings-mapbox", ["==", "extrude", "__none__"]);
-    console.log("[existing-buildings] no active neighborhood bounds, hiding existing buildings until neighborhood loads");
+    map.getSource("existing-buildings-source").setData(EMPTY_FC);
+    console.log("[existing-buildings] no active neighborhood bounds, cleared neighborhood buildings source");
     return;
   }
 
-  const west = bounds.getWest();
-  const south = bounds.getSouth();
-  const east = bounds.getEast();
-  const north = bounds.getNorth();
+  const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
+  const seen = new Set();
+  const features = [];
 
-  const neighborhoodBoundsPolygon = {
-    type: "Polygon",
-    coordinates: [
-      [
-        [west, south],
-        [east, south],
-        [east, north],
-        [west, north],
-        [west, south],
-      ],
-    ],
-  };
+  for (const candidate of candidates) {
+    const geometry = candidate && candidate.geometry ? candidate.geometry : null;
+    if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) {
+      continue;
+    }
 
-  map.setFilter("existing-buildings-mapbox", [
-    "all",
-    ["==", "extrude", "true"],
-    ["within", neighborhoodBoundsPolygon],
-  ]);
+    const coords = geometry.type === "Polygon"
+      ? geometry.coordinates?.[0]
+      : geometry.coordinates?.[0]?.[0];
+    if (!coords || !coords.length) {
+      continue;
+    }
+
+    const sample = coords[0];
+    if (!sample || sample.length < 2 || !bounds.contains(sample)) {
+      continue;
+    }
+
+    const idVal = candidate.id ?? `${sample[0]}:${sample[1]}:${coords.length}`;
+    const key = String(idVal);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+
+    features.push({
+      type: "Feature",
+      geometry,
+      properties: {
+        height: coerceNumber(candidate.properties?.height) || 0,
+        min_height: coerceNumber(candidate.properties?.min_height) || 0,
+      },
+    });
+  }
+
+  map.getSource("existing-buildings-source").setData({
+    type: "FeatureCollection",
+    features,
+  });
   console.log("[existing-buildings] selected neighborhood:", activeNeighborhood?.name || "n/a");
   console.log("[existing-buildings] lots loaded:", (activeNeighborhoodData?.features || []).length);
-  console.log("[existing-buildings] applied neighborhood bounds filter");
+  console.log("[existing-buildings] mapbox building features loaded:", features.length);
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
@@ -365,6 +385,10 @@ function ensureSourcesAndLayers() {
   }
 
   if (!map.getLayer("existing-buildings-mapbox")) {
+    if (!map.getSource("existing-buildings-source")) {
+      map.addSource("existing-buildings-source", { type: "geojson", data: EMPTY_FC });
+    }
+
     const layers = map.getStyle().layers || [];
     const labelLayerId = layers.find(
       (layer) => layer.type === "symbol" && layer.layout && layer.layout["text-field"]
@@ -374,9 +398,7 @@ function ensureSourcesAndLayers() {
       {
         id: "existing-buildings-mapbox",
         type: "fill-extrusion",
-        source: "composite",
-        "source-layer": "building",
-        filter: ["==", "extrude", "true"],
+        source: "existing-buildings-source",
         minzoom: 14,
         paint: {
           "fill-extrusion-color": "#8b98a8",
@@ -387,8 +409,7 @@ function ensureSourcesAndLayers() {
       },
       labelLayerId
     );
-    map.setFilter("existing-buildings-mapbox", ["==", "extrude", "__none__"]);
-    console.log("[existing-buildings] added mapbox layer and initialized hidden filter");
+    console.log("[existing-buildings] added neighborhood-scoped mapbox buildings layer");
   }
 
   if (map.getLayer("neighborhood-building-fill")) {
@@ -659,9 +680,7 @@ async function loadNeighborhoodById(id) {
   activeNeighborhoodData = normalizeNeighborhoodData(geojson, neighborhood.name);
   map.getSource("neighborhood-lots").setData(activeNeighborhoodData);
   clearActiveEnvelope();
-  refreshExistingBuildingsForNeighborhood();
   refreshZoningEnvelopeFromNeighborhood();
-  syncLayerVisibility();
 
   const bounds = computeNeighborhoodBounds(activeNeighborhoodData);
   if (bounds && !bounds.isEmpty()) {
@@ -673,6 +692,10 @@ async function loadNeighborhoodById(id) {
       bearing: -17,
     });
   }
+
+  refreshExistingBuildingsForNeighborhood();
+  map.once("idle", refreshExistingBuildingsForNeighborhood);
+  syncLayerVisibility();
 
   setDataStatus(`Loaded ${activeNeighborhoodData.features.length} lots from ${neighborhood.name}.`);
   setReport(`Loaded ${neighborhood.name}. Click a lot to inspect its existing building and zoning envelope.`);
