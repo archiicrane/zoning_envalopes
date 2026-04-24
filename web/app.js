@@ -232,6 +232,21 @@ function pickZoneColor(props) {
   return "#00c2ff";
 }
 
+// Returns setback in meters for a given lot's zoning props.
+// NYC typical setbacks (simplified uniform inset):
+//   R1–R2: ~3.7m (12ft) — large suburban lots
+//   R3–R5: ~2.5m (8ft) — medium residential
+//   R6+:   ~1.5m (5ft) — dense/no front yard req
+//   C/M:   ~2.0m (6ft) — commercial/manufacturing
+function computeSetback(props) {
+  const zone = (props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? "").toString().toUpperCase();
+  if (zone.startsWith("R1") || zone.startsWith("R2")) return 3.7;
+  if (zone.startsWith("R3") || zone.startsWith("R4") || zone.startsWith("R5")) return 2.5;
+  if (zone.startsWith("R")) return 1.5;
+  if (zone.startsWith("C") || zone.startsWith("M")) return 2.0;
+  return 2.5; // default
+}
+
 function buildZoningEnvelopeFeatures(geojson) {
   const features = [];
   const samples = [];
@@ -257,9 +272,21 @@ function buildZoningEnvelopeFeatures(geojson) {
       });
     }
 
+    // Apply setback inset: shrink the lot polygon by zone-based setback distance
+    const setbackMeters = computeSetback(props);
+    let envelopeGeometry = geometry;
+    try {
+      const inset = turf.buffer({ type: "Feature", geometry, properties: {} }, -setbackMeters, { units: "meters" });
+      if (inset && inset.geometry && inset.geometry.coordinates && inset.geometry.coordinates.length > 0) {
+        envelopeGeometry = inset.geometry;
+      }
+    } catch (e) {
+      // fallback to original geometry if buffer fails
+    }
+
     features.push({
       type: "Feature",
-      geometry,
+      geometry: envelopeGeometry,
       properties: {
         envelopeHeight,
         envelopeColor,
