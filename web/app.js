@@ -305,18 +305,35 @@ function ensureSourcesAndLayers() {
         "line-opacity": 0.7,
       },
     });
+  }
 
-    map.addLayer({
-      id: "neighborhood-building-fill",
-      type: "fill-extrusion",
-      source: "neighborhood-lots",
-      paint: {
-        "fill-extrusion-color": "#475569",
-        "fill-extrusion-height": ["coalesce", ["get", "existing_height_ft"], 0],
-        "fill-extrusion-base": 0,
-        "fill-extrusion-opacity": 0.82,
+  if (!map.getLayer("existing-buildings-mapbox")) {
+    const layers = map.getStyle().layers || [];
+    const labelLayerId = layers.find(
+      (layer) => layer.type === "symbol" && layer.layout && layer.layout["text-field"]
+    )?.id;
+
+    map.addLayer(
+      {
+        id: "existing-buildings-mapbox",
+        type: "fill-extrusion",
+        source: "composite",
+        "source-layer": "building",
+        filter: ["==", "extrude", "true"],
+        minzoom: 14,
+        paint: {
+          "fill-extrusion-color": "#8b98a8",
+          "fill-extrusion-height": ["get", "height"],
+          "fill-extrusion-base": ["get", "min_height"],
+          "fill-extrusion-opacity": 0.65,
+        },
       },
-    });
+      labelLayerId
+    );
+  }
+
+  if (map.getLayer("neighborhood-building-fill")) {
+    map.removeLayer("neighborhood-building-fill");
   }
 
   if (!map.getSource("zoning-envelope-source")) {
@@ -394,8 +411,9 @@ function syncLayerVisibility() {
   if (!map) {
     return;
   }
-  if (map.getLayer("neighborhood-building-fill")) {
-    map.setLayoutProperty("neighborhood-building-fill", "visibility", showBuildingToggle.checked ? "visible" : "none");
+  const existingBuildingsLayerExists = !!map.getLayer("existing-buildings-mapbox");
+  if (existingBuildingsLayerExists) {
+    map.setLayoutProperty("existing-buildings-mapbox", "visibility", showBuildingToggle.checked ? "visible" : "none");
   }
   const envelopeLayerExists = !!map.getLayer("zoning-envelope-layer");
   if (envelopeLayerExists) {
@@ -403,7 +421,11 @@ function syncLayerVisibility() {
   }
   if (showBuildingsBtn) {
     showBuildingsBtn.classList.toggle("active", showBuildingToggle.checked);
-    showBuildingsBtn.textContent = showBuildingToggle.checked ? "Show Existing Buildings" : "Hide Existing Buildings";
+    if (existingBuildingsLayerExists) {
+      showBuildingsBtn.textContent = showBuildingToggle.checked ? "Hide Existing Buildings" : "Show Existing Buildings";
+    } else {
+      showBuildingsBtn.textContent = "Show Existing Buildings";
+    }
   }
   if (showEnvelopeBtn) {
     showEnvelopeBtn.classList.toggle("active", showEnvelopeToggle.checked);
