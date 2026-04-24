@@ -62,13 +62,15 @@ envelopeOpacitySlider.addEventListener("input", () => {
   if (map && map.getLayer("zoning-envelope-fill")) {
     // Invert: transparency 0 = fully opaque, transparency 100 = fully transparent
     const opacityValue = 1 - transparencyPercent / 100;
+    // At 0% transparency, baseline should also be fully opaque (not reduced)
+    const baselineMultiplier = transparencyPercent === 0 ? 1 : 0.35;
     map.setPaintProperty(
       "zoning-envelope-fill",
       "fill-extrusion-opacity",
       [
         "case",
         ["==", ["get", "compare_variant"], "baseline"],
-        opacityValue * 0.35,
+        opacityValue * baselineMultiplier,
         opacityValue,
       ]
     );
@@ -372,6 +374,13 @@ function buildZoningEnvelopeFeatures(geojson) {
     }
 
     const props = extractProps(feature);
+    const zone = normalizeZoneToken(props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? "");
+    
+    // Skip park and open space zones
+    if (zone.startsWith("P") || zone === "OS") {
+      continue;
+    }
+
     const zoneRule = resolveZoneRule(props);
     const envelopeHeight = computeEnvelopeHeight(props);
     const envelopeColor = pickZoneColor(props);
