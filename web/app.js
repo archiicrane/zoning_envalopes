@@ -38,6 +38,8 @@ const coverageInput = document.getElementById("coverage");
 const covVal = document.getElementById("covVal");
 const farInput = document.getElementById("farSlider");
 const farVal = document.getElementById("farVal");
+const envelopeOpacitySlider = document.getElementById("envelopeOpacitySlider");
+const envelopeOpacityVal = document.getElementById("envelopeOpacityVal");
 const lotSummary = document.getElementById("lotSummary");
 const dataStatus = document.getElementById("dataStatus");
 const neighborhoodSelect = document.getElementById("neighborhoodSelect");
@@ -52,6 +54,24 @@ coverageInput.addEventListener("input", () => {
 
 farInput.addEventListener("input", () => {
   farVal.textContent = Number(farInput.value).toFixed(2);
+});
+
+envelopeOpacitySlider.addEventListener("input", () => {
+  const opacityPercent = Number(envelopeOpacitySlider.value);
+  envelopeOpacityVal.textContent = `${opacityPercent}%`;
+  if (map && map.getLayer("zoning-envelope-fill")) {
+    const opacityValue = opacityPercent / 100;
+    map.setPaintProperty(
+      "zoning-envelope-fill",
+      "fill-extrusion-opacity",
+      [
+        "case",
+        ["==", ["get", "compare_variant"], "baseline"],
+        opacityValue * 0.48,
+        opacityValue,
+      ]
+    );
+  }
 });
 
 showBuildingToggle.addEventListener("change", syncLayerVisibility);
