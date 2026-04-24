@@ -651,7 +651,12 @@ def health() -> Dict[str, str]:
 
 @app.get("/api/config")
 def frontend_config() -> Dict[str, str]:
-    token = os.getenv("MAPBOX_PUBLIC_TOKEN") or os.getenv("MAPBOX_TOKEN") or ""
+    token = (
+        os.getenv("MAPBOX_TOKEN")
+        or os.getenv("MAPBOX_PUBLIC_TOKEN")
+        or os.getenv("MAPBOX_ACCESS_TOKEN")
+        or ""
+    )
     return {"mapboxToken": token}
 
 
