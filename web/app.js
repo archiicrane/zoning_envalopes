@@ -57,10 +57,11 @@ farInput.addEventListener("input", () => {
 });
 
 envelopeOpacitySlider.addEventListener("input", () => {
-  const opacityPercent = Number(envelopeOpacitySlider.value);
-  envelopeOpacityVal.textContent = `${opacityPercent}%`;
+  const transparencyPercent = Number(envelopeOpacitySlider.value);
+  envelopeOpacityVal.textContent = `${transparencyPercent}%`;
   if (map && map.getLayer("zoning-envelope-fill")) {
-    const opacityValue = opacityPercent / 100;
+    // Invert: transparency 0 = fully opaque, transparency 100 = fully transparent
+    const opacityValue = 1 - transparencyPercent / 100;
     map.setPaintProperty(
       "zoning-envelope-fill",
       "fill-extrusion-opacity",
