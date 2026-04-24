@@ -353,8 +353,13 @@ function refreshExistingBuildingsForNeighborhood() {
       if (lat > maxLat) maxLat = lat;
     }
 
-    const featureBounds = new mapboxgl.LngLatBounds([minLng, minLat], [maxLng, maxLat]);
-    return featureBounds.intersects(neighborhoodBounds);
+    const nWest = neighborhoodBounds.getWest();
+    const nSouth = neighborhoodBounds.getSouth();
+    const nEast = neighborhoodBounds.getEast();
+    const nNorth = neighborhoodBounds.getNorth();
+
+    const separated = maxLng < nWest || minLng > nEast || maxLat < nSouth || minLat > nNorth;
+    return !separated;
   }
 
   for (const candidate of candidates) {
