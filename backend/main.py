@@ -343,6 +343,57 @@ def _open_space_ratio_required(primary_zone: str, bulk_regime: Optional[str], zr
     return None
 
 
+def _district_type(zone: str) -> str:
+    token = _normalize_zone_token(zone)
+    if token.startswith("MX"):
+        return "mixed"
+    if token.startswith("R"):
+        return "R"
+    if token.startswith("C"):
+        return "C"
+    if token.startswith("M"):
+        return "M"
+    return "mixed"
+
+
+def _is_contextual_regime(bulk_regime: Optional[str]) -> bool:
+    regime = str(bulk_regime or "").lower()
+    return regime.startswith("contextual")
+
+
+def _build_parsed_district(zone: str) -> Dict[str, Any]:
+    zone_token = _normalize_zone_token(zone)
+    rule = _resolve_zr_rule(zone_token)
+    fallback = _fallback_zone_rule(zone_token)
+    max_far = _coerce_float((rule or {}).get("qualifyingFar")) or _coerce_float((rule or {}).get("standardFar")) or fallback["far"]
+    standard_far = _coerce_float((rule or {}).get("standardFar")) or fallback["far"]
+    qualifying_far = _coerce_float((rule or {}).get("qualifyingFar"))
+    bulk_regime = (rule or {}).get("bulkRegime")
+    height_limit_ft = _rule_max_height_ft(rule) if rule else _coerce_float(fallback.get("max_height_ft"))
+    front_yard_ft = _coerce_float((rule or {}).get("frontYardFt")) or 0.0
+    side_yard_ft = _coerce_float((rule or {}).get("sideYardEachFt")) or 0.0
+    rear_yard_ft = _rear_yard_requirement_ft(zone_token, rule) or 0.0
+    open_space_ratio = _open_space_ratio_required(zone_token, bulk_regime, rule)
+    uses_open_space_ratio = bool(open_space_ratio and open_space_ratio > 0 and not _is_contextual_regime(bulk_regime))
+
+    return {
+        "zone": zone_token,
+        "district_type": _district_type(zone_token),
+        "residential_equivalent": _normalize_zone_token((rule or {}).get("residentialEquivalent")) or None,
+        "standard_far": round(standard_far, 3) if standard_far else 0.0,
+        "qualifying_far": round(qualifying_far, 3) if qualifying_far else None,
+        "max_far": round(max_far, 3) if max_far else 0.0,
+        "height_limit_ft": round(height_limit_ft, 2) if height_limit_ft else None,
+        "front_yard_ft": round(front_yard_ft, 2),
+        "side_yard_ft": round(side_yard_ft, 2),
+        "rear_yard_ft": round(rear_yard_ft, 2),
+        "uses_open_space_ratio": uses_open_space_ratio,
+        "open_space_ratio": round(open_space_ratio, 3) if uses_open_space_ratio and open_space_ratio else None,
+        "bulk_regime": bulk_regime,
+        "has_contextual_rules": _is_contextual_regime(bulk_regime),
+    }
+
+
 def _zone_priority(zone: str) -> Tuple[int, int]:
     if zone.startswith("R"):
         return (4, len(zone))
@@ -412,6 +463,13 @@ def _resolve_zoning_analysis(
 ) -> Dict[str, Any]:
     candidates = _extract_zone_tokens(zonedist1, zonedist2)
     primary_zone = max(candidates, key=_zone_priority) if candidates else None
+    parsed_districts = [_build_parsed_district(zone) for zone in candidates]
+    warnings: List[str] = []
+    if len(candidates) > 1:
+        warnings.append("Multiple zoning districts detected. Envelope is approximate.")
+    if any(zone.startswith("MX") for zone in candidates):
+        warnings.append("MX district detected. Envelope is approximate.")
+
     fallback_rule = _fallback_zone_rule(primary_zone or "")
     zr_rule = _resolve_zr_rule(primary_zone or "")
     base_rule: Dict[str, Any] = dict(fallback_rule)
@@ -452,14 +510,21 @@ def _resolve_zoning_analysis(
     requested_coverage_ratio = lot_coverage if lot_coverage is not None else _coverage_fallback(primary_zone or "")
     requested_coverage_ratio = max(0.2, min(1.0, requested_coverage_ratio))
 
-    rear_yard_ft_required = _rear_yard_requirement_ft(primary_zone or "", zr_rule)
-    open_space_ratio_required = _open_space_ratio_required(primary_zone or "", base_rule.get("bulk_regime"), zr_rule)
+    front_yard_ft_required = _coerce_float((zr_rule or {}).get("frontYardFt")) or 0.0
+    side_yard_ft_required = _coerce_float((zr_rule or {}).get("sideYardEachFt")) or 0.0
+    rear_yard_ft_required = _rear_yard_requirement_ft(primary_zone or "", zr_rule) or 0.0
+    open_space_ratio_required = _open_space_ratio_required(primary_zone or "", base_rule.get("bulk_regime"), zr_rule) or 0.0
+    uses_open_space_ratio = bool(open_space_ratio_required > 0 and not _is_contextual_regime(base_rule.get("bulk_regime")))
+    if not uses_open_space_ratio:
+        open_space_ratio_required = 0.0
 
     open_space_required_ft2 = 0.0
-    osr_coverage_cap = None
+    allowable_floor_area_ft2 = 0.0
+    osr_coverage_cap: Optional[float] = None
     if open_space_ratio_required and open_space_ratio_required > 0 and lot_area_ft2 and lot_area_ft2 > 0:
+        allowable_floor_area_ft2 = lot_area_ft2 * scenario_far
         osr_fraction = open_space_ratio_required / 100.0
-        open_space_required_ft2 = lot_area_ft2 * scenario_far * osr_fraction
+        open_space_required_ft2 = allowable_floor_area_ft2 * osr_fraction
         osr_coverage_cap = 1.0 - (scenario_far * osr_fraction)
 
     coverage_ratio = requested_coverage_ratio
@@ -470,6 +535,8 @@ def _resolve_zoning_analysis(
     return {
         "primary_zone": primary_zone,
         "candidate_zones": candidates,
+        "parsed_districts": parsed_districts,
+        "warnings": warnings,
         "commercial_overlays": overlays,
         "base_far": round(base_far, 3),
         "existing_far": round(built_far or 0.0, 3),
@@ -481,9 +548,14 @@ def _resolve_zoning_analysis(
         "requested_coverage_ratio": round(requested_coverage_ratio, 3),
         "coverage_ratio": round(coverage_ratio, 3),
         "coverage_ratio_limited_by_open_space": bool(osr_coverage_cap is not None and coverage_ratio < requested_coverage_ratio),
+        "allowable_floor_area_ft2": round(allowable_floor_area_ft2 or ((lot_area_ft2 or 0.0) * scenario_far), 2),
+        "front_yard_ft_required": round(front_yard_ft_required, 2),
+        "side_yard_ft_required": round(side_yard_ft_required, 2),
         "open_space_ratio_required": round(open_space_ratio_required or 0.0, 3),
         "open_space_required_ft2": round(open_space_required_ft2, 2),
         "rear_yard_ft_required": round(rear_yard_ft_required or 0.0, 2),
+        "has_contextual_rules": _is_contextual_regime(base_rule.get("bulk_regime")),
+        "uses_open_space_ratio": uses_open_space_ratio,
         "bulk_regime": base_rule.get("bulk_regime"),
         "base_height_ft": round(_coerce_float(base_rule.get("base_height_ft")) or 0.0, 2),
         "street_setback_ft": round(_coerce_float(base_rule.get("street_setback_ft")) or 0.0, 2),
@@ -512,28 +584,62 @@ def _estimate_existing_building_height_ft(numfloors: Optional[float], bldgarea: 
     return round(floors * floor_height_ft, 2)
 
 
-def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: Dict[str, Any]) -> Dict[str, Any]:
+def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     outer = _close_ring(payload.lot_polygon)
-    coverage_ratio = max(0.2, min(1.0, zoning["coverage_ratio"]))
-    far_limited_height_ft = max(15.0, zoning["scenario_far"] * payload.floor_height_ft / coverage_ratio)
-    zoning_height_ft = round(min(zoning["max_height_ft"], far_limited_height_ft), 2)
-    base_height_ft = max(0.0, min(zoning_height_ft, zoning.get("base_height_ft") or 0.0))
+    lot_area = max(1.0, lot_area_ft2)
+    floor_to_floor_height_ft = payload.floor_height_ft or 10.0
 
     existing_height_ft = _estimate_existing_building_height_ft(
         payload.numfloors,
         payload.bldgarea,
-        lot_area_ft2,
-        payload.floor_height_ft,
+        lot_area,
+        floor_to_floor_height_ft,
     )
-    existing_coverage = _estimate_existing_building_coverage(payload.numfloors, payload.bldgarea, lot_area_ft2)
-    envelope_ring = _scale_ring(outer, math.sqrt(coverage_ratio)) if coverage_ratio < 0.98 else outer
+    existing_coverage = _estimate_existing_building_coverage(payload.numfloors, payload.bldgarea, lot_area)
     existing_ring = _scale_ring(outer, math.sqrt(existing_coverage)) if existing_coverage < 0.98 else outer
+
+    rear_yard_ft = max(0.0, _coerce_float(zoning.get("rear_yard_ft_required")) or 0.0)
+    side_yard_ft = max(0.0, _coerce_float(zoning.get("side_yard_ft_required")) or 0.0)
+    front_yard_ft = max(0.0, _coerce_float(zoning.get("front_yard_ft_required")) or 0.0)
+
+    rear_scale = _ring_inset_scale(outer, rear_yard_ft)
+    area_after_rear = lot_area * (rear_scale ** 2)
+    rear_yard_area_ft2 = max(0.0, lot_area - area_after_rear)
+
+    side_scale = _ring_inset_scale(outer, side_yard_ft)
+    area_after_side = area_after_rear * (side_scale ** 2)
+    side_yard_area_ft2 = max(0.0, area_after_rear - area_after_side)
+
+    front_scale = _ring_inset_scale(outer, front_yard_ft)
+    area_after_front = area_after_side * (front_scale ** 2)
+    front_yard_area_ft2 = max(0.0, area_after_side - area_after_front)
+
+    area_after_yards_ft2 = max(100.0, area_after_front)
+    allowable_floor_area_ft2 = max(0.0, lot_area * (_coerce_float(zoning.get("scenario_far")) or 0.0))
+    required_open_space_ft2 = max(0.0, _coerce_float(zoning.get("open_space_required_ft2")) or 0.0)
+
+    buildable_footprint_ft2 = max(100.0, area_after_yards_ft2 - required_open_space_ft2)
+    buildable_ratio = max(0.02, min(1.0, buildable_footprint_ft2 / lot_area))
+    buildable_ring = _scale_ring(outer, math.sqrt(buildable_ratio)) if buildable_ratio < 0.995 else outer
+
+    floors_needed = max(1.0, allowable_floor_area_ft2 / max(1.0, buildable_footprint_ft2))
+    required_height_ft = floors_needed * floor_to_floor_height_ft
+
+    height_limit_ft = _coerce_float(zoning.get("max_height_ft"))
+    if height_limit_ft and height_limit_ft > 0:
+        envelope_height_ft = min(required_height_ft, height_limit_ft)
+        full_far_fits = required_height_ft <= height_limit_ft + 1e-6
+    else:
+        envelope_height_ft = required_height_ft
+        full_far_fits = True
+
+    base_height_ft = max(0.0, min(envelope_height_ft, _coerce_float(zoning.get("base_height_ft")) or 0.0))
+
     bulk_regime = zoning.get("bulk_regime") or ""
     upper_inset_ft = zoning.get("street_setback_ft") or zoning.get("simplified_plan_inset_ft") or 0.0
-    upper_scale = _ring_inset_scale(outer, upper_inset_ft)
-    upper_ring = _scale_ring(outer, upper_scale) if upper_scale < 0.99 else outer
+    upper_scale = _ring_inset_scale(buildable_ring, upper_inset_ft)
+    upper_ring = _scale_ring(buildable_ring, upper_scale) if upper_scale < 0.99 else buildable_ring
 
-    zoning_features: List[Dict[str, Any]] = []
     stepped_regimes = {
         "base-and-setback",
         "contextual",
@@ -542,7 +648,9 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
         "sky-exposure-plane-or-tower",
         "manufacturing-sky-exposure",
     }
-    if base_height_ft > 0 and base_height_ft < zoning_height_ft and bulk_regime in stepped_regimes:
+
+    zoning_features: List[Dict[str, Any]] = []
+    if base_height_ft > 0 and base_height_ft < envelope_height_ft and bulk_regime in stepped_regimes:
         zoning_features.extend(
             [
                 {
@@ -552,21 +660,19 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
                         "height_ft": round(base_height_ft, 2),
                         "base_ft": 0,
                         "color": "#2563eb",
-                        "opacity": 0.34,
-                        "coverage_ratio": 1.0,
+                        "coverage_ratio": round(buildable_ratio, 3),
                         "segment": "base",
                     },
-                    "geometry": {"type": "Polygon", "coordinates": [outer]},
+                    "geometry": {"type": "Polygon", "coordinates": [buildable_ring]},
                 },
                 {
                     "type": "Feature",
                     "properties": {
                         "kind": "zoning_envelope",
-                        "height_ft": zoning_height_ft,
+                        "height_ft": round(envelope_height_ft, 2),
                         "base_ft": round(base_height_ft, 2),
                         "color": "#2563eb",
-                        "opacity": 0.42,
-                        "coverage_ratio": round(max(0.05, upper_scale * upper_scale), 3),
+                        "coverage_ratio": round(max(0.05, buildable_ratio * upper_scale * upper_scale), 3),
                         "segment": "upper",
                     },
                     "geometry": {"type": "Polygon", "coordinates": [upper_ring]},
@@ -579,17 +685,77 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
                 "type": "Feature",
                 "properties": {
                     "kind": "zoning_envelope",
-                    "height_ft": zoning_height_ft,
+                    "height_ft": round(envelope_height_ft, 2),
                     "base_ft": 0,
                     "color": "#2563eb",
-                    "opacity": 0.38,
-                    "coverage_ratio": round(coverage_ratio, 3),
-                    "open_space_required_ft2": zoning.get("open_space_required_ft2", 0.0),
+                    "coverage_ratio": round(buildable_ratio, 3),
                     "segment": "single",
                 },
-                "geometry": {"type": "Polygon", "coordinates": [envelope_ring]},
+                "geometry": {"type": "Polygon", "coordinates": [buildable_ring]},
             }
         )
+
+    overlays: List[Dict[str, Any]] = []
+    rear_clear_ring = _scale_ring(outer, rear_scale) if rear_scale < 0.995 else outer
+    yards_clear_ratio = max(0.02, min(1.0, area_after_yards_ft2 / lot_area))
+    yards_clear_ring = _scale_ring(outer, math.sqrt(yards_clear_ratio)) if yards_clear_ratio < 0.995 else outer
+
+    if rear_yard_area_ft2 > 1.0 and rear_scale < 0.999:
+        overlays.append(
+            {
+                "type": "Feature",
+                "properties": {
+                    "kind": "rear_yard_zone",
+                    "area_ft2": round(rear_yard_area_ft2, 2),
+                    "color": "#f59e0b",
+                },
+                "geometry": {"type": "Polygon", "coordinates": [outer, rear_clear_ring]},
+            }
+        )
+
+    open_space_zone_area_ft2 = max(0.0, area_after_yards_ft2 - buildable_footprint_ft2)
+    if open_space_zone_area_ft2 > 1.0 and yards_clear_ratio > buildable_ratio:
+        overlays.append(
+            {
+                "type": "Feature",
+                "properties": {
+                    "kind": "open_space_zone",
+                    "area_ft2": round(open_space_zone_area_ft2, 2),
+                    "color": "#10b981",
+                },
+                "geometry": {"type": "Polygon", "coordinates": [yards_clear_ring, buildable_ring]},
+            }
+        )
+
+    overlays.append(
+        {
+            "type": "Feature",
+            "properties": {
+                "kind": "buildable_footprint",
+                "area_ft2": round(buildable_footprint_ft2, 2),
+                "color": "#0ea5e9",
+            },
+            "geometry": {"type": "Polygon", "coordinates": [buildable_ring]},
+        }
+    )
+
+    study = {
+        "lot_area_ft2": round(lot_area, 2),
+        "far": round(_coerce_float(zoning.get("scenario_far")) or 0.0, 3),
+        "allowable_floor_area_ft2": round(allowable_floor_area_ft2, 2),
+        "required_open_space_ft2": round(required_open_space_ft2, 2),
+        "rear_yard_area_ft2": round(rear_yard_area_ft2, 2),
+        "rear_yard_requirement_ft": round(rear_yard_ft, 2),
+        "front_yard_requirement_ft": round(front_yard_ft, 2),
+        "side_yard_requirement_ft": round(side_yard_ft, 2),
+        "buildable_footprint_ft2": round(buildable_footprint_ft2, 2),
+        "estimated_floors": round(floors_needed, 2),
+        "required_height_ft": round(required_height_ft, 2),
+        "envelope_height_ft": round(envelope_height_ft, 2),
+        "height_limit_ft": round(height_limit_ft, 2) if height_limit_ft else None,
+        "full_far_fits": bool(full_far_fits),
+        "full_far_fit_warning": None if full_far_fits else "Full FAR may not fit inside this envelope under current assumptions.",
+    }
 
     return {
         "type": "FeatureCollection",
@@ -617,9 +783,10 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
                 },
                 "geometry": {"type": "Polygon", "coordinates": [existing_ring]},
             },
+            *overlays,
             *zoning_features,
         ],
-    }
+    }, study
 
 
 def _point_in_ring(lng: float, lat: float, ring: List[List[float]]) -> bool:
@@ -1077,7 +1244,7 @@ def build_envelope(payload: EnvelopeRequest) -> Dict[str, Any]:
         use_type=use_type,
         upzone=payload.upzone,
     )
-    geojson = _build_study_geojson(payload, lot_area_ft2, zoning)
+    geojson, buildability_study = _build_study_geojson(payload, lot_area_ft2, zoning)
 
     existing_feature = next(feature for feature in geojson["features"] if feature["properties"]["kind"] == "existing_building")
     zoning_features = [feature for feature in geojson["features"] if feature["properties"]["kind"] == "zoning_envelope"]
@@ -1094,6 +1261,7 @@ def build_envelope(payload: EnvelopeRequest) -> Dict[str, Any]:
             "existing_building_coverage_ratio": existing_feature["properties"]["coverage_ratio"],
             "full_envelope_height_ft": round(full_envelope_height_ft, 2),
             "full_envelope_coverage_ratio": round(full_envelope_coverage_ratio, 3),
+            "zoning_buildability_study": buildability_study,
         },
         "geojson": geojson,
     }

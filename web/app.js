@@ -737,6 +737,28 @@ function ensureSourcesAndLayers() {
     const { scenarioOpacity, baselineOpacity } = _envelopeOpacityValues();
 
     map.addLayer({
+      id: "rear-yard-zone-fill",
+      type: "fill",
+      source: "study-model",
+      filter: ["==", ["get", "kind"], "rear_yard_zone"],
+      paint: {
+        "fill-color": "#f59e0b",
+        "fill-opacity": 0.2,
+      },
+    });
+
+    map.addLayer({
+      id: "open-space-zone-fill",
+      type: "fill",
+      source: "study-model",
+      filter: ["==", ["get", "kind"], "open_space_zone"],
+      paint: {
+        "fill-color": "#10b981",
+        "fill-opacity": 0.22,
+      },
+    });
+
+    map.addLayer({
       id: "zoning-envelope-fill-baseline",
       type: "fill-extrusion",
       source: "study-model",
@@ -771,12 +793,25 @@ function ensureSourcesAndLayers() {
     });
 
     map.addLayer({
+      id: "buildable-footprint-outline",
+      type: "line",
+      source: "study-model",
+      filter: ["==", ["get", "kind"], "buildable_footprint"],
+      paint: {
+        "line-color": "#0ea5e9",
+        "line-width": 2,
+        "line-opacity": 0.95,
+      },
+    });
+
+    map.addLayer({
       id: "study-outline",
       type: "line",
       source: "study-model",
+      filter: ["==", ["get", "kind"], "selected_lot"],
       paint: {
         "line-color": "#0f172a",
-        "line-width": ["case", ["==", ["get", "kind"], "selected_lot"], 2, 1],
+        "line-width": 2,
       },
     });
   }
@@ -793,6 +828,19 @@ function syncLayerVisibility() {
   const envelopeLayerExists = !!map.getLayer("zoning-envelope-layer");
   if (envelopeLayerExists) {
     map.setLayoutProperty("zoning-envelope-layer", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
+  }
+  const studyLayerIds = [
+    "zoning-envelope-fill-baseline",
+    "zoning-envelope-fill",
+    "rear-yard-zone-fill",
+    "open-space-zone-fill",
+    "buildable-footprint-outline",
+    "study-outline",
+  ];
+  for (const layerId of studyLayerIds) {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", showEnvelopeToggle.checked ? "visible" : "none");
+    }
   }
   if (showBuildingsBtn) {
     showBuildingsBtn.classList.toggle("active", showBuildingToggle.checked);
@@ -853,23 +901,31 @@ function updateStudyModel(geojson) {
   syncLayerVisibility();
 }
 
-function _extractCompareEnvelopeFeatures(geojson, color, variant) {
+function _extractCompareEnvelopeFeatures(geojson, color, variant, includeOverlays = false) {
   return (geojson?.features || [])
-    .filter((feature) => feature?.properties?.kind === "zoning_envelope")
+    .filter((feature) => {
+      const kind = feature?.properties?.kind;
+      if (kind === "zoning_envelope") return true;
+      if (!includeOverlays) return false;
+      return ["selected_lot", "rear_yard_zone", "open_space_zone", "buildable_footprint"].includes(kind);
+    })
     .map((feature) => ({
       ...feature,
       properties: {
         ...feature.properties,
-        color,
-        compare_variant: variant,
+        ...(feature?.properties?.kind === "zoning_envelope" ? { color, compare_variant: variant } : {}),
       },
     }));
 }
 
 function refreshSelectedLotComparisonModel() {
+  const overlaySource = scenarioEnvelopeGeojson || baselineEnvelopeGeojson;
   const features = [
-    ..._extractCompareEnvelopeFeatures(baselineEnvelopeGeojson, "#64748b", "baseline"),
-    ..._extractCompareEnvelopeFeatures(scenarioEnvelopeGeojson, "#2563eb", "scenario"),
+    ..._extractCompareEnvelopeFeatures(baselineEnvelopeGeojson, "#64748b", "baseline", false),
+    ..._extractCompareEnvelopeFeatures(scenarioEnvelopeGeojson, "#2563eb", "scenario", false),
+    ..._extractCompareEnvelopeFeatures(overlaySource, "#2563eb", "scenario", true).filter(
+      (feature) => feature?.properties?.kind !== "zoning_envelope"
+    ),
   ];
   updateStudyModel({ type: "FeatureCollection", features });
 }
@@ -913,6 +969,11 @@ function _buildZoningReqRows(zoning) {
   const rows = [];
 
   rows.push(`<div class="summary-section-head">Zoning District Requirements</div>`);
+  if (Array.isArray(zoning.warnings) && zoning.warnings.length) {
+    for (const warning of zoning.warnings) {
+      rows.push(`<div class="summary-row summary-row--warning"><span>Warning</span><strong>${warning}</strong></div>`);
+    }
+  }
   rows.push(`<div class="summary-row"><span>Bulk Regime</span><strong>${regime || "—"}</strong></div>`);
 
   const standardFar = rule.standardFar ?? null;
@@ -957,6 +1018,35 @@ function _buildZoningReqRows(zoning) {
   return rows.join("");
 }
 
+function _buildBuildabilityStudyRows(zoning, envelopeResults) {
+  const study = envelopeResults?.zoning_buildability_study;
+  if (!study) return "";
+
+  const yesNo = study.full_far_fits ? "Yes" : "No";
+  return `
+    <div class="summary-section-head">ZONING BUILDABILITY STUDY</div>
+    <div class="summary-row"><span>Lot Area</span><strong>${formatNumber(study.lot_area_ft2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Zoning District</span><strong>${zoning?.primary_zone || "n/a"}</strong></div>
+    <div class="summary-row"><span>FAR</span><strong>${formatNumber(study.far, 2)}</strong></div>
+    <div class="summary-row"><span>Allowable Floor Area</span><strong>${formatNumber(study.allowable_floor_area_ft2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Required Open Space</span><strong>${formatNumber(study.required_open_space_ft2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Rear Yard Requirement</span><strong>${_ft(study.rear_yard_requirement_ft)}</strong></div>
+    <div class="summary-row"><span>Buildable Footprint</span><strong>${formatNumber(study.buildable_footprint_ft2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Estimated Floors</span><strong>${formatNumber(study.estimated_floors, 2)}</strong></div>
+    <div class="summary-row"><span>Envelope Height</span><strong>${_ft(study.envelope_height_ft)}</strong></div>
+    <div class="summary-row"><span>Full FAR Fits?</span><strong>${yesNo}</strong></div>
+    ${study.full_far_fits ? "" : `<div class="summary-row summary-row--warning"><span>Note</span><strong>${study.full_far_fit_warning}</strong></div>`}
+    <details class="summary-assumptions">
+      <summary>Assumptions</summary>
+      <div>floor-to-floor height = 10 ft</div>
+      <div>open space calculations are approximate</div>
+      <div>rear yard is assumed from the rear lot line</div>
+      <div>split zoning districts are approximated unless zoning polygon clipping is implemented</div>
+      <div>final results are for visualization and research, not official zoning compliance</div>
+    </details>
+  `;
+}
+
 function updateLotSummary(data, envelopeResults) {
   if (!data) {
     lotSummary.className = "lot-summary empty";
@@ -994,6 +1084,7 @@ function updateLotSummary(data, envelopeResults) {
     <div class="summary-row"><span>Baseline Envelope</span><strong>${formatNumber(baselineHeight, 0)} ft</strong></div>
     <div class="summary-row"><span>Scenario Envelope</span><strong>${formatNumber(scenarioHeight ?? envelopeHeight, 0)} ft</strong></div>
     ${_buildZoningReqRows(zoning)}
+    ${_buildBuildabilityStudyRows(zoning, envelopeResults)}
   `;
 }
 
@@ -1103,7 +1194,22 @@ async function requestEnvelopeForZone(zoneCode) {
     throw new Error(`Envelope request failed: ${txt}`);
   }
 
-  return res.json();
+  const data = await res.json();
+  const zoning = data?.results?.zoning_analysis || {};
+  const study = data?.results?.zoning_buildability_study || {};
+  console.log("[zoning-study] selected lot", {
+    bbl: activeLotData?.bbl || "n/a",
+    address: activeLotData?.address || "n/a",
+    zone: zoneCode,
+  });
+  console.log("[zoning-study] parsed district", zoning.parsed_districts || []);
+  console.log("[zoning-study] lot area", study.lot_area_ft2 ?? data?.results?.lot_area_ft2 ?? null);
+  console.log("[zoning-study] allowable floor area", study.allowable_floor_area_ft2 ?? zoning.allowable_floor_area_ft2 ?? null);
+  console.log("[zoning-study] required open space", study.required_open_space_ft2 ?? zoning.open_space_required_ft2 ?? null);
+  console.log("[zoning-study] buildable footprint", study.buildable_footprint_ft2 ?? null);
+  console.log("[zoning-study] final envelope height", study.envelope_height_ft ?? data?.results?.full_envelope_height_ft ?? null);
+
+  return data;
 }
 
 async function generateBaselineEnvelope() {

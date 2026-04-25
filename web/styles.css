@@ -234,6 +234,35 @@ hr {
   text-decoration: underline;
 }
 
+.summary-row--warning {
+  color: #7c2d12;
+  background: rgba(251, 191, 36, 0.14);
+  padding: 8px;
+  border-radius: 6px;
+  border-bottom: none;
+}
+
+.summary-assumptions {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+}
+
+.summary-assumptions summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.summary-assumptions div {
+  margin-top: 3px;
+  color: rgba(31, 41, 55, 0.82);
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
