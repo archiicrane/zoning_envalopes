@@ -326,6 +326,19 @@ hr {
   color: rgba(15, 23, 42, 0.9);
 }
 
+.assumption-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: rgba(31, 41, 55, 0.84);
+}
+
+.assumption-toggle input {
+  accent-color: var(--accent-2);
+}
+
 .study-legend {
   margin-top: 8px;
   padding: 8px;
@@ -377,6 +390,21 @@ hr {
 .legend-chip-envelope {
   background: rgba(37, 99, 235, 0.35);
   border-color: #2563eb;
+}
+
+.legend-chip-front {
+  background: rgba(37, 99, 235, 0.4);
+  border-color: #2563eb;
+}
+
+.legend-chip-rear {
+  background: rgba(220, 38, 38, 0.4);
+  border-color: #dc2626;
+}
+
+.legend-chip-side {
+  background: rgba(249, 115, 22, 0.4);
+  border-color: #f97316;
 }
 
 .assumption-reset-btn {
