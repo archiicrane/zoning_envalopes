@@ -30,6 +30,7 @@ let scenarioEnvelopeGeojson = null;
 let scenarioEnvelopeResults = null;
 let assumptionOverrides = { floorHeightFt: 10, transparencyPct: null, osrOverride: null, rearYardFtOverride: null, maxHeightFtOverride: null };
 let zoningStudyDefaults = null;
+let lastAssumptionChanged = null;
 let activeNeighborhood = null;
 let activeNeighborhoodData = EMPTY_FC;
 let availableNeighborhoods = [];
@@ -767,6 +768,17 @@ function ensureSourcesAndLayers() {
     });
 
     map.addLayer({
+      id: "buildable-footprint-fill",
+      type: "fill",
+      source: "study-model",
+      filter: ["==", ["get", "kind"], "buildable_footprint"],
+      paint: {
+        "fill-color": "#14b8a6",
+        "fill-opacity": 0.2,
+      },
+    });
+
+    map.addLayer({
       id: "zoning-envelope-fill-baseline",
       type: "fill-extrusion",
       source: "study-model",
@@ -818,7 +830,7 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "selected_lot"],
       paint: {
-        "line-color": "#0f172a",
+        "line-color": "#115e59",
         "line-width": 2,
       },
     });
@@ -842,6 +854,7 @@ function syncLayerVisibility() {
     "zoning-envelope-fill",
     "rear-yard-zone-fill",
     "open-space-zone-fill",
+    "buildable-footprint-fill",
     "buildable-footprint-outline",
     "study-outline",
   ];
@@ -1034,6 +1047,8 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
   if (!zoningStudyDefaults) {
     const defaultOsr = coerceNumber(zoning?.open_space_ratio_required) ?? 0;
     const defaultRearYardFt = coerceNumber(study.rear_yard_requirement_ft) ?? 20;
+    const defaultFrontYardFt = coerceNumber(study.front_yard_requirement_ft) ?? 0;
+    const defaultSideYardFt = coerceNumber(study.side_yard_requirement_ft) ?? 0;
     const defaultMaxHeightFt = coerceNumber(study.height_limit_ft) ?? 120;
     const baseRearYardFt2 = coerceNumber(study.rear_yard_area_ft2) ?? 0;
     const baseTotalYardFt2 = Math.max(
@@ -1045,6 +1060,8 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
       far: study.far ?? 0,
       defaultOsr,
       defaultRearYardFt,
+      defaultFrontYardFt,
+      defaultSideYardFt,
       defaultMaxHeightFt,
       baseRearYardFt2,
       baseTotalYardFt2,
@@ -1063,20 +1080,31 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
   const sliderRearYard = assumptionOverrides.rearYardFtOverride ?? defaultRearYardFt;
   const sliderMaxHeight = assumptionOverrides.maxHeightFtOverride ?? defaultMaxHeightFt;
 
+  const lotAreaFt2 = coerceNumber(study.lot_area_ft2) ?? 0;
+  const allowableFloorAreaFt2 = coerceNumber(study.allowable_floor_area_ft2) ?? 0;
+  const initialFinalBuildableFt2 = coerceNumber(study.buildable_footprint_ft2) ?? 0;
+  const initialRequiredOpenSpaceFt2 = coerceNumber(study.required_open_space_ft2) ?? 0;
+  const initialYardAdjustedFt2 = Math.min(lotAreaFt2, initialFinalBuildableFt2 + initialRequiredOpenSpaceFt2);
+  const initialProvidedOpenSpaceFt2 = Math.max(0, lotAreaFt2 - initialYardAdjustedFt2);
+  const initialOpenSpaceDeficitFt2 = Math.max(0, initialRequiredOpenSpaceFt2 - initialProvidedOpenSpaceFt2);
+
   const yesNo = study.full_far_fits ? "Yes" : "No";
   const farFitWarning = study.full_far_fit_warning || "";
 
   return `
     <div class="summary-section-head">ZONING BUILDABILITY STUDY</div>
     <div class="summary-row"><span>Lot Area</span><strong>${formatNumber(study.lot_area_ft2, 0)} sf</strong></div>
-    <div class="summary-row"><span>Zoning District</span><strong>${zoning?.primary_zone || "n/a"}</strong></div>
     <div class="summary-row"><span>FAR</span><strong>${formatNumber(study.far, 2)}</strong></div>
     <div class="summary-row"><span>Allowable Floor Area</span><strong id="study-val-afa">${formatNumber(study.allowable_floor_area_ft2, 0)} sf</strong></div>
-    <div class="summary-row"><span>Required Open Space</span><strong id="study-val-ros">${formatNumber(study.required_open_space_ft2, 0)} sf</strong></div>
-    <div class="summary-row"><span>Rear Yard Requirement</span><strong id="study-val-ryr">${_ft(study.rear_yard_requirement_ft)}</strong></div>
-    <div class="summary-row"><span>Buildable Footprint</span><strong id="study-val-bfp">${formatNumber(study.buildable_footprint_ft2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Yard-Adjusted Footprint</span><strong id="study-val-yardfp">${formatNumber(initialYardAdjustedFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Required Open Space</span><strong id="study-val-ros">${formatNumber(initialRequiredOpenSpaceFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Provided Open Space</span><strong id="study-val-pos">${formatNumber(initialProvidedOpenSpaceFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Open Space Deficit</span><strong id="study-val-osd">${formatNumber(initialOpenSpaceDeficitFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Final Buildable Footprint</span><strong id="study-val-bfp">${formatNumber(initialFinalBuildableFt2, 0)} sf</strong></div>
     <div class="summary-row"><span>Estimated Floors</span><strong id="study-val-floors">${formatNumber(study.estimated_floors, 2)}</strong></div>
-    <div class="summary-row"><span>Envelope Height</span><strong id="study-val-height">${_ft(study.envelope_height_ft)}</strong></div>
+    <div class="summary-row"><span>Required Height</span><strong id="study-val-reqheight">${_ft(study.required_height_ft)}</strong></div>
+    <div class="summary-row"><span>Max Height</span><strong id="study-val-maxheight">${_ft(study.height_limit_ft ?? defaultMaxHeightFt)}</strong></div>
+    <div class="summary-row"><span>Final Envelope Height</span><strong id="study-val-height">${_ft(study.envelope_height_ft)}</strong></div>
     <div class="summary-row"><span>Full FAR Fits?</span><strong id="study-val-farfits">${yesNo}</strong></div>
     <div id="study-row-farwarn" class="summary-row summary-row--warning"${study.full_far_fits ? ' style="display:none"' : ''}>
       <span>Note</span><strong id="study-val-farwarn">${farFitWarning}</strong>
@@ -1086,26 +1114,41 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
       <div class="assumption-slider-row">
         <label>Floor-to-Floor Height <span class="assumption-val" id="aval-floor-height">${sliderFloor} ft</span></label>
         <input type="range" id="aslider-floor-height" class="assumption-slider" min="8" max="16" step="0.5" value="${sliderFloor}">
+        <div class="assumption-subline">Default: 10 ft | Current: <span id="acurrent-floor-height">${sliderFloor} ft</span></div>
       </div>
       <div class="assumption-slider-row">
         <label>Envelope Transparency <span class="assumption-val" id="aval-transparency">${sliderTransparency}%</span></label>
         <input type="range" id="aslider-transparency" class="assumption-slider" min="10" max="90" step="5" value="${sliderTransparency}">
+        <div class="assumption-subline">Default: ${currentTransparency}% | Current: <span id="acurrent-transparency">${sliderTransparency}%</span></div>
       </div>
       <div class="assumption-slider-row">
         <label>Open Space Ratio <span class="assumption-val" id="aval-osr">${sliderOsr}</span></label>
-        <input type="range" id="aslider-osr" class="assumption-slider" min="0" max="60" step="1" value="${sliderOsr}">
+        <input type="range" id="aslider-osr" class="assumption-slider" min="0" max="40" step="1" value="${Math.min(40, sliderOsr)}">
+        <div class="assumption-subline">Default: ${formatNumber(defaultOsr, 0)} | Current: <span id="acurrent-osr">${formatNumber(Math.min(40, sliderOsr), 0)}</span></div>
       </div>
       <div class="assumption-slider-row">
         <label>Rear Yard Depth <span class="assumption-val" id="aval-rear-yard">${sliderRearYard} ft</span></label>
-        <input type="range" id="aslider-rear-yard" class="assumption-slider" min="0" max="50" step="1" value="${sliderRearYard}">
+        <input type="range" id="aslider-rear-yard" class="assumption-slider" min="0" max="40" step="1" value="${Math.min(40, sliderRearYard)}">
+        <div class="assumption-subline">Default: ${formatNumber(defaultRearYardFt, 0)} ft | Current: <span id="acurrent-rear-yard">${formatNumber(Math.min(40, sliderRearYard), 0)} ft</span></div>
         <div class="assumption-helper">Deeper rear yard -> less buildable footprint -> envelope can get taller to fit FAR.</div>
       </div>
       <div class="assumption-slider-row">
         <label>Max Height <span class="assumption-val" id="aval-max-height">${sliderMaxHeight} ft</span></label>
-        <input type="range" id="aslider-max-height" class="assumption-slider" min="30" max="300" step="5" value="${sliderMaxHeight}">
+        <input type="range" id="aslider-max-height" class="assumption-slider" min="40" max="250" step="5" value="${Math.max(40, Math.min(250, sliderMaxHeight))}">
+        <div class="assumption-subline">Default: ${formatNumber(defaultMaxHeightFt, 0)} ft | Current: <span id="acurrent-max-height">${formatNumber(Math.max(40, Math.min(250, sliderMaxHeight)), 0)} ft</span></div>
       </div>
       <div class="assumption-impact" id="study-assumption-impact">
-        Rear yard depth -> buildable footprint -> floors -> envelope height.
+        Move a slider to see live impact.
+      </div>
+      <div class="scenario-impact" id="scenario-impact-box">
+        With current assumptions, this lot allows ${formatNumber(study.allowable_floor_area_ft2, 0)} sf of floor area. The buildable footprint is ${formatNumber(initialFinalBuildableFt2, 0)} sf, requiring about ${formatNumber(study.estimated_floors, 1)} floors. The final envelope is limited to ${formatNumber(study.height_limit_ft ?? defaultMaxHeightFt, 0)} ft, so ${study.full_far_fits ? "full FAR fits" : "full FAR may not fit"}.
+      </div>
+      <div class="study-legend">
+        <div><span class="legend-chip legend-chip-lot"></span> Selected lot outline</div>
+        <div><span class="legend-chip legend-chip-yard"></span> Yard / setback area</div>
+        <div><span class="legend-chip legend-chip-open"></span> Open space area</div>
+        <div><span class="legend-chip legend-chip-buildable"></span> Final buildable footprint</div>
+        <div><span class="legend-chip legend-chip-envelope"></span> Final envelope extrusion</div>
       </div>
       <button type="button" id="assumption-reset-btn" class="assumption-reset-btn">Reset to Zoning Defaults</button>
       <div class="assumption-note">Results are approximate — for visualization and research only.</div>
@@ -1174,28 +1217,90 @@ function buildClientLotData(feature) {
 // ─── Polygon geometry helpers (mirrors backend _scale_ring / _ring_inset_scale) ───
 
 function _polygonAreaFt2(ring) {
-  let areaDeg = 0;
-  for (let i = 0, n = ring.length - 1; i < n; i++) {
-    areaDeg += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+  const closed = _closeRing(ring);
+  try {
+    return turf.area({ type: "Feature", geometry: { type: "Polygon", coordinates: [closed] }, properties: {} }) * 10.7639;
+  } catch (_err) {
+    return 0;
   }
-  areaDeg = Math.abs(areaDeg) / 2;
-  // Approx at NYC lat: 1° lon ≈ 82 631 m, 1° lat ≈ 111 319 m
-  return areaDeg * 82631 * 111319 * 10.7639; // → ft²
 }
 
-function _ringInsetScale(ring, insetFt) {
-  if (insetFt <= 0) return 1.0;
-  const areaFt2 = _polygonAreaFt2(ring);
-  if (areaFt2 <= 0) return 1.0;
-  const radiusM = Math.sqrt((areaFt2 / 10.7639) / Math.PI);
-  return Math.max(0.02, Math.min(1.0, 1.0 - (insetFt * 0.3048) / radiusM));
+function _closeRing(ring) {
+  if (!Array.isArray(ring) || !ring.length) return [];
+  const out = ring.map((pt) => [pt[0], pt[1]]);
+  const first = out[0];
+  const last = out[out.length - 1];
+  if (first[0] !== last[0] || first[1] !== last[1]) {
+    out.push([first[0], first[1]]);
+  }
+  return out;
 }
 
-function _scaleRingJS(ring, scale) {
-  if (scale >= 1.0) return ring.slice();
-  const cx = ring.reduce((s, p) => s + p[0], 0) / ring.length;
-  const cy = ring.reduce((s, p) => s + p[1], 0) / ring.length;
-  return ring.map((p) => [cx + (p[0] - cx) * scale, cy + (p[1] - cy) * scale]);
+function _areaFt2FromGeometry(geometry) {
+  if (!geometry) return 0;
+  try {
+    return turf.area({ type: "Feature", geometry, properties: {} }) * 10.7639;
+  } catch (_err) {
+    return 0;
+  }
+}
+
+function _bboxRing(ring) {
+  const xs = ring.map((p) => p[0]);
+  const ys = ring.map((p) => p[1]);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  return [
+    [minX, minY],
+    [maxX, minY],
+    [maxX, maxY],
+    [minX, maxY],
+    [minX, minY],
+  ];
+}
+
+function _bufferInwardGeometry(geometry, insetFt) {
+  if (!geometry || insetFt <= 0) return geometry;
+  const insetMeters = insetFt * 0.3048;
+  try {
+    const buffered = turf.buffer({ type: "Feature", geometry, properties: {} }, -insetMeters, { units: "meters" });
+    if (buffered?.geometry?.coordinates?.length) {
+      return buffered.geometry;
+    }
+  } catch (_err) {
+    // handled by caller fallback
+  }
+  return null;
+}
+
+function _fallbackInsetGeometry(lotRing, insetFt) {
+  const bboxRing = _bboxRing(lotRing);
+  const bboxGeometry = { type: "Polygon", coordinates: [_closeRing(bboxRing)] };
+  const inset = _bufferInwardGeometry(bboxGeometry, insetFt);
+  if (inset) return { geometry: inset, usedFallback: true };
+  return { geometry: bboxGeometry, usedFallback: true };
+}
+
+function _computeYardAdjustedGeometry(lotRing, frontYardFt, sideYardFt, rearYardFt) {
+  const lotGeometry = { type: "Polygon", coordinates: [_closeRing(lotRing)] };
+  const totalInsetFt = Math.max(0, frontYardFt) + Math.max(0, rearYardFt) + (2 * Math.max(0, sideYardFt));
+  const effectiveInsetFt = totalInsetFt / 4;
+  let yardAdjustedGeometry = _bufferInwardGeometry(lotGeometry, effectiveInsetFt);
+  let geometryFallbackUsed = false;
+  if (!yardAdjustedGeometry) {
+    const fallback = _fallbackInsetGeometry(lotRing, effectiveInsetFt);
+    yardAdjustedGeometry = fallback.geometry;
+    geometryFallbackUsed = fallback.usedFallback;
+  }
+  const maxFootprintAreaFt2 = _areaFt2FromGeometry(yardAdjustedGeometry);
+  console.log("[buildability] yard-adjusted footprint", {
+    effectiveInsetFt,
+    maxFootprintAreaFt2,
+    geometryFallbackUsed,
+  });
+  return { lotGeometry, yardAdjustedGeometry, maxFootprintAreaFt2, geometryFallbackUsed };
 }
 
 // ─── Assumptions: recalculate zoning study values ───
@@ -1207,49 +1312,100 @@ function _recalcStudy() {
     far,
     defaultOsr,
     defaultRearYardFt,
+    defaultFrontYardFt,
+    defaultSideYardFt,
     defaultMaxHeightFt,
-    baseRearYardFt2,
-    baseTotalYardFt2,
     baselineBuildableFootprintFt2,
     baselineEstimatedFloors,
     baselineEnvelopeHeightFt,
   } = zoningStudyDefaults;
+  if (!activeLotPolygon || activeLotPolygon.length < 4) return null;
+
   const floorHeightFt = assumptionOverrides.floorHeightFt;
   const osr = assumptionOverrides.osrOverride ?? defaultOsr;
   const rearYardFt = assumptionOverrides.rearYardFtOverride ?? defaultRearYardFt;
   const maxHeightFt = assumptionOverrides.maxHeightFtOverride ?? defaultMaxHeightFt ?? 120;
 
-  // Scale rear yard area proportionally to rear yard depth change
-  const rearYardDepthScale = defaultRearYardFt > 0 ? rearYardFt / defaultRearYardFt : (rearYardFt > 0 ? 1 : 0);
-  const newRearYardFt2 = baseRearYardFt2 * rearYardDepthScale;
-  const newTotalYardFt2 = Math.max(0, baseTotalYardFt2 + (newRearYardFt2 - baseRearYardFt2));
-
   const allowableFloorArea = lotAreaFt2 * far;
-  const requiredOpenSpace = allowableFloorArea * osr / 100;
-  const buildableFootprintFt2 = Math.max(0, lotAreaFt2 - requiredOpenSpace - newTotalYardFt2);
+  const { lotGeometry, yardAdjustedGeometry, maxFootprintAreaFt2, geometryFallbackUsed } = _computeYardAdjustedGeometry(
+    activeLotPolygon,
+    defaultFrontYardFt,
+    defaultSideYardFt,
+    rearYardFt
+  );
+
+  const openSpaceRequired = Math.max(0, allowableFloorArea * osr / 100);
+  const openSpaceProvided = Math.max(0, lotAreaFt2 - maxFootprintAreaFt2);
+  const openSpaceDeficit = Math.max(0, openSpaceRequired - openSpaceProvided);
+  let finalBuildableFootprintFt2 = Math.max(0, maxFootprintAreaFt2 - openSpaceDeficit);
+  let clampWarning = null;
+
+  const minFootprintFt2 = lotAreaFt2 * 0.1;
+  const tooConstrained = maxFootprintAreaFt2 <= minFootprintFt2;
+  if (!tooConstrained && finalBuildableFootprintFt2 < minFootprintFt2) {
+    finalBuildableFootprintFt2 = minFootprintFt2;
+    clampWarning = "Footprint clamped for visualization because assumptions produced an unrealistic result.";
+  }
+
+  console.log("[buildability] open space required", openSpaceRequired);
+  console.log("[buildability] open space provided", openSpaceProvided);
+  console.log("[buildability] open space deficit", openSpaceDeficit);
+  console.log("[buildability] final footprint", finalBuildableFootprintFt2);
+
+  const areaRatio = Math.max(0.01, Math.min(1, finalBuildableFootprintFt2 / Math.max(1, maxFootprintAreaFt2)));
+  let finalBuildableGeometry = yardAdjustedGeometry;
+  if (areaRatio < 0.999) {
+    const inwardMeters = Math.max(0, (1 - Math.sqrt(areaRatio)) * 6);
+    try {
+      const buffered = turf.buffer({ type: "Feature", geometry: yardAdjustedGeometry, properties: {} }, -inwardMeters, { units: "meters" });
+      if (buffered?.geometry?.coordinates?.length) {
+        finalBuildableGeometry = buffered.geometry;
+      }
+    } catch (_err) {
+      // keep yard geometry as fallback
+    }
+  }
 
   let estimatedFloors = null;
   let envelopeHeightFt = 0;
   let fullFarFits = false;
+  let requiredHeightFt = 0;
 
-  if (buildableFootprintFt2 > 0) {
-    estimatedFloors = allowableFloorArea / buildableFootprintFt2;
-    const requiredHeight = estimatedFloors * floorHeightFt;
-    envelopeHeightFt = Math.min(requiredHeight, maxHeightFt);
-    fullFarFits = requiredHeight <= maxHeightFt + 1e-6;
+  if (finalBuildableFootprintFt2 > 0) {
+    estimatedFloors = allowableFloorArea / finalBuildableFootprintFt2;
+    requiredHeightFt = estimatedFloors * floorHeightFt;
+    envelopeHeightFt = Math.min(requiredHeightFt, maxHeightFt);
+    fullFarFits = requiredHeightFt <= maxHeightFt + 1e-6;
   }
+
+  console.log("[buildability] required height", requiredHeightFt);
+  console.log("[buildability] final envelope height", envelopeHeightFt);
 
   console.log("[assumptions] recalculated zoning study", {
     osr, rearYardFt, floorHeightFt, maxHeightFt,
-    allowableFloorArea, requiredOpenSpace, buildableFootprintFt2, estimatedFloors, envelopeHeightFt, fullFarFits,
+    allowableFloorArea, openSpaceRequired, openSpaceProvided, openSpaceDeficit,
+    finalBuildableFootprintFt2, estimatedFloors, requiredHeightFt, envelopeHeightFt, fullFarFits,
   });
 
   return {
     lotAreaFt2, far, osr, rearYardFt, floorHeightFt, maxHeightFt,
-    allowableFloorArea, requiredOpenSpace, newRearYardFt2,
-    buildableFootprintFt2, estimatedFloors, envelopeHeightFt, fullFarFits,
+    allowableFloorArea,
+    yardAdjustedFootprintFt2: maxFootprintAreaFt2,
+    openSpaceRequired,
+    openSpaceProvided,
+    openSpaceDeficit,
+    finalBuildableFootprintFt2,
+    estimatedFloors,
+    requiredHeightFt,
+    envelopeHeightFt,
+    fullFarFits,
+    clampWarning,
+    geometryFallbackUsed,
+    lotGeometry,
+    yardAdjustedGeometry,
+    finalBuildableGeometry,
     deltaRearYardFt: rearYardFt - defaultRearYardFt,
-    deltaBuildableFootprintFt2: buildableFootprintFt2 - baselineBuildableFootprintFt2,
+    deltaBuildableFootprintFt2: finalBuildableFootprintFt2 - baselineBuildableFootprintFt2,
     deltaEstimatedFloors: (estimatedFloors ?? 0) - baselineEstimatedFloors,
     deltaEnvelopeHeightFt: envelopeHeightFt - baselineEnvelopeHeightFt,
   };
@@ -1260,96 +1416,126 @@ function _recalcStudy() {
 function _updateStudyPanelNumbers(result) {
   if (!result) return;
   const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-  set("study-val-ros", `${formatNumber(result.requiredOpenSpace, 0)} sf`);
-  set("study-val-ryr", `${formatNumber(result.rearYardFt, 0)} ft`);
-  set("study-val-bfp", result.buildableFootprintFt2 > 0 ? `${formatNumber(result.buildableFootprintFt2, 0)} sf` : "—");
+  set("study-val-afa", `${formatNumber(result.allowableFloorArea, 0)} sf`);
+  set("study-val-yardfp", `${formatNumber(result.yardAdjustedFootprintFt2, 0)} sf`);
+  set("study-val-ros", `${formatNumber(result.openSpaceRequired, 0)} sf`);
+  set("study-val-pos", `${formatNumber(result.openSpaceProvided, 0)} sf`);
+  set("study-val-osd", `${formatNumber(result.openSpaceDeficit, 0)} sf`);
+  set("study-val-bfp", result.finalBuildableFootprintFt2 > 0 ? `${formatNumber(result.finalBuildableFootprintFt2, 0)} sf` : "—");
   set("study-val-floors", result.estimatedFloors != null ? formatNumber(result.estimatedFloors, 2) : "—");
+  set("study-val-reqheight", `${formatNumber(result.requiredHeightFt, 0)} ft`);
+  set("study-val-maxheight", `${formatNumber(result.maxHeightFt, 0)} ft`);
   set("study-val-height", result.envelopeHeightFt > 0 ? `${formatNumber(result.envelopeHeightFt, 0)} ft` : "—");
   set("study-val-farfits", result.fullFarFits ? "Yes" : "No");
+
+  set("acurrent-floor-height", `${result.floorHeightFt} ft`);
+  set("acurrent-transparency", `${Number(envelopeOpacitySlider.value)}%`);
+  set("acurrent-osr", `${formatNumber(result.osr, 0)}`);
+  set("acurrent-rear-yard", `${formatNumber(result.rearYardFt, 0)} ft`);
+  set("acurrent-max-height", `${formatNumber(result.maxHeightFt, 0)} ft`);
+
   const warnRow = document.getElementById("study-row-farwarn");
   const warnVal = document.getElementById("study-val-farwarn");
-  if (warnRow) warnRow.style.display = result.fullFarFits ? "none" : "";
+  if (warnRow) warnRow.style.display = (result.fullFarFits && !result.clampWarning) ? "none" : "";
   if (warnVal) {
-    if (result.buildableFootprintFt2 <= 0) {
+    if (result.clampWarning) {
+      warnVal.textContent = result.clampWarning;
+    } else if (result.finalBuildableFootprintFt2 <= 0) {
       warnVal.textContent = "Buildable footprint is too small under current assumptions.";
     } else if (!result.fullFarFits) {
       warnVal.textContent = "Full FAR may not fit inside this envelope under current assumptions.";
+    } else {
+      warnVal.textContent = "";
     }
   }
 
   const impact = document.getElementById("study-assumption-impact");
   if (impact) {
-    const rearWord = result.deltaRearYardFt >= 0 ? "deeper" : "shallower";
-    const bfpWord = result.deltaBuildableFootprintFt2 >= 0 ? "increases" : "decreases";
-    const floorsWord = result.deltaEstimatedFloors >= 0 ? "increase" : "decrease";
-    const heightWord = result.deltaEnvelopeHeightFt >= 0 ? "increase" : "decrease";
-    impact.textContent = `Rear yard is ${Math.abs(result.deltaRearYardFt).toFixed(0)} ft ${rearWord} than zoning default -> buildable footprint ${bfpWord} by ${formatNumber(Math.abs(result.deltaBuildableFootprintFt2), 0)} sf -> estimated floors ${floorsWord} -> envelope height can ${heightWord}.`;
+    const bySlider = {
+      rearYard: "Increasing rear yard reduces buildable footprint.",
+      osr: "Increasing open space ratio may reduce footprint or prevent full FAR.",
+      floorHeight: "Increasing floor height makes the envelope taller.",
+      maxHeight: "Increasing max height only matters if FAR requires more height.",
+      transparency: "Transparency changes visualization only; buildability metrics stay the same.",
+    };
+    impact.textContent = bySlider[lastAssumptionChanged] || "Move a slider to see live impact.";
+  }
+
+  const scenarioBox = document.getElementById("scenario-impact-box");
+  if (scenarioBox) {
+    scenarioBox.textContent = `With current assumptions, this lot allows ${formatNumber(result.allowableFloorArea, 0)} sf of floor area. The buildable footprint is ${formatNumber(result.finalBuildableFootprintFt2, 0)} sf, requiring about ${formatNumber(result.estimatedFloors, 1)} floors. The final envelope is limited to ${formatNumber(result.maxHeightFt, 0)} ft, so ${result.fullFarFits ? "full FAR fits" : "full FAR may not fit"}.`;
   }
 }
 
 // ─── Assumptions: rebuild envelope + overlay features ───
 
-function _buildStudyEnvelopeFeaturesFromAssumptions(rawGeojson, newEnvelopeHeightFt, color, variant) {
-  const origFeatures = (rawGeojson?.features || []).filter((f) => f?.properties?.kind === "zoning_envelope");
-  if (!origFeatures.length || newEnvelopeHeightFt <= 0) return [];
-  const origMax = Math.max(...origFeatures.map((f) => coerceNumber(f?.properties?.height_ft) ?? 0));
-  if (origMax <= 0) return [];
-  const scale = newEnvelopeHeightFt / origMax;
-  return origFeatures.map((f) => ({
-    ...f,
-    properties: {
-      ...f.properties,
-      height_ft: Math.round((coerceNumber(f.properties.height_ft) ?? 0) * scale * 100) / 100,
-      color,
-      compare_variant: variant,
+function _buildStudyEnvelopeFeaturesFromAssumptions(result, color, variant) {
+  if (!result || !result.finalBuildableGeometry || result.envelopeHeightFt <= 0) return [];
+  return [
+    {
+      type: "Feature",
+      properties: {
+        kind: "zoning_envelope",
+        compare_variant: variant,
+        color,
+        base_ft: 0,
+        height_ft: Math.round(result.envelopeHeightFt * 100) / 100,
+      },
+      geometry: result.finalBuildableGeometry,
     },
-  }));
+  ];
 }
 
-function _buildStudyOverlayFeaturesFromAssumptions(lotPolygon, result) {
-  const outer = lotPolygon.slice();
-  const first = outer[0];
-  const last = outer[outer.length - 1];
-  if (first[0] !== last[0] || first[1] !== last[1]) outer.push([first[0], first[1]]);
-
-  const { lotAreaFt2, buildableFootprintFt2, rearYardFt, newRearYardFt2 } = result;
-  const rearScale = _ringInsetScale(outer, rearYardFt);
-  const rearClearRing = _scaleRingJS(outer, rearScale);
-  const buildableRatio = Math.max(0.02, Math.min(1.0, buildableFootprintFt2 / lotAreaFt2));
-  const buildableRing = _scaleRingJS(outer, Math.sqrt(buildableRatio));
-  const yardsAreaFt2 = Math.max(buildableFootprintFt2, lotAreaFt2 - newRearYardFt2);
-  const yardsRatio = Math.max(0.02, Math.min(1.0, yardsAreaFt2 / lotAreaFt2));
-  const yardsClearRing = _scaleRingJS(outer, Math.sqrt(yardsRatio));
-  const openSpaceAreaFt2 = Math.max(0, yardsAreaFt2 - buildableFootprintFt2);
-
+function _buildStudyOverlayFeaturesFromAssumptions(result) {
+  if (!result || !result.lotGeometry || !result.yardAdjustedGeometry || !result.finalBuildableGeometry) {
+    return [];
+  }
   const features = [
     {
       type: "Feature",
-      properties: { kind: "selected_lot", height_ft: 0, base_ft: 0, color: "#facc15", opacity: 0.12 },
-      geometry: { type: "Polygon", coordinates: [outer] },
+      properties: { kind: "selected_lot", height_ft: 0, base_ft: 0, color: "#115e59", opacity: 0.12 },
+      geometry: result.lotGeometry,
     },
   ];
 
-  if (newRearYardFt2 > 1 && rearScale < 0.999) {
-    features.push({
-      type: "Feature",
-      properties: { kind: "rear_yard_zone", area_ft2: Math.round(newRearYardFt2), color: "#f59e0b" },
-      geometry: { type: "Polygon", coordinates: [outer, rearClearRing] },
-    });
+  try {
+    const yardDiff = turf.difference(
+      { type: "Feature", geometry: result.lotGeometry, properties: {} },
+      { type: "Feature", geometry: result.yardAdjustedGeometry, properties: {} }
+    );
+    if (yardDiff?.geometry) {
+      features.push({
+        type: "Feature",
+        properties: { kind: "rear_yard_zone", area_ft2: Math.round(Math.max(0, result.lotAreaFt2 - result.yardAdjustedFootprintFt2)), color: "#f59e0b" },
+        geometry: yardDiff.geometry,
+      });
+    }
+  } catch (_err) {
+    // keep without diff overlay
   }
 
-  if (openSpaceAreaFt2 > 1 && yardsRatio > buildableRatio) {
-    features.push({
-      type: "Feature",
-      properties: { kind: "open_space_zone", area_ft2: Math.round(openSpaceAreaFt2), color: "#10b981" },
-      geometry: { type: "Polygon", coordinates: [yardsClearRing, buildableRing] },
-    });
+  if (result.openSpaceDeficit > 0) {
+    try {
+      const openDiff = turf.difference(
+        { type: "Feature", geometry: result.yardAdjustedGeometry, properties: {} },
+        { type: "Feature", geometry: result.finalBuildableGeometry, properties: {} }
+      );
+      if (openDiff?.geometry) {
+        features.push({
+          type: "Feature",
+          properties: { kind: "open_space_zone", area_ft2: Math.round(result.openSpaceDeficit), color: "#10b981" },
+          geometry: openDiff.geometry,
+        });
+      }
+    } catch (_err) {
+      // keep without diff overlay
+    }
   }
 
   features.push({
     type: "Feature",
-    properties: { kind: "buildable_footprint", area_ft2: Math.round(buildableFootprintFt2), color: "#0ea5e9" },
-    geometry: { type: "Polygon", coordinates: [buildableRing] },
+    properties: { kind: "buildable_footprint", area_ft2: Math.round(result.finalBuildableFootprintFt2), color: "#14b8a6" },
+    geometry: result.finalBuildableGeometry,
   });
 
   return features;
@@ -1360,17 +1546,16 @@ function _redrawEnvelopeFromAssumptions(result) {
   const activeGeojson = scenarioEnvelopeGeojson || baselineEnvelopeGeojson;
   if (!activeGeojson) return;
 
-  const overlayFeatures = _buildStudyOverlayFeaturesFromAssumptions(activeLotPolygon, result);
+  const overlayFeatures = _buildStudyOverlayFeaturesFromAssumptions(result);
   let envelopeFeatures = [];
-  if (result.buildableFootprintFt2 > 0 && result.envelopeHeightFt > 0) {
+  if (result.finalBuildableFootprintFt2 > 0 && result.envelopeHeightFt > 0) {
     const baselineFeatures = _extractCompareEnvelopeFeatures(baselineEnvelopeGeojson, "#64748b", "baseline", false);
-    const scenarioSource = scenarioEnvelopeGeojson || baselineEnvelopeGeojson;
-    const scenarioFeatures = _buildStudyEnvelopeFeaturesFromAssumptions(scenarioSource, result.envelopeHeightFt, "#2563eb", "scenario");
+    const scenarioFeatures = _buildStudyEnvelopeFeaturesFromAssumptions(result, "#2563eb", "scenario");
     envelopeFeatures = [...baselineFeatures, ...scenarioFeatures];
   }
 
   updateStudyModel({ type: "FeatureCollection", features: [...overlayFeatures, ...envelopeFeatures] });
-  console.log("[assumptions] redrew envelope", { envelopeHeightFt: result.envelopeHeightFt, buildableFootprintFt2: result.buildableFootprintFt2 });
+  console.log("[assumptions] redrew envelope", { envelopeHeightFt: result.envelopeHeightFt, buildableFootprintFt2: result.finalBuildableFootprintFt2 });
 }
 
 // ─── Assumptions: slider input handler ───
@@ -1383,31 +1568,48 @@ function _onAssumptionInput(event) {
 
   if (id === "aslider-floor-height") {
     assumptionOverrides.floorHeightFt = val;
+    lastAssumptionChanged = "floorHeight";
     const el = document.getElementById("aval-floor-height");
     if (el) el.textContent = `${val} ft`;
+    const cur = document.getElementById("acurrent-floor-height");
+    if (cur) cur.textContent = `${val} ft`;
     console.log("[assumptions] floor height changed", val);
   } else if (id === "aslider-transparency") {
     assumptionOverrides.transparencyPct = val;
+    lastAssumptionChanged = "transparency";
     const el = document.getElementById("aval-transparency");
     if (el) el.textContent = `${val}%`;
+    const cur = document.getElementById("acurrent-transparency");
+    if (cur) cur.textContent = `${val}%`;
     envelopeOpacitySlider.value = val;
     envelopeOpacityVal.textContent = `${val}%`;
     applyEnvelopeOpacityToLayers();
+    const impact = document.getElementById("study-assumption-impact");
+    if (impact) impact.textContent = "Transparency changes visualization only; buildability metrics stay the same.";
     return; // transparency doesn't affect study numbers
   } else if (id === "aslider-osr") {
     assumptionOverrides.osrOverride = val;
+    lastAssumptionChanged = "osr";
     const el = document.getElementById("aval-osr");
     if (el) el.textContent = String(val);
+    const cur = document.getElementById("acurrent-osr");
+    if (cur) cur.textContent = String(val);
     console.log("[assumptions] open space ratio changed", val);
   } else if (id === "aslider-rear-yard") {
     assumptionOverrides.rearYardFtOverride = val;
+    lastAssumptionChanged = "rearYard";
     const el = document.getElementById("aval-rear-yard");
     if (el) el.textContent = `${val} ft`;
+    const cur = document.getElementById("acurrent-rear-yard");
+    if (cur) cur.textContent = `${val} ft`;
     console.log("[assumptions] rear yard changed", val);
   } else if (id === "aslider-max-height") {
     assumptionOverrides.maxHeightFtOverride = val;
+    lastAssumptionChanged = "maxHeight";
     const el = document.getElementById("aval-max-height");
     if (el) el.textContent = `${val} ft`;
+    const cur = document.getElementById("acurrent-max-height");
+    if (cur) cur.textContent = `${val} ft`;
     console.log("[assumptions] max height changed", val);
   } else {
     return;
@@ -1430,6 +1632,7 @@ function clearActiveEnvelope() {
   scenarioEnvelopeResults = null;
   assumptionOverrides = { floorHeightFt: 10, transparencyPct: null, osrOverride: null, rearYardFtOverride: null, maxHeightFtOverride: null };
   zoningStudyDefaults = null;
+  lastAssumptionChanged = null;
   updateSelectionVisual(null, false);
   refreshSelectedLotComparisonModel();
   updateLotSummary(null);
@@ -1446,6 +1649,8 @@ function applySelectedZoneOverride(zoneCode) {
   }
 
   zoningStudyDefaults = null;
+  lastAssumptionChanged = null;
+  assumptionOverrides = { floorHeightFt: 10, transparencyPct: null, osrOverride: null, rearYardFtOverride: null, maxHeightFtOverride: null };
   activeZoneOverride = zone;
   activeLotData.zonedist1 = zone;
   activeLotData.zone = zone;
@@ -1790,6 +1995,7 @@ lotSummary.addEventListener("input", (event) => {
 lotSummary.addEventListener("click", (event) => {
   if (event.target?.id !== "assumption-reset-btn") return;
   assumptionOverrides = { floorHeightFt: 10, transparencyPct: null, osrOverride: null, rearYardFtOverride: null, maxHeightFtOverride: null };
+  lastAssumptionChanged = null;
   const envelopeResults = scenarioEnvelopeResults || baselineEnvelopeResults;
   updateLotSummary(activeLotData, envelopeResults);
   const details = document.getElementById("assumptionsDetails");

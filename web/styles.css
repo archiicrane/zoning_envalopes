@@ -300,6 +300,12 @@ hr {
   color: rgba(31, 41, 55, 0.6);
 }
 
+.assumption-subline {
+  margin-top: 3px;
+  font-size: 10px;
+  color: rgba(51, 65, 85, 0.75);
+}
+
 .assumption-impact {
   margin-top: 10px;
   padding: 8px;
@@ -308,6 +314,69 @@ hr {
   background: rgba(29, 78, 216, 0.08);
   font-size: 11px;
   color: rgba(30, 58, 138, 0.95);
+}
+
+.scenario-impact {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 118, 110, 0.28);
+  background: rgba(20, 184, 166, 0.1);
+  font-size: 11px;
+  color: rgba(15, 23, 42, 0.9);
+}
+
+.study-legend {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  color: rgba(30, 41, 59, 0.86);
+}
+
+.study-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.study-legend > div:first-child {
+  margin-top: 0;
+}
+
+.legend-chip {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(15, 23, 42, 0.25);
+}
+
+.legend-chip-lot {
+  background: rgba(17, 94, 89, 0.2);
+  border-color: #115e59;
+}
+
+.legend-chip-yard {
+  background: rgba(245, 158, 11, 0.35);
+  border-color: #f59e0b;
+}
+
+.legend-chip-open {
+  background: rgba(16, 185, 129, 0.35);
+  border-color: #10b981;
+}
+
+.legend-chip-buildable {
+  background: rgba(20, 184, 166, 0.35);
+  border-color: #0f766e;
+}
+
+.legend-chip-envelope {
+  background: rgba(37, 99, 235, 0.35);
+  border-color: #2563eb;
 }
 
 .assumption-reset-btn {
