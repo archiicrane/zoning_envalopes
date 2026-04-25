@@ -1048,6 +1048,9 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
       defaultMaxHeightFt,
       baseRearYardFt2,
       baseTotalYardFt2,
+      baselineBuildableFootprintFt2: study.buildable_footprint_ft2 ?? 0,
+      baselineEstimatedFloors: study.estimated_floors ?? 0,
+      baselineEnvelopeHeightFt: study.envelope_height_ft ?? 0,
     };
     assumptionOverrides = { floorHeightFt: 10, transparencyPct: null, osrOverride: null, rearYardFtOverride: null, maxHeightFtOverride: null };
   }
@@ -1095,10 +1098,14 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
       <div class="assumption-slider-row">
         <label>Rear Yard Depth <span class="assumption-val" id="aval-rear-yard">${sliderRearYard} ft</span></label>
         <input type="range" id="aslider-rear-yard" class="assumption-slider" min="0" max="50" step="1" value="${sliderRearYard}">
+        <div class="assumption-helper">Deeper rear yard -> less buildable footprint -> envelope can get taller to fit FAR.</div>
       </div>
       <div class="assumption-slider-row">
         <label>Max Height <span class="assumption-val" id="aval-max-height">${sliderMaxHeight} ft</span></label>
         <input type="range" id="aslider-max-height" class="assumption-slider" min="30" max="300" step="5" value="${sliderMaxHeight}">
+      </div>
+      <div class="assumption-impact" id="study-assumption-impact">
+        Rear yard depth -> buildable footprint -> floors -> envelope height.
       </div>
       <button type="button" id="assumption-reset-btn" class="assumption-reset-btn">Reset to Zoning Defaults</button>
       <div class="assumption-note">Results are approximate — for visualization and research only.</div>
@@ -1195,7 +1202,18 @@ function _scaleRingJS(ring, scale) {
 
 function _recalcStudy() {
   if (!zoningStudyDefaults) return null;
-  const { lotAreaFt2, far, defaultOsr, defaultRearYardFt, defaultMaxHeightFt, baseRearYardFt2, baseTotalYardFt2 } = zoningStudyDefaults;
+  const {
+    lotAreaFt2,
+    far,
+    defaultOsr,
+    defaultRearYardFt,
+    defaultMaxHeightFt,
+    baseRearYardFt2,
+    baseTotalYardFt2,
+    baselineBuildableFootprintFt2,
+    baselineEstimatedFloors,
+    baselineEnvelopeHeightFt,
+  } = zoningStudyDefaults;
   const floorHeightFt = assumptionOverrides.floorHeightFt;
   const osr = assumptionOverrides.osrOverride ?? defaultOsr;
   const rearYardFt = assumptionOverrides.rearYardFtOverride ?? defaultRearYardFt;
@@ -1230,6 +1248,10 @@ function _recalcStudy() {
     lotAreaFt2, far, osr, rearYardFt, floorHeightFt, maxHeightFt,
     allowableFloorArea, requiredOpenSpace, newRearYardFt2,
     buildableFootprintFt2, estimatedFloors, envelopeHeightFt, fullFarFits,
+    deltaRearYardFt: rearYardFt - defaultRearYardFt,
+    deltaBuildableFootprintFt2: buildableFootprintFt2 - baselineBuildableFootprintFt2,
+    deltaEstimatedFloors: (estimatedFloors ?? 0) - baselineEstimatedFloors,
+    deltaEnvelopeHeightFt: envelopeHeightFt - baselineEnvelopeHeightFt,
   };
 }
 
@@ -1253,6 +1275,15 @@ function _updateStudyPanelNumbers(result) {
     } else if (!result.fullFarFits) {
       warnVal.textContent = "Full FAR may not fit inside this envelope under current assumptions.";
     }
+  }
+
+  const impact = document.getElementById("study-assumption-impact");
+  if (impact) {
+    const rearWord = result.deltaRearYardFt >= 0 ? "deeper" : "shallower";
+    const bfpWord = result.deltaBuildableFootprintFt2 >= 0 ? "increases" : "decreases";
+    const floorsWord = result.deltaEstimatedFloors >= 0 ? "increase" : "decrease";
+    const heightWord = result.deltaEnvelopeHeightFt >= 0 ? "increase" : "decrease";
+    impact.textContent = `Rear yard is ${Math.abs(result.deltaRearYardFt).toFixed(0)} ft ${rearWord} than zoning default -> buildable footprint ${bfpWord} by ${formatNumber(Math.abs(result.deltaBuildableFootprintFt2), 0)} sf -> estimated floors ${floorsWord} -> envelope height can ${heightWord}.`;
   }
 }
 
