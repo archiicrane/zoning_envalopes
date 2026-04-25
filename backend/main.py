@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -199,7 +200,17 @@ def _extract_zone_tokens(*values: Optional[str]) -> List[str]:
     for value in values:
         if not value:
             continue
-        cleaned = str(value).upper().replace("/", " ").replace(",", " ")
+        cleaned = str(value).upper()
+        # Treat mixed designations like "M1-R6A" as two zoning tokens while preserving
+        # standard district suffixes like "M1-1".
+        cleaned = re.sub(r"(?<=\d)-(?=[RCM])", " ", cleaned)
+        cleaned = (
+            cleaned.replace("/", " ")
+            .replace(",", " ")
+            .replace(";", " ")
+            .replace("(", " ")
+            .replace(")", " ")
+        )
         for token in cleaned.split():
             token = token.strip("();")
             if token and token[0] in {"R", "C", "M"} and token not in tokens:
@@ -287,11 +298,78 @@ def _rule_street_setback_ft(rule: Dict[str, Any]) -> Optional[float]:
     return None
 
 
+def _rule_rear_yard_ft(rule: Dict[str, Any]) -> Optional[float]:
+    value = _coerce_float(rule.get("rearYardFt"))
+    if value and value > 0:
+        return value
+    return None
+
+
+def _zone_r_digit(zone: str) -> Optional[int]:
+    token = _normalize_zone_token(zone)
+    if not token.startswith("R") or len(token) < 2 or not token[1].isdigit():
+        return None
+
+    # Handles R6, R6A, R7-2, R10A
+    idx = 1
+    digits = []
+    while idx < len(token) and token[idx].isdigit():
+        digits.append(token[idx])
+        idx += 1
+    if not digits:
+        return None
+    return int("".join(digits))
+
+
+def _rear_yard_requirement_ft(primary_zone: str, zr_rule: Optional[Dict[str, Any]]) -> Optional[float]:
+    if zr_rule:
+        rule_val = _rule_rear_yard_ft(zr_rule)
+        if rule_val and rule_val > 0:
+            return rule_val
+
+    r_digit = _zone_r_digit(primary_zone)
+    if r_digit is not None:
+        return 30.0 if r_digit >= 6 else 20.0
+
+    return None
+
+
+def _open_space_ratio_required(primary_zone: str, bulk_regime: Optional[str], zr_rule: Optional[Dict[str, Any]]) -> Optional[float]:
+    if zr_rule:
+        for key in ("openSpaceRatio", "openSpaceRatioRequired"):
+            value = _coerce_float(zr_rule.get(key))
+            if value and value > 0:
+                return value
+
+    r_digit = _zone_r_digit(primary_zone)
+    if r_digit is None or r_digit < 6:
+        return None
+
+    regime = str(bulk_regime or "").lower()
+    zone = _normalize_zone_token(primary_zone)
+
+    # App-level approximation used for massing feasibility. This is intentionally
+    # conservative and should be replaced by exact table values as data expands.
+    osr = 0.20
+    if zone.startswith(("R9", "R10")):
+        osr = 0.25
+    elif regime.startswith("contextual"):
+        osr = 0.16
+    elif "sky-exposure" in regime:
+        osr = 0.22
+    elif zone.endswith(("A", "B", "X")):
+        osr = 0.16
+
+    return round(osr, 3)
+
+
 def _zone_priority(zone: str) -> Tuple[int, int]:
-    if zone.startswith("R") or zone.startswith("M"):
-        return (3, len(zone))
+    if zone.startswith("R"):
+        return (4, len(zone))
     if zone.startswith(("C3", "C4", "C5", "C6", "C8")):
         return (3, len(zone))
+    if zone.startswith("M"):
+        return (2, len(zone))
     if zone.startswith(("C1", "C2", "C7")):
         return (1, len(zone))
     return (2, len(zone))
@@ -348,6 +426,7 @@ def _resolve_zoning_analysis(
     requested_far: Optional[float] = None,
     requested_height_ft: Optional[float] = None,
     lot_coverage: Optional[float] = None,
+    lot_area_ft2: Optional[float] = None,
     use_type: str = "market_rate",
     upzone: bool = False,
 ) -> Dict[str, Any]:
@@ -366,6 +445,7 @@ def _resolve_zoning_analysis(
         base_rule["bulk_regime"] = zr_rule.get("bulkRegime")
         base_rule["base_height_ft"] = _rule_base_height_ft(zr_rule)
         base_rule["street_setback_ft"] = _rule_street_setback_ft(zr_rule)
+        base_rule["rear_yard_ft"] = _rule_rear_yard_ft(zr_rule)
         simplified_inset_ft = _coerce_float(zr_rule.get("simplifiedPlanInsetFt"))
         if simplified_inset_ft and simplified_inset_ft > 0:
             base_rule["simplified_plan_inset_ft"] = simplified_inset_ft
@@ -389,8 +469,22 @@ def _resolve_zoning_analysis(
     if upzone:
         max_height_ft = max(max_height_ft, base_rule["max_height_ft"] * 1.2)
 
-    coverage_ratio = lot_coverage if lot_coverage is not None else _coverage_fallback(primary_zone or "")
-    coverage_ratio = max(0.2, min(1.0, coverage_ratio))
+    requested_coverage_ratio = lot_coverage if lot_coverage is not None else _coverage_fallback(primary_zone or "")
+    requested_coverage_ratio = max(0.2, min(1.0, requested_coverage_ratio))
+
+    rear_yard_ft_required = _rear_yard_requirement_ft(primary_zone or "", zr_rule)
+    open_space_ratio_required = _open_space_ratio_required(primary_zone or "", base_rule.get("bulk_regime"), zr_rule)
+
+    open_space_required_ft2 = 0.0
+    osr_coverage_cap = None
+    if open_space_ratio_required and open_space_ratio_required > 0 and lot_area_ft2 and lot_area_ft2 > 0:
+        open_space_required_ft2 = lot_area_ft2 * scenario_far * open_space_ratio_required
+        osr_coverage_cap = 1.0 - (scenario_far * open_space_ratio_required)
+
+    coverage_ratio = requested_coverage_ratio
+    if osr_coverage_cap is not None:
+        coverage_ratio = min(coverage_ratio, osr_coverage_cap)
+    coverage_ratio = max(0.05, min(1.0, coverage_ratio))
 
     return {
         "primary_zone": primary_zone,
@@ -403,7 +497,12 @@ def _resolve_zoning_analysis(
         "facility_far": round(facil_far or 0.0, 3),
         "scenario_far": round(scenario_far, 3),
         "max_height_ft": round(max_height_ft, 2),
+        "requested_coverage_ratio": round(requested_coverage_ratio, 3),
         "coverage_ratio": round(coverage_ratio, 3),
+        "coverage_ratio_limited_by_open_space": bool(osr_coverage_cap is not None and coverage_ratio < requested_coverage_ratio),
+        "open_space_ratio_required": round(open_space_ratio_required or 0.0, 3),
+        "open_space_required_ft2": round(open_space_required_ft2, 2),
+        "rear_yard_ft_required": round(rear_yard_ft_required or 0.0, 2),
         "bulk_regime": base_rule.get("bulk_regime"),
         "base_height_ft": round(_coerce_float(base_rule.get("base_height_ft")) or 0.0, 2),
         "street_setback_ft": round(_coerce_float(base_rule.get("street_setback_ft")) or 0.0, 2),
@@ -504,6 +603,7 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
                     "color": "#2563eb",
                     "opacity": 0.38,
                     "coverage_ratio": round(coverage_ratio, 3),
+                    "open_space_required_ft2": zoning.get("open_space_required_ft2", 0.0),
                     "segment": "single",
                 },
                 "geometry": {"type": "Polygon", "coordinates": [envelope_ring]},
@@ -992,6 +1092,7 @@ def build_envelope(payload: EnvelopeRequest) -> Dict[str, Any]:
         requested_far=payload.zoning_far,
         requested_height_ft=payload.max_height_ft,
         lot_coverage=payload.lot_coverage if payload.far_mode else None,
+        lot_area_ft2=payload.lot_area or lot_area_ft2,
         use_type=use_type,
         upzone=payload.upzone,
     )

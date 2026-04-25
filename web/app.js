@@ -266,12 +266,59 @@ function normalizeZoneToken(value) {
   return raw.replace(/\s+/g, "");
 }
 
+function extractZoneTokens(...values) {
+  const tokens = [];
+  for (const value of values) {
+    const raw = String(value || "").toUpperCase();
+    if (!raw) continue;
+
+    // Split mixed designations like M1-R6A into M1 and R6A, but keep M1-1 intact.
+    const normalized = raw
+      .replace(/(?<=\d)-(?=[RCM])/g, " ")
+      .replace(/[\/,;()]/g, " ");
+
+    for (const part of normalized.split(/\s+/)) {
+      const token = normalizeZoneToken(part);
+      if (!token || !/^[RCM]/.test(token)) continue;
+      if (!tokens.includes(token)) {
+        tokens.push(token);
+      }
+    }
+  }
+  return tokens;
+}
+
+function zonePriority(zone) {
+  if (zone.startsWith("R")) return [4, zone.length];
+  if (/^C[34568]/.test(zone)) return [3, zone.length];
+  if (zone.startsWith("M")) return [2, zone.length];
+  if (/^C[127]/.test(zone)) return [1, zone.length];
+  return [2, zone.length];
+}
+
+function pickPrimaryZoneToken(...values) {
+  const tokens = extractZoneTokens(...values);
+  if (!tokens.length) return "";
+  return tokens.sort((a, b) => {
+    const [pa, la] = zonePriority(a);
+    const [pb, lb] = zonePriority(b);
+    if (pa !== pb) return pb - pa;
+    return lb - la;
+  })[0];
+}
+
 function resolveZoneRule(propsOrZone) {
-  const zoneToken = normalizeZoneToken(
+  const zoneToken =
     typeof propsOrZone === "string"
-      ? propsOrZone
-      : propsOrZone?.zonedist1 ?? propsOrZone?.ZoneDist1 ?? propsOrZone?.zone ?? propsOrZone?.ZoningDist ?? ""
-  );
+      ? pickPrimaryZoneToken(propsOrZone)
+      : pickPrimaryZoneToken(
+        propsOrZone?.zonedist1,
+        propsOrZone?.ZoneDist1,
+        propsOrZone?.zonedist2,
+        propsOrZone?.ZoneDist2,
+        propsOrZone?.zone,
+        propsOrZone?.ZoningDist
+      );
   if (!zoneToken) {
     return null;
   }
@@ -295,7 +342,14 @@ function getAvailableZoningOptions() {
 }
 
 function pickZoneColor(props) {
-  const zone = normalizeZoneToken(props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? props.ZoningDist ?? "");
+  const zone = pickPrimaryZoneToken(
+    props.zonedist1,
+    props.ZoneDist1,
+    props.zonedist2,
+    props.ZoneDist2,
+    props.zone,
+    props.ZoningDist
+  );
 
   const explicit = {
     "R7": "#2563eb",
@@ -850,12 +904,20 @@ function _buildZoningReqRows(zoning) {
 
   const frontYard = rule.frontYardFt ?? null;
   const sideYard = rule.sideYardEachFt ?? null;
-  const rearYard = rule.rearYardFt ?? null;
+  const rearYard = rule.rearYardFt ?? zoning.rear_yard_ft_required ?? null;
   const streetSetback = rule.streetSetbackWideFt ?? null;
+  const openSpaceRatio = zoning.open_space_ratio_required ?? coerceNumber(rule.openSpaceRatio ?? rule.openSpaceRatioRequired);
+  const openSpaceRequiredFt2 = zoning.open_space_required_ft2 ?? null;
   if (frontYard != null) rows.push(`<div class="summary-row"><span>Front Yard</span><strong>${_ft(frontYard)}</strong></div>`);
   if (sideYard != null) rows.push(`<div class="summary-row"><span>Side Yard (each)</span><strong>${_ft(sideYard)}</strong></div>`);
   if (rearYard != null) rows.push(`<div class="summary-row"><span>Rear Yard</span><strong>${_ft(rearYard)}</strong></div>`);
   if (streetSetback != null) rows.push(`<div class="summary-row"><span>Street Setback</span><strong>${_ft(streetSetback)}</strong></div>`);
+  if (openSpaceRatio != null && Number(openSpaceRatio) > 0) {
+    rows.push(`<div class="summary-row"><span>Open Space Ratio</span><strong>${formatNumber(openSpaceRatio, 2)}</strong></div>`);
+  }
+  if (openSpaceRequiredFt2 != null && Number(openSpaceRequiredFt2) > 0) {
+    rows.push(`<div class="summary-row"><span>Required Open Space</span><strong>${formatNumber(openSpaceRequiredFt2, 0)} sf</strong></div>`);
+  }
 
   const sources = rule.sourceSections;
   if (Array.isArray(sources) && sources.length) {
@@ -910,12 +972,13 @@ function updateLotSummary(data, envelopeResults) {
 
 function buildClientLotData(feature) {
   const props = extractProps(feature);
+  const primaryZone = pickPrimaryZoneToken(props.zonedist1, props.zonedist2, props.zone);
   return {
     ...props,
-    zone: props.zonedist1 || props.zonedist2 || null,
+    zone: primaryZone || props.zonedist1 || props.zonedist2 || null,
     lot_polygon: featureGeometryToLotPolygon(feature),
     zoning_analysis: {
-      primary_zone: props.zonedist1 || props.zonedist2 || null,
+      primary_zone: primaryZone || null,
       base_far: props.resid_far || props.comm_far || props.facil_far || 0,
       scenario_far: props.resid_far || props.comm_far || props.facil_far || 0,
       max_height_ft: 120,
@@ -1159,7 +1222,7 @@ async function lookupLot() {
 
   activeLotPolygon = data.lot_polygon;
   activeLotData = data;
-  activeOriginalZone = normalizeZoneToken(data.zonedist1 || data.zonedist2 || "");
+  activeOriginalZone = pickPrimaryZoneToken(data.zoning_analysis?.primary_zone, data.zonedist1, data.zonedist2);
   activeZoneOverride = activeOriginalZone;
   baselineEnvelopeGeojson = null;
   baselineEnvelopeResults = null;
@@ -1186,7 +1249,7 @@ function selectLotFeature(feature) {
 
   activeLotPolygon = data.lot_polygon;
   activeLotData = data;
-  activeOriginalZone = normalizeZoneToken(data.zonedist1 || data.zonedist2 || "");
+  activeOriginalZone = pickPrimaryZoneToken(data.zoning_analysis?.primary_zone, data.zonedist1, data.zonedist2);
   activeZoneOverride = activeOriginalZone;
   baselineEnvelopeGeojson = null;
   baselineEnvelopeResults = null;
