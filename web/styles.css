@@ -263,6 +263,63 @@ hr {
   color: rgba(31, 41, 55, 0.82);
 }
 
+.assumption-slider-row {
+  padding: 7px 0 4px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.assumption-slider-row:last-of-type {
+  border-bottom: none;
+}
+
+.assumption-slider-row label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: rgba(31, 41, 55, 0.72);
+  margin-bottom: 4px;
+}
+
+.assumption-val {
+  font-weight: 700;
+  color: var(--accent-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.assumption-slider {
+  width: 100%;
+  accent-color: var(--accent-2);
+  cursor: pointer;
+  height: 4px;
+}
+
+.assumption-reset-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px 10px;
+  background: var(--accent-2);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.assumption-reset-btn:hover {
+  opacity: 0.85;
+}
+
+.assumption-note {
+  margin-top: 6px;
+  font-size: 10px;
+  color: rgba(31, 41, 55, 0.5);
+  font-style: italic;
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;

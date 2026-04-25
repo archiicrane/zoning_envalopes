@@ -28,6 +28,8 @@ let baselineEnvelopeGeojson = null;
 let baselineEnvelopeResults = null;
 let scenarioEnvelopeGeojson = null;
 let scenarioEnvelopeResults = null;
+let assumptionOverrides = { floorHeightFt: 10, transparencyPct: null, osrOverride: null, rearYardFtOverride: null, maxHeightFtOverride: null };
+let zoningStudyDefaults = null;
 let activeNeighborhood = null;
 let activeNeighborhoodData = EMPTY_FC;
 let availableNeighborhoods = [];
@@ -83,6 +85,12 @@ function applyEnvelopeOpacityToLayers() {
 envelopeOpacitySlider.addEventListener("input", () => {
   const { transparencyPercent } = _envelopeOpacityValues();
   envelopeOpacityVal.textContent = `${transparencyPercent}%`;
+  const panelSlider = document.getElementById("aslider-transparency");
+  if (panelSlider) {
+    panelSlider.value = transparencyPercent;
+    const panelVal = document.getElementById("aval-transparency");
+    if (panelVal) panelVal.textContent = `${transparencyPercent}%`;
+  }
   applyEnvelopeOpacityToLayers();
 });
 
@@ -1022,27 +1030,78 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
   const study = envelopeResults?.zoning_buildability_study;
   if (!study) return "";
 
+  // Initialize defaults from study the first time this lot/zone is rendered
+  if (!zoningStudyDefaults) {
+    const defaultOsr = coerceNumber(zoning?.open_space_ratio_required) ?? 0;
+    const defaultRearYardFt = coerceNumber(study.rear_yard_requirement_ft) ?? 20;
+    const defaultMaxHeightFt = coerceNumber(study.height_limit_ft) ?? 120;
+    const baseRearYardFt2 = coerceNumber(study.rear_yard_area_ft2) ?? 0;
+    const baseTotalYardFt2 = Math.max(
+      0,
+      (study.lot_area_ft2 ?? 0) - (study.buildable_footprint_ft2 ?? 0) - (study.required_open_space_ft2 ?? 0)
+    );
+    zoningStudyDefaults = {
+      lotAreaFt2: study.lot_area_ft2 ?? 0,
+      far: study.far ?? 0,
+      defaultOsr,
+      defaultRearYardFt,
+      defaultMaxHeightFt,
+      baseRearYardFt2,
+      baseTotalYardFt2,
+    };
+    assumptionOverrides = { floorHeightFt: 10, transparencyPct: null, osrOverride: null, rearYardFtOverride: null, maxHeightFtOverride: null };
+  }
+
+  const { defaultOsr, defaultRearYardFt, defaultMaxHeightFt } = zoningStudyDefaults;
+  const currentTransparency = Number(envelopeOpacitySlider.value);
+  const sliderFloor = assumptionOverrides.floorHeightFt;
+  const sliderTransparency = assumptionOverrides.transparencyPct ?? currentTransparency;
+  const sliderOsr = assumptionOverrides.osrOverride ?? defaultOsr;
+  const sliderRearYard = assumptionOverrides.rearYardFtOverride ?? defaultRearYardFt;
+  const sliderMaxHeight = assumptionOverrides.maxHeightFtOverride ?? defaultMaxHeightFt;
+
   const yesNo = study.full_far_fits ? "Yes" : "No";
+  const farFitWarning = study.full_far_fit_warning || "";
+
   return `
     <div class="summary-section-head">ZONING BUILDABILITY STUDY</div>
     <div class="summary-row"><span>Lot Area</span><strong>${formatNumber(study.lot_area_ft2, 0)} sf</strong></div>
     <div class="summary-row"><span>Zoning District</span><strong>${zoning?.primary_zone || "n/a"}</strong></div>
     <div class="summary-row"><span>FAR</span><strong>${formatNumber(study.far, 2)}</strong></div>
-    <div class="summary-row"><span>Allowable Floor Area</span><strong>${formatNumber(study.allowable_floor_area_ft2, 0)} sf</strong></div>
-    <div class="summary-row"><span>Required Open Space</span><strong>${formatNumber(study.required_open_space_ft2, 0)} sf</strong></div>
-    <div class="summary-row"><span>Rear Yard Requirement</span><strong>${_ft(study.rear_yard_requirement_ft)}</strong></div>
-    <div class="summary-row"><span>Buildable Footprint</span><strong>${formatNumber(study.buildable_footprint_ft2, 0)} sf</strong></div>
-    <div class="summary-row"><span>Estimated Floors</span><strong>${formatNumber(study.estimated_floors, 2)}</strong></div>
-    <div class="summary-row"><span>Envelope Height</span><strong>${_ft(study.envelope_height_ft)}</strong></div>
-    <div class="summary-row"><span>Full FAR Fits?</span><strong>${yesNo}</strong></div>
-    ${study.full_far_fits ? "" : `<div class="summary-row summary-row--warning"><span>Note</span><strong>${study.full_far_fit_warning}</strong></div>`}
-    <details class="summary-assumptions">
+    <div class="summary-row"><span>Allowable Floor Area</span><strong id="study-val-afa">${formatNumber(study.allowable_floor_area_ft2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Required Open Space</span><strong id="study-val-ros">${formatNumber(study.required_open_space_ft2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Rear Yard Requirement</span><strong id="study-val-ryr">${_ft(study.rear_yard_requirement_ft)}</strong></div>
+    <div class="summary-row"><span>Buildable Footprint</span><strong id="study-val-bfp">${formatNumber(study.buildable_footprint_ft2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Estimated Floors</span><strong id="study-val-floors">${formatNumber(study.estimated_floors, 2)}</strong></div>
+    <div class="summary-row"><span>Envelope Height</span><strong id="study-val-height">${_ft(study.envelope_height_ft)}</strong></div>
+    <div class="summary-row"><span>Full FAR Fits?</span><strong id="study-val-farfits">${yesNo}</strong></div>
+    <div id="study-row-farwarn" class="summary-row summary-row--warning"${study.full_far_fits ? ' style="display:none"' : ''}>
+      <span>Note</span><strong id="study-val-farwarn">${farFitWarning}</strong>
+    </div>
+    <details class="summary-assumptions" id="assumptionsDetails">
       <summary>Assumptions</summary>
-      <div>floor-to-floor height = 10 ft</div>
-      <div>open space calculations are approximate</div>
-      <div>rear yard is assumed from the rear lot line</div>
-      <div>split zoning districts are approximated unless zoning polygon clipping is implemented</div>
-      <div>final results are for visualization and research, not official zoning compliance</div>
+      <div class="assumption-slider-row">
+        <label>Floor-to-Floor Height <span class="assumption-val" id="aval-floor-height">${sliderFloor} ft</span></label>
+        <input type="range" id="aslider-floor-height" class="assumption-slider" min="8" max="16" step="0.5" value="${sliderFloor}">
+      </div>
+      <div class="assumption-slider-row">
+        <label>Envelope Transparency <span class="assumption-val" id="aval-transparency">${sliderTransparency}%</span></label>
+        <input type="range" id="aslider-transparency" class="assumption-slider" min="10" max="90" step="5" value="${sliderTransparency}">
+      </div>
+      <div class="assumption-slider-row">
+        <label>Open Space Ratio <span class="assumption-val" id="aval-osr">${sliderOsr}</span></label>
+        <input type="range" id="aslider-osr" class="assumption-slider" min="0" max="60" step="1" value="${sliderOsr}">
+      </div>
+      <div class="assumption-slider-row">
+        <label>Rear Yard Depth <span class="assumption-val" id="aval-rear-yard">${sliderRearYard} ft</span></label>
+        <input type="range" id="aslider-rear-yard" class="assumption-slider" min="0" max="50" step="1" value="${sliderRearYard}">
+      </div>
+      <div class="assumption-slider-row">
+        <label>Max Height <span class="assumption-val" id="aval-max-height">${sliderMaxHeight} ft</span></label>
+        <input type="range" id="aslider-max-height" class="assumption-slider" min="30" max="300" step="5" value="${sliderMaxHeight}">
+      </div>
+      <button type="button" id="assumption-reset-btn" class="assumption-reset-btn">Reset to Zoning Defaults</button>
+      <div class="assumption-note">Results are approximate — for visualization and research only.</div>
     </details>
   `;
 }
@@ -1105,6 +1164,230 @@ function buildClientLotData(feature) {
   };
 }
 
+// ─── Polygon geometry helpers (mirrors backend _scale_ring / _ring_inset_scale) ───
+
+function _polygonAreaFt2(ring) {
+  let areaDeg = 0;
+  for (let i = 0, n = ring.length - 1; i < n; i++) {
+    areaDeg += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+  }
+  areaDeg = Math.abs(areaDeg) / 2;
+  // Approx at NYC lat: 1° lon ≈ 82 631 m, 1° lat ≈ 111 319 m
+  return areaDeg * 82631 * 111319 * 10.7639; // → ft²
+}
+
+function _ringInsetScale(ring, insetFt) {
+  if (insetFt <= 0) return 1.0;
+  const areaFt2 = _polygonAreaFt2(ring);
+  if (areaFt2 <= 0) return 1.0;
+  const radiusM = Math.sqrt((areaFt2 / 10.7639) / Math.PI);
+  return Math.max(0.02, Math.min(1.0, 1.0 - (insetFt * 0.3048) / radiusM));
+}
+
+function _scaleRingJS(ring, scale) {
+  if (scale >= 1.0) return ring.slice();
+  const cx = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+  const cy = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+  return ring.map((p) => [cx + (p[0] - cx) * scale, cy + (p[1] - cy) * scale]);
+}
+
+// ─── Assumptions: recalculate zoning study values ───
+
+function _recalcStudy() {
+  if (!zoningStudyDefaults) return null;
+  const { lotAreaFt2, far, defaultOsr, defaultRearYardFt, defaultMaxHeightFt, baseRearYardFt2, baseTotalYardFt2 } = zoningStudyDefaults;
+  const floorHeightFt = assumptionOverrides.floorHeightFt;
+  const osr = assumptionOverrides.osrOverride ?? defaultOsr;
+  const rearYardFt = assumptionOverrides.rearYardFtOverride ?? defaultRearYardFt;
+  const maxHeightFt = assumptionOverrides.maxHeightFtOverride ?? defaultMaxHeightFt ?? 120;
+
+  // Scale rear yard area proportionally to rear yard depth change
+  const rearYardDepthScale = defaultRearYardFt > 0 ? rearYardFt / defaultRearYardFt : (rearYardFt > 0 ? 1 : 0);
+  const newRearYardFt2 = baseRearYardFt2 * rearYardDepthScale;
+  const newTotalYardFt2 = Math.max(0, baseTotalYardFt2 + (newRearYardFt2 - baseRearYardFt2));
+
+  const allowableFloorArea = lotAreaFt2 * far;
+  const requiredOpenSpace = allowableFloorArea * osr / 100;
+  const buildableFootprintFt2 = Math.max(0, lotAreaFt2 - requiredOpenSpace - newTotalYardFt2);
+
+  let estimatedFloors = null;
+  let envelopeHeightFt = 0;
+  let fullFarFits = false;
+
+  if (buildableFootprintFt2 > 0) {
+    estimatedFloors = allowableFloorArea / buildableFootprintFt2;
+    const requiredHeight = estimatedFloors * floorHeightFt;
+    envelopeHeightFt = Math.min(requiredHeight, maxHeightFt);
+    fullFarFits = requiredHeight <= maxHeightFt + 1e-6;
+  }
+
+  console.log("[assumptions] recalculated zoning study", {
+    osr, rearYardFt, floorHeightFt, maxHeightFt,
+    allowableFloorArea, requiredOpenSpace, buildableFootprintFt2, estimatedFloors, envelopeHeightFt, fullFarFits,
+  });
+
+  return {
+    lotAreaFt2, far, osr, rearYardFt, floorHeightFt, maxHeightFt,
+    allowableFloorArea, requiredOpenSpace, newRearYardFt2,
+    buildableFootprintFt2, estimatedFloors, envelopeHeightFt, fullFarFits,
+  };
+}
+
+// ─── Assumptions: update study panel numbers in-place ───
+
+function _updateStudyPanelNumbers(result) {
+  if (!result) return;
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  set("study-val-ros", `${formatNumber(result.requiredOpenSpace, 0)} sf`);
+  set("study-val-ryr", `${formatNumber(result.rearYardFt, 0)} ft`);
+  set("study-val-bfp", result.buildableFootprintFt2 > 0 ? `${formatNumber(result.buildableFootprintFt2, 0)} sf` : "—");
+  set("study-val-floors", result.estimatedFloors != null ? formatNumber(result.estimatedFloors, 2) : "—");
+  set("study-val-height", result.envelopeHeightFt > 0 ? `${formatNumber(result.envelopeHeightFt, 0)} ft` : "—");
+  set("study-val-farfits", result.fullFarFits ? "Yes" : "No");
+  const warnRow = document.getElementById("study-row-farwarn");
+  const warnVal = document.getElementById("study-val-farwarn");
+  if (warnRow) warnRow.style.display = result.fullFarFits ? "none" : "";
+  if (warnVal) {
+    if (result.buildableFootprintFt2 <= 0) {
+      warnVal.textContent = "Buildable footprint is too small under current assumptions.";
+    } else if (!result.fullFarFits) {
+      warnVal.textContent = "Full FAR may not fit inside this envelope under current assumptions.";
+    }
+  }
+}
+
+// ─── Assumptions: rebuild envelope + overlay features ───
+
+function _buildStudyEnvelopeFeaturesFromAssumptions(rawGeojson, newEnvelopeHeightFt, color, variant) {
+  const origFeatures = (rawGeojson?.features || []).filter((f) => f?.properties?.kind === "zoning_envelope");
+  if (!origFeatures.length || newEnvelopeHeightFt <= 0) return [];
+  const origMax = Math.max(...origFeatures.map((f) => coerceNumber(f?.properties?.height_ft) ?? 0));
+  if (origMax <= 0) return [];
+  const scale = newEnvelopeHeightFt / origMax;
+  return origFeatures.map((f) => ({
+    ...f,
+    properties: {
+      ...f.properties,
+      height_ft: Math.round((coerceNumber(f.properties.height_ft) ?? 0) * scale * 100) / 100,
+      color,
+      compare_variant: variant,
+    },
+  }));
+}
+
+function _buildStudyOverlayFeaturesFromAssumptions(lotPolygon, result) {
+  const outer = lotPolygon.slice();
+  const first = outer[0];
+  const last = outer[outer.length - 1];
+  if (first[0] !== last[0] || first[1] !== last[1]) outer.push([first[0], first[1]]);
+
+  const { lotAreaFt2, buildableFootprintFt2, rearYardFt, newRearYardFt2 } = result;
+  const rearScale = _ringInsetScale(outer, rearYardFt);
+  const rearClearRing = _scaleRingJS(outer, rearScale);
+  const buildableRatio = Math.max(0.02, Math.min(1.0, buildableFootprintFt2 / lotAreaFt2));
+  const buildableRing = _scaleRingJS(outer, Math.sqrt(buildableRatio));
+  const yardsAreaFt2 = Math.max(buildableFootprintFt2, lotAreaFt2 - newRearYardFt2);
+  const yardsRatio = Math.max(0.02, Math.min(1.0, yardsAreaFt2 / lotAreaFt2));
+  const yardsClearRing = _scaleRingJS(outer, Math.sqrt(yardsRatio));
+  const openSpaceAreaFt2 = Math.max(0, yardsAreaFt2 - buildableFootprintFt2);
+
+  const features = [
+    {
+      type: "Feature",
+      properties: { kind: "selected_lot", height_ft: 0, base_ft: 0, color: "#facc15", opacity: 0.12 },
+      geometry: { type: "Polygon", coordinates: [outer] },
+    },
+  ];
+
+  if (newRearYardFt2 > 1 && rearScale < 0.999) {
+    features.push({
+      type: "Feature",
+      properties: { kind: "rear_yard_zone", area_ft2: Math.round(newRearYardFt2), color: "#f59e0b" },
+      geometry: { type: "Polygon", coordinates: [outer, rearClearRing] },
+    });
+  }
+
+  if (openSpaceAreaFt2 > 1 && yardsRatio > buildableRatio) {
+    features.push({
+      type: "Feature",
+      properties: { kind: "open_space_zone", area_ft2: Math.round(openSpaceAreaFt2), color: "#10b981" },
+      geometry: { type: "Polygon", coordinates: [yardsClearRing, buildableRing] },
+    });
+  }
+
+  features.push({
+    type: "Feature",
+    properties: { kind: "buildable_footprint", area_ft2: Math.round(buildableFootprintFt2), color: "#0ea5e9" },
+    geometry: { type: "Polygon", coordinates: [buildableRing] },
+  });
+
+  return features;
+}
+
+function _redrawEnvelopeFromAssumptions(result) {
+  if (!result || !activeLotPolygon) return;
+  const activeGeojson = scenarioEnvelopeGeojson || baselineEnvelopeGeojson;
+  if (!activeGeojson) return;
+
+  const overlayFeatures = _buildStudyOverlayFeaturesFromAssumptions(activeLotPolygon, result);
+  let envelopeFeatures = [];
+  if (result.buildableFootprintFt2 > 0 && result.envelopeHeightFt > 0) {
+    const baselineFeatures = _extractCompareEnvelopeFeatures(baselineEnvelopeGeojson, "#64748b", "baseline", false);
+    const scenarioSource = scenarioEnvelopeGeojson || baselineEnvelopeGeojson;
+    const scenarioFeatures = _buildStudyEnvelopeFeaturesFromAssumptions(scenarioSource, result.envelopeHeightFt, "#2563eb", "scenario");
+    envelopeFeatures = [...baselineFeatures, ...scenarioFeatures];
+  }
+
+  updateStudyModel({ type: "FeatureCollection", features: [...overlayFeatures, ...envelopeFeatures] });
+  console.log("[assumptions] redrew envelope", { envelopeHeightFt: result.envelopeHeightFt, buildableFootprintFt2: result.buildableFootprintFt2 });
+}
+
+// ─── Assumptions: slider input handler ───
+
+function _onAssumptionInput(event) {
+  const target = event.target;
+  if (!target) return;
+  const id = target.id;
+  const val = Number(target.value);
+
+  if (id === "aslider-floor-height") {
+    assumptionOverrides.floorHeightFt = val;
+    const el = document.getElementById("aval-floor-height");
+    if (el) el.textContent = `${val} ft`;
+    console.log("[assumptions] floor height changed", val);
+  } else if (id === "aslider-transparency") {
+    assumptionOverrides.transparencyPct = val;
+    const el = document.getElementById("aval-transparency");
+    if (el) el.textContent = `${val}%`;
+    envelopeOpacitySlider.value = val;
+    envelopeOpacityVal.textContent = `${val}%`;
+    applyEnvelopeOpacityToLayers();
+    return; // transparency doesn't affect study numbers
+  } else if (id === "aslider-osr") {
+    assumptionOverrides.osrOverride = val;
+    const el = document.getElementById("aval-osr");
+    if (el) el.textContent = String(val);
+    console.log("[assumptions] open space ratio changed", val);
+  } else if (id === "aslider-rear-yard") {
+    assumptionOverrides.rearYardFtOverride = val;
+    const el = document.getElementById("aval-rear-yard");
+    if (el) el.textContent = `${val} ft`;
+    console.log("[assumptions] rear yard changed", val);
+  } else if (id === "aslider-max-height") {
+    assumptionOverrides.maxHeightFtOverride = val;
+    const el = document.getElementById("aval-max-height");
+    if (el) el.textContent = `${val} ft`;
+    console.log("[assumptions] max height changed", val);
+  } else {
+    return;
+  }
+
+  const result = _recalcStudy();
+  if (!result) return;
+  _updateStudyPanelNumbers(result);
+  _redrawEnvelopeFromAssumptions(result);
+}
+
 function clearActiveEnvelope() {
   activeLotPolygon = null;
   activeLotData = null;
@@ -1114,6 +1397,8 @@ function clearActiveEnvelope() {
   baselineEnvelopeResults = null;
   scenarioEnvelopeGeojson = null;
   scenarioEnvelopeResults = null;
+  assumptionOverrides = { floorHeightFt: 10, transparencyPct: null, osrOverride: null, rearYardFtOverride: null, maxHeightFtOverride: null };
+  zoningStudyDefaults = null;
   updateSelectionVisual(null, false);
   refreshSelectedLotComparisonModel();
   updateLotSummary(null);
@@ -1129,6 +1414,7 @@ function applySelectedZoneOverride(zoneCode) {
     return;
   }
 
+  zoningStudyDefaults = null;
   activeZoneOverride = zone;
   activeLotData.zonedist1 = zone;
   activeLotData.zone = zone;
@@ -1461,6 +1747,26 @@ neighborhoodSelect.addEventListener("change", async () => {
     await loadNeighborhoodById(neighborhoodSelect.value);
   } catch (err) {
     setReport(String(err));
+  }
+});
+
+// Assumption sliders
+lotSummary.addEventListener("input", (event) => {
+  _onAssumptionInput(event);
+});
+
+// Assumption reset button
+lotSummary.addEventListener("click", (event) => {
+  if (event.target?.id !== "assumption-reset-btn") return;
+  assumptionOverrides = { floorHeightFt: 10, transparencyPct: null, osrOverride: null, rearYardFtOverride: null, maxHeightFtOverride: null };
+  const envelopeResults = scenarioEnvelopeResults || baselineEnvelopeResults;
+  updateLotSummary(activeLotData, envelopeResults);
+  const details = document.getElementById("assumptionsDetails");
+  if (details) details.open = true;
+  const result = _recalcStudy();
+  if (result) {
+    _updateStudyPanelNumbers(result);
+    _redrawEnvelopeFromAssumptions(result);
   }
 });
 
