@@ -340,27 +340,7 @@ def _open_space_ratio_required(primary_zone: str, bulk_regime: Optional[str], zr
             value = _coerce_float(zr_rule.get(key))
             if value and value > 0:
                 return value
-
-    r_digit = _zone_r_digit(primary_zone)
-    if r_digit is None or r_digit < 6:
-        return None
-
-    regime = str(bulk_regime or "").lower()
-    zone = _normalize_zone_token(primary_zone)
-
-    # App-level approximation used for massing feasibility. This is intentionally
-    # conservative and should be replaced by exact table values as data expands.
-    osr = 0.20
-    if zone.startswith(("R9", "R10")):
-        osr = 0.25
-    elif regime.startswith("contextual"):
-        osr = 0.16
-    elif "sky-exposure" in regime:
-        osr = 0.22
-    elif zone.endswith(("A", "B", "X")):
-        osr = 0.16
-
-    return round(osr, 3)
+    return None
 
 
 def _zone_priority(zone: str) -> Tuple[int, int]:
@@ -478,8 +458,9 @@ def _resolve_zoning_analysis(
     open_space_required_ft2 = 0.0
     osr_coverage_cap = None
     if open_space_ratio_required and open_space_ratio_required > 0 and lot_area_ft2 and lot_area_ft2 > 0:
-        open_space_required_ft2 = lot_area_ft2 * scenario_far * open_space_ratio_required
-        osr_coverage_cap = 1.0 - (scenario_far * open_space_ratio_required)
+        osr_fraction = open_space_ratio_required / 100.0
+        open_space_required_ft2 = lot_area_ft2 * scenario_far * osr_fraction
+        osr_coverage_cap = 1.0 - (scenario_far * osr_fraction)
 
     coverage_ratio = requested_coverage_ratio
     if osr_coverage_cap is not None:

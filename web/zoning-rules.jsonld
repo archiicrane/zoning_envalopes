@@ -6,6 +6,7 @@
     "residentialEquivalent": "https://zr.planning.nyc.gov/terms/residentialEquivalent",
     "standardFar": "https://zr.planning.nyc.gov/terms/standardFar",
     "qualifyingFar": "https://zr.planning.nyc.gov/terms/qualifyingFar",
+    "openSpaceRatio": "https://zr.planning.nyc.gov/terms/openSpaceRatio",
     "frontYardFt": "https://zr.planning.nyc.gov/terms/frontYardFt",
     "sideYardEachFt": "https://zr.planning.nyc.gov/terms/sideYardEachFt",
     "rearYardFt": "https://zr.planning.nyc.gov/terms/rearYardFt",
@@ -23,12 +24,13 @@
   "dataset": {
     "name": "NYC Zoning Envelope Rules",
     "sourceSite": "https://zr.planning.nyc.gov/",
-    "lastReviewed": "2026-04-24",
+    "lastReviewed": "2026-04-25",
     "notes": "Normalized machine-readable bulk controls for envelope inference. This file captures district-level bulk rules and provenance used by the app. It does not fully encode special districts, authorizations, transit-zone parking, tower coverage, every footnote variant, or lot-specific exceptions. The simplifiedPlanInsetFt field is an app-facing proxy for plan extrusion and is not a literal substitute for stepped massing geometry."
   },
   "sources": {
     "zr-23-21": "https://zr.planning.nyc.gov/article-ii/chapter-3/23-21",
     "zr-23-22": "https://zr.planning.nyc.gov/article-ii/chapter-3/23-22",
+    "zr-23-14": "https://zr.planning.nyc.gov/article-ii/chapter-3/23-14",
     "zr-23-733": "https://zr.planning.nyc.gov/article-ii/chapter-3/23-733",
     "zr-23-737": "https://zr.planning.nyc.gov/article-ii/chapter-3/23-737",
     "zr-23-321": "https://zr.planning.nyc.gov/article-ii/chapter-3/23-321",
@@ -269,11 +271,12 @@
       "bulkRegime": "sky-exposure-plane",
       "standardFar": 2.2,
       "qualifyingFar": 3.9,
+      "openSpaceRatio": 20,
       "maximumFrontWallHeightFt": 60,
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
     },
     {
       "zoneCode": "R6A",
@@ -281,13 +284,14 @@
       "bulkRegime": "contextual",
       "standardFar": 3.0,
       "qualifyingFar": 3.9,
+      "openSpaceRatio": 16,
       "minimumBaseHeightFt": 40,
       "maximumBaseHeightFt": 65,
       "maximumBuildingHeightFt": 75,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
     },
     {
       "zoneCode": "R6B",
@@ -295,13 +299,14 @@
       "bulkRegime": "contextual",
       "standardFar": 2.0,
       "qualifyingFar": 2.4,
+      "openSpaceRatio": 16,
       "minimumBaseHeightFt": 30,
       "maximumBaseHeightFt": 45,
       "maximumBuildingHeightFt": 55,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
     },
     {
       "zoneCode": "R7-1",
@@ -309,11 +314,12 @@
       "bulkRegime": "sky-exposure-plane",
       "standardFar": 3.44,
       "qualifyingFar": 5.01,
+      "openSpaceRatio": 20,
       "maximumFrontWallHeightFt": 60,
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
     },
     {
       "zoneCode": "R7-2",
@@ -321,11 +327,12 @@
       "bulkRegime": "sky-exposure-plane",
       "standardFar": 3.44,
       "qualifyingFar": 5.01,
+      "openSpaceRatio": 20,
       "maximumFrontWallHeightFt": 60,
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
     },
     {
       "zoneCode": "R7A",
@@ -333,13 +340,14 @@
       "bulkRegime": "contextual",
       "standardFar": 4.0,
       "qualifyingFar": 5.01,
+      "openSpaceRatio": 18,
       "minimumBaseHeightFt": 40,
       "maximumBaseHeightFt": 75,
       "maximumBuildingHeightFt": 85,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
     },
     {
       "zoneCode": "R7B",
@@ -347,13 +355,14 @@
       "bulkRegime": "contextual",
       "standardFar": 3.0,
       "qualifyingFar": 3.9,
+      "openSpaceRatio": 18,
       "minimumBaseHeightFt": 40,
       "maximumBaseHeightFt": 65,
       "maximumBuildingHeightFt": 75,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
     },
     {
       "zoneCode": "R7D",
@@ -361,24 +370,26 @@
       "bulkRegime": "contextual",
       "standardFar": 4.66,
       "qualifyingFar": 5.6,
+      "openSpaceRatio": 18,
       "minimumBaseHeightFt": 60,
       "maximumBaseHeightFt": 85,
       "maximumBuildingHeightFt": 105,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
     },
     {
       "zoneCode": "R8",
       "zoneType": "residential",
       "bulkRegime": "sky-exposure-plane",
       "standardFar": 6.02,
+      "openSpaceRatio": 20,
       "maximumFrontWallHeightFt": 85,
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
     },
     {
       "zoneCode": "R8A",
@@ -386,13 +397,14 @@
       "bulkRegime": "contextual",
       "standardFar": 6.02,
       "qualifyingFar": 7.2,
+      "openSpaceRatio": 20,
       "minimumBaseHeightFt": 60,
       "maximumBaseHeightFt": 95,
       "maximumBuildingHeightFt": 125,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
     },
     {
       "zoneCode": "R8B",
@@ -400,34 +412,37 @@
       "bulkRegime": "contextual",
       "standardFar": 4.0,
       "qualifyingFar": 4.8,
+      "openSpaceRatio": 18,
       "minimumBaseHeightFt": 55,
       "maximumBaseHeightFt": 65,
       "maximumBuildingHeightFt": 75,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
     },
     {
       "zoneCode": "R9",
       "zoneType": "residential",
       "bulkRegime": "sky-exposure-plane-or-tower",
       "standardFar": 7.52,
+      "openSpaceRatio": 23,
       "maximumFrontWallHeightFt": 85,
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736", "zr-23-737"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736", "zr-23-737"]
     },
     {
       "zoneCode": "R9A",
       "zoneType": "residential",
       "bulkRegime": "contextual-variant",
       "standardFar": 7.52,
+      "openSpaceRatio": 23,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
     },
     {
       "zoneCode": "R10",
@@ -435,11 +450,12 @@
       "bulkRegime": "sky-exposure-plane-or-tower",
       "standardFar": 10.0,
       "qualifyingFar": 12.0,
+      "openSpaceRatio": 25,
       "maximumFrontWallHeightFt": 85,
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-322", "zr-23-335", "zr-23-733", "zr-23-736", "zr-23-737"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-733", "zr-23-736", "zr-23-737"]
     },
     {
       "zoneCode": "R10A",
@@ -447,10 +463,11 @@
       "bulkRegime": "contextual-variant",
       "standardFar": 10.0,
       "qualifyingFar": 12.0,
+      "openSpaceRatio": 25,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-432", "zr-23-433"]
     },
     {
       "zoneCode": "C3",
