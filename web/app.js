@@ -56,25 +56,34 @@ farInput.addEventListener("input", () => {
   farVal.textContent = Number(farInput.value).toFixed(2);
 });
 
-envelopeOpacitySlider.addEventListener("input", () => {
+function _envelopeOpacityValues() {
   const transparencyPercent = Number(envelopeOpacitySlider.value);
-  envelopeOpacityVal.textContent = `${transparencyPercent}%`;
-  if (map && map.getLayer("zoning-envelope-fill")) {
-    // Invert: transparency 0 = fully opaque, transparency 100 = fully transparent
-    const opacityValue = 1 - transparencyPercent / 100;
-    // At 0% transparency, baseline should also be fully opaque (not reduced)
-    const baselineMultiplier = transparencyPercent === 0 ? 1 : 0.35;
-    map.setPaintProperty(
-      "zoning-envelope-fill",
-      "fill-extrusion-opacity",
-      [
-        "case",
-        ["==", ["get", "compare_variant"], "baseline"],
-        opacityValue * baselineMultiplier,
-        opacityValue,
-      ]
-    );
+  const opacityValue = 1 - transparencyPercent / 100;
+  const baselineMultiplier = transparencyPercent === 0 ? 1 : 0.35;
+  return {
+    transparencyPercent,
+    scenarioOpacity: opacityValue,
+    baselineOpacity: opacityValue * baselineMultiplier,
+  };
+}
+
+function applyEnvelopeOpacityToLayers() {
+  if (!map) {
+    return;
   }
+  const { scenarioOpacity, baselineOpacity } = _envelopeOpacityValues();
+  if (map.getLayer("zoning-envelope-fill")) {
+    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-opacity", scenarioOpacity);
+  }
+  if (map.getLayer("zoning-envelope-fill-baseline")) {
+    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-opacity", baselineOpacity);
+  }
+}
+
+envelopeOpacitySlider.addEventListener("input", () => {
+  const { transparencyPercent } = _envelopeOpacityValues();
+  envelopeOpacityVal.textContent = `${transparencyPercent}%`;
+  applyEnvelopeOpacityToLayers();
 });
 
 showBuildingToggle.addEventListener("change", syncLayerVisibility);
@@ -725,21 +734,39 @@ function ensureSourcesAndLayers() {
   if (!map.getSource("study-model")) {
     map.addSource("study-model", { type: "geojson", data: EMPTY_FC });
 
+    const { scenarioOpacity, baselineOpacity } = _envelopeOpacityValues();
+
+    map.addLayer({
+      id: "zoning-envelope-fill-baseline",
+      type: "fill-extrusion",
+      source: "study-model",
+      filter: [
+        "all",
+        ["==", ["get", "kind"], "zoning_envelope"],
+        ["==", ["get", "compare_variant"], "baseline"],
+      ],
+      paint: {
+        "fill-extrusion-color": ["coalesce", ["get", "color"], "#64748b"],
+        "fill-extrusion-height": ["coalesce", ["get", "height_ft"], 0],
+        "fill-extrusion-base": ["coalesce", ["get", "base_ft"], 0],
+        "fill-extrusion-opacity": baselineOpacity,
+      },
+    });
+
     map.addLayer({
       id: "zoning-envelope-fill",
       type: "fill-extrusion",
       source: "study-model",
-      filter: ["==", ["get", "kind"], "zoning_envelope"],
+      filter: [
+        "all",
+        ["==", ["get", "kind"], "zoning_envelope"],
+        ["!=", ["get", "compare_variant"], "baseline"],
+      ],
       paint: {
         "fill-extrusion-color": ["coalesce", ["get", "color"], "#2563eb"],
         "fill-extrusion-height": ["coalesce", ["get", "height_ft"], 0],
         "fill-extrusion-base": ["coalesce", ["get", "base_ft"], 0],
-        "fill-extrusion-opacity": [
-          "case",
-          ["==", ["get", "compare_variant"], "baseline"],
-          0.2,
-          0.42,
-        ],
+        "fill-extrusion-opacity": scenarioOpacity,
       },
     });
 
