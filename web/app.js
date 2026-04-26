@@ -47,6 +47,7 @@ let zoningStudyDefaults = null;
 let lastAssumptionChanged = null;
 let showYardEdgeTypes = false;
 let focusSelectedLotMode = false;
+let showRoadCenterlines = false;
 let lastStudyResult = null;
 let activeNeighborhood = null;
 let activeNeighborhoodData = EMPTY_FC;
@@ -945,6 +946,20 @@ function ensureSourcesAndLayers() {
     });
 
     map.addLayer({
+      id: "edge-to-road-links",
+      type: "line",
+      source: "study-model",
+      filter: ["==", ["get", "kind"], "edge_to_road_link"],
+      paint: {
+        "line-color": "#facc15",
+        "line-width": 1.2,
+        "line-dasharray": [2, 2],
+        "line-opacity": 0.95,
+      },
+      layout: { visibility: "none" },
+    });
+
+    map.addLayer({
       id: "yard-edge-labels",
       type: "symbol",
       source: "study-model",
@@ -978,6 +993,21 @@ function ensureSourcesAndLayers() {
         "text-halo-color": "#ffffff",
         "text-halo-width": 1.2,
       },
+    });
+  }
+
+  if (!map.getSource("road-centerlines-debug")) {
+    map.addSource("road-centerlines-debug", { type: "geojson", data: EMPTY_FC });
+    map.addLayer({
+      id: "road-centerlines-debug-line",
+      type: "line",
+      source: "road-centerlines-debug",
+      paint: {
+        "line-color": "#facc15",
+        "line-width": 2.2,
+        "line-opacity": 0.95,
+      },
+      layout: { visibility: "none" },
     });
   }
 }
@@ -1020,16 +1050,23 @@ function syncLayerVisibility() {
     "yard-edge-front-line",
     "yard-edge-rear-line",
     "yard-edge-side-line",
+    "edge-to-road-links",
     "yard-edge-corner-line",
     "yard-edge-labels",
     "buildable-label",
   ];
   for (const layerId of studyLayerIds) {
-    if (map.getLayer(layerId)) {
       const isOptionalDebugLine = ["yard-edge-front-line", "yard-edge-rear-line", "yard-edge-side-line"].includes(layerId);
+      const isRoadLinkLayer = layerId === "edge-to-road-links";
+      const visible = showEnvelopeToggle.checked
+        && (!isOptionalDebugLine || showYardEdgeTypes)
+        && (!isRoadLinkLayer || showRoadCenterlines);
       const visible = showEnvelopeToggle.checked && (!isOptionalDebugLine || showYardEdgeTypes);
       map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
     }
+  if (map.getLayer("road-centerlines-debug-line")) {
+    map.setLayoutProperty("road-centerlines-debug-line", "visibility", showRoadCenterlines ? "visible" : "none");
+  }
   }
   applyFocusModeVisuals();
   if (showBuildingsBtn) {
@@ -1333,6 +1370,12 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
     <div class="summary-row"><span>Side Edge 1</span><strong id="study-edge-side-1">Analyzing...</strong></div>
     <div class="summary-row"><span>Side Edge 2</span><strong id="study-edge-side-2">Analyzing...</strong></div>
     <div class="summary-row summary-row--source"><span>ZR References</span><span id="study-edge-zr">Analyzing...</span></div>
+    <div class="summary-section-head">EDGE DETECTION</div>
+    <div class="summary-row"><span>Nearest Road</span><strong id="study-detect-road">Analyzing...</strong></div>
+    <div class="summary-row"><span>Front Edge Distance</span><strong id="study-detect-front-dist">Analyzing...</strong></div>
+    <div class="summary-row"><span>Rear Edge Distance</span><strong id="study-detect-rear-dist">Analyzing...</strong></div>
+    <div class="summary-row"><span>Lot Type</span><strong id="study-detect-lot-type">Analyzing...</strong></div>
+    <div class="summary-row"><span>Detection Method</span><strong id="study-detect-method">Road centerline proximity</strong></div>
     <details class="summary-assumptions" id="assumptionsDetails">
       <summary>Assumptions</summary>
       <div class="assumption-slider-row">
@@ -1375,6 +1418,7 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
         Move a slider to see live impact.
       </div>
       <label class="assumption-toggle"><input type="checkbox" id="showYardEdgeTypesToggle" ${showYardEdgeTypes ? "checked" : ""}> Show Colored Edge Lines (debug)</label>
+      <label class="assumption-toggle"><input type="checkbox" id="showRoadCenterlinesToggle" ${showRoadCenterlines ? "checked" : ""}> Show Road Centerlines</label>
       <label class="assumption-toggle"><input type="checkbox" id="focusSelectedLotToggle" ${focusSelectedLotMode ? "checked" : ""}> Focus Selected Lot</label>
       <div class="scenario-impact" id="scenario-impact-box">
         With current assumptions, this lot allows ${formatNumber(study.allowable_floor_area_ft2, 0)} sf of floor area. The buildable footprint is ${formatNumber(initialFinalBuildableFt2, 0)} sf, requiring about ${formatNumber(study.estimated_floors, 1)} floors. The final envelope is limited to ${formatNumber(study.height_limit_ft ?? defaultMaxHeightFt, 0)} ft, so ${study.full_far_fits ? "full FAR fits" : "full FAR may not fit"}.
@@ -1390,6 +1434,7 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
         <div><span class="legend-chip legend-chip-front"></span> FRONT edge (debug)</div>
         <div><span class="legend-chip legend-chip-rear"></span> REAR edge (debug)</div>
         <div><span class="legend-chip legend-chip-side"></span> SIDE edge (debug)</div>
+        <div><span class="legend-chip legend-chip-road"></span> Road centerlines</div>
         <div><span class="legend-chip legend-chip-corner"></span> CORNER edge</div>
         <div><span class="legend-chip legend-chip-buildable-label"></span> BUILDABLE AREA label</div>
       </div>
@@ -1585,16 +1630,29 @@ function _toRoadLineFeatures(features) {
   const lines = [];
   for (const feature of features || []) {
     const geometry = feature?.geometry;
+    const properties = feature?.properties || {};
     if (!geometry) continue;
     if (geometry.type === "LineString") {
-      lines.push({ type: "Feature", geometry, properties: {} });
+      lines.push({ type: "Feature", geometry, properties });
     } else if (geometry.type === "MultiLineString") {
       for (const coords of geometry.coordinates || []) {
-        lines.push({ type: "Feature", geometry: { type: "LineString", coordinates: coords }, properties: {} });
+        lines.push({ type: "Feature", geometry: { type: "LineString", coordinates: coords }, properties });
       }
     }
   }
   return lines;
+}
+
+function _roadName(road) {
+  if (!road?.properties) return "Unknown road";
+  return (
+    road.properties.name
+    || road.properties.fullname
+    || road.properties.stname
+    || road.properties.street
+    || road.properties.ref
+    || "Unknown road"
+  );
 }
 
 function _toLotBoundaryLines(features) {
@@ -1845,19 +1903,21 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
   const neighborLines = _getNeighborLotBoundaryLines(lotRing);
   const toleranceM = toleranceFt * 0.3048;
   const lotCentroid = turf.centroid({ type: "Feature", geometry: { type: "Polygon", coordinates: [_closeRing(lotRing)] }, properties: {} });
-  const nearestRoad = _nearestRoadLineToPoint(lotCentroid.geometry.coordinates, roads);
 
-  const streetEdgeIndices = [];
+  const edgesByRoadDistance = [];
   for (const edge of edges) {
     const pt = turf.point(edge.midpoint);
     let minDistM = Number.POSITIVE_INFINITY;
     let nearestRoad = null;
+    let nearestRoadPoint = null;
     for (const road of roads) {
       try {
-        const d = turf.pointToLineDistance(pt, road, { units: "meters" });
+        const nearestOnLine = turf.nearestPointOnLine(road, pt, { units: "meters" });
+        const d = nearestOnLine?.properties?.dist ?? turf.pointToLineDistance(pt, road, { units: "meters" });
         if (d < minDistM) {
           minDistM = d;
           nearestRoad = road;
+          nearestRoadPoint = nearestOnLine?.geometry?.coordinates || null;
         }
       } catch (_err) {
         // skip invalid road geometry
@@ -1865,10 +1925,29 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
     }
     edge.minRoadDistM = minDistM;
     edge.streetClass = _streetClassFromRoad(nearestRoad);
-    if (Number.isFinite(minDistM) && minDistM <= toleranceM) {
-      streetEdgeIndices.push(edge.idx);
-    }
+    edge.nearestRoad = nearestRoad;
+    edge.nearestRoadName = _roadName(nearestRoad);
+    edge.nearestRoadPoint = nearestRoadPoint;
+    edgesByRoadDistance.push(edge);
     edge.touchesNeighbor = _edgeTouchesNeighbor(edge, neighborLines);
+  }
+
+  edgesByRoadDistance.sort((a, b) => a.minRoadDistM - b.minRoadDistM);
+  const primaryFrontEdge = edgesByRoadDistance[0] || edges[0] || null;
+  const streetEdgeIndices = [];
+  if (primaryFrontEdge) {
+    streetEdgeIndices.push(primaryFrontEdge.idx);
+  }
+
+  const secondaryFrontCandidate = edgesByRoadDistance.find((edge) => {
+    if (!primaryFrontEdge || edge.idx === primaryFrontEdge.idx) return false;
+    if (!Number.isFinite(edge.minRoadDistM) || !Number.isFinite(primaryFrontEdge.minRoadDistM)) return false;
+    const closeToRoad = edge.minRoadDistM <= toleranceM;
+    const closeToPrimary = (edge.minRoadDistM - primaryFrontEdge.minRoadDistM) <= feetToMeters(18);
+    return closeToRoad && closeToPrimary;
+  });
+  if (secondaryFrontCandidate) {
+    streetEdgeIndices.push(secondaryFrontCandidate.idx);
   }
 
   let lotType = "Interior";
@@ -1879,44 +1958,22 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
   let sideEdgeIndices = [];
   let rearEstimated = false;
 
-  const primaryFrontEdge = streetEdgeIndices.length
-    ? edges
-      .filter((e) => streetEdgeIndices.includes(e.idx))
-      .sort((a, b) => b.lengthM - a.lengthM)[0]
-    : (nearestRoad
-      ? edges
-        .slice()
-        .sort((a, b) => {
-          const da = turf.pointToLineDistance(turf.point(a.midpoint), nearestRoad.road, { units: "meters" });
-          const db = turf.pointToLineDistance(turf.point(b.midpoint), nearestRoad.road, { units: "meters" });
-          return da - db;
-        })[0]
-      : edges.find((e) => e.idx === _closestEdgeToRoad(edges)));
-
-  if (!streetEdgeIndices.length) {
-    warnings.push("Street edge detection fails. Using nearest road-facing edge as FRONT.");
-  }
-
   if (streetEdgeIndices.length > 2) {
     lotType = "Irregular";
-    warnings.push("Lot edge classification uncertain. Yard geometry is approximate.");
+    warnings.push("More than two road-facing edges detected. Lot type set to irregular.");
   } else if (streetEdgeIndices.length > 1) {
     const unique = [...streetEdgeIndices];
     const adjacentPair = unique.some((idx, i) => unique.slice(i + 1).some((jdx) => _isAdjacentEdge(idx, jdx, edges.length)));
     if (adjacentPair) {
       lotType = "Corner";
-      warnings.push("Corner lot detected.");
+      warnings.push("Corner lot detected by road centerline proximity.");
     } else {
       lotType = "Through";
-      warnings.push("Through lot detected. Rear yard rules may differ.");
+      warnings.push("Through lot detected by opposite street-facing edges.");
     }
   }
 
-  if (streetEdgeIndices.length) {
-    frontEdgeIndices = [...streetEdgeIndices];
-  } else if (primaryFrontEdge) {
-    frontEdgeIndices = [primaryFrontEdge.idx];
-  }
+  frontEdgeIndices = streetEdgeIndices.length ? [...streetEdgeIndices] : (primaryFrontEdge ? [primaryFrontEdge.idx] : []);
 
   if (lotType === "Through") {
     rearEdgeIndex = null;
@@ -1925,6 +1982,10 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
     const frontIdx = primaryFrontEdge?.idx ?? frontEdgeIndices[0] ?? 0;
     const nonFront = allIndices.filter((idx) => !frontEdgeIndices.includes(idx));
     rearEdgeIndex = _farthestEdgeFrom(edges, nonFront, edges.find((e) => e.idx === frontIdx)?.midpoint || [0, 0]);
+    if (rearEdgeIndex != null && streetEdgeIndices.includes(rearEdgeIndex)) {
+      const nonStreetCandidates = nonFront.filter((idx) => !streetEdgeIndices.includes(idx));
+      rearEdgeIndex = _farthestEdgeFrom(edges, nonStreetCandidates, edges.find((e) => e.idx === frontIdx)?.midpoint || [0, 0]);
+    }
     if (rearEdgeIndex == null) {
       rearEstimated = true;
       warnings.push("Rear yard edge is estimated.");
@@ -1960,6 +2021,7 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
 
   return {
     edges,
+    roads,
     lotType,
     isCornerLot: lotType === "Corner",
     isThroughLot: lotType === "Through",
@@ -1969,6 +2031,13 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
     rearEdgeIndex,
     sideEdgeIndices,
     rearEstimated,
+    primaryFrontEdgeIndex: primaryFrontEdge?.idx ?? null,
+    frontEdgeDistanceM: Number.isFinite(primaryFrontEdge?.minRoadDistM) ? primaryFrontEdge.minRoadDistM : null,
+    rearEdgeDistanceM: Number.isFinite(edges.find((e) => e.idx === rearEdgeIndex)?.minRoadDistM)
+      ? edges.find((e) => e.idx === rearEdgeIndex).minRoadDistM
+      : null,
+    nearestRoadName: primaryFrontEdge?.nearestRoadName || "Unknown road",
+    detectionMethod: "road centerline proximity",
   };
 }
 
@@ -2077,6 +2146,18 @@ function _edgeDebugFeatures(classification) {
       pushEdge(idx, "yard_edge_corner", "CORNER", "#7c3aed");
     }
   }
+
+  for (const edge of classification.edges || []) {
+    if (!Array.isArray(edge.nearestRoadPoint)) continue;
+    features.push({
+      type: "Feature",
+      properties: { kind: "edge_to_road_link", edge_idx: edge.idx },
+      geometry: {
+        type: "LineString",
+        coordinates: [edge.midpoint, edge.nearestRoadPoint],
+      },
+    });
+  }
   return features;
 }
 
@@ -2092,6 +2173,18 @@ function _computeYardAdjustedGeometry(lotRing, edgeRuleEngine) {
   const lotGeometry = { type: "Polygon", coordinates: [_closeRing(lotRing)] };
   const lotFeature = { type: "Feature", geometry: lotGeometry, properties: {} };
   const classification = _classifyLotEdges(lotRing);
+  const roadCenterlineFeatures = {
+    type: "FeatureCollection",
+    features: (classification.roads || []).map((road, idx) => ({
+      type: "Feature",
+      properties: {
+        kind: "road_centerline",
+        road_name: _roadName(road),
+        road_idx: idx,
+      },
+      geometry: road.geometry,
+    })),
+  };
   const edgeRules = _buildEdgeRuleEngine(classification, {
     rule: appliedRule,
     appliedDistrict,
@@ -2185,6 +2278,7 @@ function _computeYardAdjustedGeometry(lotRing, edgeRuleEngine) {
     sideBufferGeometry: sideBufferUnion?.geometry || null,
     usedSimplifiedFallback: false,
     edgeRules,
+    roadCenterlineFeatures,
   };
 }
 
@@ -2248,6 +2342,7 @@ function _recalcStudy() {
     sideBufferGeometry,
     usedSimplifiedFallback,
     edgeRules,
+    roadCenterlineFeatures,
   } = _computeYardAdjustedGeometry(
     activeLotPolygon,
     {
@@ -2365,6 +2460,12 @@ function _recalcStudy() {
     edgeDebugFeatures: _edgeDebugFeatures(classification),
     edgeRules,
     streetType: edgeRules?.streetType || "narrow",
+    nearestRoadName: classification?.nearestRoadName || "Unknown road",
+    frontEdgeDistanceFt: classification?.frontEdgeDistanceM != null ? classification.frontEdgeDistanceM * 3.28084 : null,
+    rearEdgeDistanceFt: classification?.rearEdgeDistanceM != null ? classification.rearEdgeDistanceM * 3.28084 : null,
+    edgeDetectionRoadName: classification?.nearestRoadName || "Unknown road",
+    edgeDetectionMethod: classification?.detectionMethod || "road centerline proximity",
+    roadCenterlineFeatures,
     appliedDistrict,
     mixedUseDetected: !!zoningStudyDefaults?.mixedUseDetected,
     usedSimplifiedFallback,
@@ -2410,6 +2511,11 @@ function _updateStudyPanelNumbers(result) {
   set("study-edge-side-1", fmtEdge(sideRules[0]));
   set("study-edge-side-2", fmtEdge(sideRules[1]));
   set("study-edge-zr", (result.edgeRules?.zrSections || []).join(", ") || "12-10, 23-45, 23-46, 23-47, 23-60");
+  set("study-detect-road", result.edgeDetectionRoadName || "Unknown road");
+  set("study-detect-front-dist", result.frontEdgeDistanceFt != null ? `${formatNumber(result.frontEdgeDistanceFt, 1)} ft` : "—");
+  set("study-detect-rear-dist", result.rearEdgeDistanceFt != null ? `${formatNumber(result.rearEdgeDistanceFt, 1)} ft` : "—");
+  set("study-detect-lot-type", result.lotType || "Irregular");
+  set("study-detect-method", result.edgeDetectionMethod || "Road centerline proximity");
 
   const mixedRow = document.getElementById("study-row-mixed-note");
   if (mixedRow) mixedRow.style.display = result.mixedUseDetected ? "" : "none";
@@ -2634,6 +2740,9 @@ function _redrawEnvelopeFromAssumptions(result) {
   }
 
   updateStudyModel({ type: "FeatureCollection", features: [...overlayFeatures, ...envelopeFeatures] });
+  if (map?.getSource("road-centerlines-debug")) {
+    map.getSource("road-centerlines-debug").setData(result.roadCenterlineFeatures || EMPTY_FC);
+  }
   console.log("[assumptions] redrew envelope", { envelopeHeightFt: result.envelopeHeightFt, buildableFootprintFt2: result.finalBuildableFootprintFt2 });
 }
 
@@ -2732,6 +2841,9 @@ function clearActiveEnvelope() {
   lastStudyResult = null;
   updateSelectionVisual(null, false);
   refreshSelectedLotComparisonModel();
+  if (map?.getSource("road-centerlines-debug")) {
+    map.getSource("road-centerlines-debug").setData(EMPTY_FC);
+  }
   updateLotSummary(null);
 }
 
@@ -3053,6 +3165,15 @@ lotSummary.addEventListener("change", async (event) => {
 
   if (target.id === "showYardEdgeTypesToggle") {
     showYardEdgeTypes = !!target.checked;
+    syncLayerVisibility();
+    if (lastStudyResult) {
+      _redrawEnvelopeFromAssumptions(lastStudyResult);
+    }
+    return;
+  }
+
+  if (target.id === "showRoadCenterlinesToggle") {
+    showRoadCenterlines = !!target.checked;
     syncLayerVisibility();
     if (lastStudyResult) {
       _redrawEnvelopeFromAssumptions(lastStudyResult);

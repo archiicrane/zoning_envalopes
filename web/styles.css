@@ -422,6 +422,11 @@ hr {
   border-color: #f97316;
 }
 
+.legend-chip-road {
+  background: rgba(250, 204, 21, 0.55);
+  border-color: #eab308;
+}
+
 .legend-chip-corner {
   background: rgba(124, 58, 237, 0.4);
   border-color: #7c3aed;
