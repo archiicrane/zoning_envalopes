@@ -422,6 +422,16 @@ hr {
   border-color: #f97316;
 }
 
+.legend-chip-corner {
+  background: rgba(124, 58, 237, 0.4);
+  border-color: #7c3aed;
+}
+
+.legend-chip-buildable-label {
+  background: rgba(15, 118, 110, 0.2);
+  border-color: #0b3d3a;
+}
+
 .assumption-reset-btn {
   display: block;
   width: 100%;
