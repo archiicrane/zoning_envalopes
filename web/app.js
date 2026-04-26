@@ -1555,26 +1555,6 @@ function _fallbackInsetGeometry(lotRing, insetFt) {
   return { geometry: bboxGeometry, usedFallback: true };
 }
 
-function _computeYardAdjustedGeometry(lotRing, frontYardFt, sideYardFt, rearYardFt) {
-  const lotGeometry = { type: "Polygon", coordinates: [_closeRing(lotRing)] };
-  const totalInsetFt = Math.max(0, frontYardFt) + Math.max(0, rearYardFt) + (2 * Math.max(0, sideYardFt));
-  const effectiveInsetFt = totalInsetFt / 4;
-  let yardAdjustedGeometry = _bufferInwardGeometry(lotGeometry, effectiveInsetFt);
-  let geometryFallbackUsed = false;
-  if (!yardAdjustedGeometry) {
-    const fallback = _fallbackInsetGeometry(lotRing, effectiveInsetFt);
-    yardAdjustedGeometry = fallback.geometry;
-    geometryFallbackUsed = fallback.usedFallback;
-  }
-  const maxFootprintAreaFt2 = _areaFt2FromGeometry(yardAdjustedGeometry);
-  console.log("[buildability] yard-adjusted footprint", {
-    effectiveInsetFt,
-    maxFootprintAreaFt2,
-    geometryFallbackUsed,
-  });
-  return { lotGeometry, yardAdjustedGeometry, maxFootprintAreaFt2, geometryFallbackUsed };
-}
-
 function _featureGeometryOnly(feature) {
   return feature ? { type: "Feature", geometry: feature.geometry, properties: {} } : null;
 }
