@@ -1056,17 +1056,17 @@ function syncLayerVisibility() {
     "buildable-label",
   ];
   for (const layerId of studyLayerIds) {
+    if (map.getLayer(layerId)) {
       const isOptionalDebugLine = ["yard-edge-front-line", "yard-edge-rear-line", "yard-edge-side-line"].includes(layerId);
       const isRoadLinkLayer = layerId === "edge-to-road-links";
       const visible = showEnvelopeToggle.checked
         && (!isOptionalDebugLine || showYardEdgeTypes)
         && (!isRoadLinkLayer || showRoadCenterlines);
-      const visible = showEnvelopeToggle.checked && (!isOptionalDebugLine || showYardEdgeTypes);
       map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
     }
+  }
   if (map.getLayer("road-centerlines-debug-line")) {
     map.setLayoutProperty("road-centerlines-debug-line", "visibility", showRoadCenterlines ? "visible" : "none");
-  }
   }
   applyFocusModeVisuals();
   if (showBuildingsBtn) {

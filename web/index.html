@@ -78,7 +78,14 @@
     </div>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-    <script type="module" src="/web/app.js?v=20260425n"></script>
+    <script src="/web/vendor/turf.min.js"></script>
+    <script>
+      if (!window.turf) {
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js";
+        document.head.appendChild(s);
+      }
+    </script>
+    <script type="module" src="/web/app.js?v=20260425o"></script>
   </body>
 </html>
