@@ -2,11 +2,14 @@
   "@context": {
     "zoneCode": "https://zr.planning.nyc.gov/terms/zoneCode",
     "zoneType": "https://zr.planning.nyc.gov/terms/zoneType",
+    "districtType": "https://zr.planning.nyc.gov/terms/districtType",
     "bulkRegime": "https://zr.planning.nyc.gov/terms/bulkRegime",
     "residentialEquivalent": "https://zr.planning.nyc.gov/terms/residentialEquivalent",
     "standardFar": "https://zr.planning.nyc.gov/terms/standardFar",
     "qualifyingFar": "https://zr.planning.nyc.gov/terms/qualifyingFar",
+    "maxFar": "https://zr.planning.nyc.gov/terms/maxFar",
     "openSpaceRatio": "https://zr.planning.nyc.gov/terms/openSpaceRatio",
+    "usesOpenSpaceRatio": "https://zr.planning.nyc.gov/terms/usesOpenSpaceRatio",
     "frontYardFt": "https://zr.planning.nyc.gov/terms/frontYardFt",
     "sideYardEachFt": "https://zr.planning.nyc.gov/terms/sideYardEachFt",
     "rearYardFt": "https://zr.planning.nyc.gov/terms/rearYardFt",
@@ -19,7 +22,8 @@
     "streetSetbackWideFt": "https://zr.planning.nyc.gov/terms/streetSetbackWideFt",
     "streetSetbackNarrowFt": "https://zr.planning.nyc.gov/terms/streetSetbackNarrowFt",
     "simplifiedPlanInsetFt": "https://zr.planning.nyc.gov/terms/simplifiedPlanInsetFt",
-    "sourceSections": "https://zr.planning.nyc.gov/terms/sourceSections"
+    "sourceSections": "https://zr.planning.nyc.gov/terms/sourceSections",
+    "notes": "https://zr.planning.nyc.gov/terms/notes"
   },
   "dataset": {
     "name": "NYC Zoning Envelope Rules",

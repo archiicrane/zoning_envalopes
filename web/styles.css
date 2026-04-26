@@ -377,6 +377,21 @@ hr {
   border-color: #f59e0b;
 }
 
+.legend-chip-front-yard {
+  background: rgba(37, 99, 235, 0.35);
+  border-color: #2563eb;
+}
+
+.legend-chip-side-yard {
+  background: rgba(249, 115, 22, 0.35);
+  border-color: #f97316;
+}
+
+.legend-chip-rear-yard {
+  background: rgba(220, 38, 38, 0.35);
+  border-color: #dc2626;
+}
+
 .legend-chip-open {
   background: rgba(16, 185, 129, 0.35);
   border-color: #10b981;

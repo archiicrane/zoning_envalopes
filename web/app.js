@@ -155,7 +155,29 @@ async function loadZoningRules() {
     zoningRuleIndex = new Map(
       rules
         .filter((rule) => rule && rule.zoneCode)
-        .map((rule) => [normalizeZoneToken(rule.zoneCode), rule])
+        .map((rule) => {
+          const zoneCode = normalizeZoneToken(rule.zoneCode);
+          const maxFar = coerceNumber(rule.qualifyingFar ?? rule.standardFar);
+          const districtType = rule.districtType || (
+            zoneCode.startsWith("R") ? "residential"
+              : zoneCode.startsWith("C") ? "commercial"
+                : zoneCode.startsWith("M") ? "manufacturing"
+                  : "mixed"
+          );
+          const bulkRegime = String(rule.bulkRegime || "").toLowerCase();
+          const usesOpenSpaceRatio =
+            typeof rule.usesOpenSpaceRatio === "boolean"
+              ? rule.usesOpenSpaceRatio
+              : Boolean(coerceNumber(rule.openSpaceRatio) > 0 && !bulkRegime.startsWith("contextual"));
+          const normalizedRule = {
+            ...rule,
+            districtType,
+            maxFar,
+            usesOpenSpaceRatio,
+            notes: rule.notes || (Array.isArray(rule.sourceSections) ? `ZR ${rule.sourceSections.join(", ")}` : ""),
+          };
+          return [zoneCode, normalizedRule];
+        })
     );
 
     console.log("[zoning-rules] loaded", zoningRuleIndex.size, "rules from", ZONING_RULES_URL);
@@ -760,12 +782,34 @@ function ensureSourcesAndLayers() {
     const { scenarioOpacity, baselineOpacity } = _envelopeOpacityValues();
 
     map.addLayer({
+      id: "front-yard-zone-fill",
+      type: "fill",
+      source: "study-model",
+      filter: ["==", ["get", "kind"], "front_yard_zone"],
+      paint: {
+        "fill-color": "#2563eb",
+        "fill-opacity": 0.2,
+      },
+    });
+
+    map.addLayer({
+      id: "side-yard-zone-fill",
+      type: "fill",
+      source: "study-model",
+      filter: ["==", ["get", "kind"], "side_yard_zone"],
+      paint: {
+        "fill-color": "#f97316",
+        "fill-opacity": 0.2,
+      },
+    });
+
+    map.addLayer({
       id: "rear-yard-zone-fill",
       type: "fill",
       source: "study-model",
       filter: ["==", ["get", "kind"], "rear_yard_zone"],
       paint: {
-        "fill-color": "#f59e0b",
+        "fill-color": "#dc2626",
         "fill-opacity": 0.2,
       },
     });
@@ -920,6 +964,8 @@ function syncLayerVisibility() {
   const studyLayerIds = [
     "zoning-envelope-fill-baseline",
     "zoning-envelope-fill",
+    "front-yard-zone-fill",
+    "side-yard-zone-fill",
     "rear-yard-zone-fill",
     "open-space-zone-fill",
     "buildable-footprint-fill",
@@ -1002,7 +1048,14 @@ function _extractCompareEnvelopeFeatures(geojson, color, variant, includeOverlay
       const kind = feature?.properties?.kind;
       if (kind === "zoning_envelope") return true;
       if (!includeOverlays) return false;
-      return ["selected_lot", "rear_yard_zone", "open_space_zone", "buildable_footprint"].includes(kind);
+      return [
+        "selected_lot",
+        "front_yard_zone",
+        "side_yard_zone",
+        "rear_yard_zone",
+        "open_space_zone",
+        "buildable_footprint",
+      ].includes(kind);
     })
     .map((feature) => ({
       ...feature,
@@ -1070,6 +1123,12 @@ function _buildZoningReqRows(zoning) {
     }
   }
   rows.push(`<div class="summary-row"><span>Bulk Regime</span><strong>${regime || "—"}</strong></div>`);
+  if (rule.districtType) {
+    rows.push(`<div class="summary-row"><span>District Type</span><strong>${rule.districtType}</strong></div>`);
+  }
+  if (rule.maxFar != null) {
+    rows.push(`<div class="summary-row"><span>Max FAR (Rule)</span><strong>${formatNumber(rule.maxFar, 2)}</strong></div>`);
+  }
 
   const standardFar = rule.standardFar ?? null;
   const qualifyingFar = rule.qualifyingFar ?? null;
@@ -1098,6 +1157,9 @@ function _buildZoningReqRows(zoning) {
   if (openSpaceRatio != null && Number(openSpaceRatio) > 0) {
     rows.push(`<div class="summary-row"><span>Open Space Ratio</span><strong>${formatNumber(openSpaceRatio, 2)}</strong></div>`);
   }
+  if (typeof rule.usesOpenSpaceRatio === "boolean") {
+    rows.push(`<div class="summary-row"><span>Uses Open Space Ratio</span><strong>${rule.usesOpenSpaceRatio ? "Yes" : "No"}</strong></div>`);
+  }
   if (openSpaceRequiredFt2 != null && Number(openSpaceRequiredFt2) > 0) {
     rows.push(`<div class="summary-row"><span>Required Open Space</span><strong>${formatNumber(openSpaceRequiredFt2, 0)} sf</strong></div>`);
   }
@@ -1109,6 +1171,9 @@ function _buildZoningReqRows(zoning) {
       .join(", ");
     rows.push(`<div class="summary-row summary-row--source"><span>ZR Sections</span><span>${links}</span></div>`);
   }
+  if (rule.notes) {
+    rows.push(`<div class="summary-row summary-row--source"><span>Notes</span><span>${rule.notes}</span></div>`);
+  }
 
   return rows.join("");
 }
@@ -1116,6 +1181,13 @@ function _buildZoningReqRows(zoning) {
 function _buildBuildabilityStudyRows(zoning, envelopeResults) {
   const study = envelopeResults?.zoning_buildability_study;
   if (!study) return "";
+  const parsedDistricts = Array.isArray(zoning?.parsed_districts) ? zoning.parsed_districts : [];
+  const primaryDistrict = zoning?.primary_zone || parsedDistricts[0]?.zone || "n/a";
+  const firstResEquivalent = parsedDistricts.find((d) => d?.residential_equivalent)?.residential_equivalent || "n/a";
+  const mixedUseDetected = parsedDistricts.length > 1 || parsedDistricts.some((d) => String(d?.zone || "").includes("/") || String(d?.zone || "").includes("MX"));
+  const appliedRuleSet = mixedUseDetected
+    ? (firstResEquivalent !== "n/a" ? `${primaryDistrict} + ${firstResEquivalent}` : primaryDistrict)
+    : primaryDistrict;
 
   // Initialize defaults from study the first time this lot/zone is rendered
   if (!zoningStudyDefaults) {
@@ -1132,6 +1204,10 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
     zoningStudyDefaults = {
       lotAreaFt2: study.lot_area_ft2 ?? 0,
       far: study.far ?? 0,
+      primaryDistrict,
+      residentialEquivalent: firstResEquivalent,
+      mixedUseDetected,
+      parsedDistricts,
       defaultOsr,
       defaultRearYardFt,
       defaultFrontYardFt,
@@ -1170,6 +1246,11 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
   return `
     <div class="summary-section-head">ZONING BUILDABILITY STUDY</div>
     <div class="summary-row"><span>Lot Area</span><strong>${formatNumber(study.lot_area_ft2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Zoning District</span><strong>${primaryDistrict}</strong></div>
+    <div class="summary-row"><span>Primary District</span><strong id="study-val-primary">${primaryDistrict}</strong></div>
+    <div class="summary-row"><span>Residential Equivalent</span><strong id="study-val-reseq">${firstResEquivalent}</strong></div>
+    <div class="summary-row"><span>Mixed-Use District?</span><strong id="study-val-mixed">${mixedUseDetected ? "Yes" : "No"}</strong></div>
+    <div class="summary-row"><span>Applied Rule Set</span><strong id="study-val-ruleset">${appliedRuleSet}</strong></div>
     <div class="summary-row"><span>FAR</span><strong>${formatNumber(study.far, 2)}</strong></div>
     <div class="summary-row"><span>Lot Type</span><strong id="study-val-lottype">Analyzing...</strong></div>
     <div class="summary-row"><span>Allowable Floor Area</span><strong id="study-val-afa">${formatNumber(study.allowable_floor_area_ft2, 0)} sf</strong></div>
@@ -1177,6 +1258,9 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
     <div class="summary-row"><span>Required Open Space</span><strong id="study-val-ros">${formatNumber(initialRequiredOpenSpaceFt2, 0)} sf</strong></div>
     <div class="summary-row"><span>Provided Open Space</span><strong id="study-val-pos">${formatNumber(initialProvidedOpenSpaceFt2, 0)} sf</strong></div>
     <div class="summary-row"><span>Open Space Deficit</span><strong id="study-val-osd">${formatNumber(initialOpenSpaceDeficitFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Front Yard / Street Setback</span><strong id="study-val-front-yard">${formatNumber(sliderFrontYard, 0)} ft</strong></div>
+    <div class="summary-row"><span>Side Yard</span><strong id="study-val-side-yard">${formatNumber(sliderSideYard, 0)} ft</strong></div>
+    <div class="summary-row"><span>Rear Yard</span><strong id="study-val-rear-yard">${formatNumber(sliderRearYard, 0)} ft</strong></div>
     <div class="summary-row"><span>Final Buildable Footprint</span><strong id="study-val-bfp">${formatNumber(initialFinalBuildableFt2, 0)} sf</strong></div>
     <div class="summary-row"><span>Estimated Floors</span><strong id="study-val-floors">${formatNumber(study.estimated_floors, 2)}</strong></div>
     <div class="summary-row"><span>Required Height</span><strong id="study-val-reqheight">${_ft(study.required_height_ft)}</strong></div>
@@ -1236,8 +1320,10 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
       </div>
       <div class="study-legend">
         <div><span class="legend-chip legend-chip-lot"></span> Selected lot outline</div>
-        <div><span class="legend-chip legend-chip-yard"></span> Yard / setback area</div>
-        <div><span class="legend-chip legend-chip-open"></span> Open space area</div>
+        <div><span class="legend-chip legend-chip-front-yard"></span> Front yard / street setback</div>
+        <div><span class="legend-chip legend-chip-side-yard"></span> Side yards</div>
+        <div><span class="legend-chip legend-chip-rear-yard"></span> Rear yard</div>
+        <div><span class="legend-chip legend-chip-open"></span> Required open space</div>
         <div><span class="legend-chip legend-chip-buildable"></span> Final buildable footprint</div>
         <div><span class="legend-chip legend-chip-envelope"></span> Final envelope extrusion</div>
         <div><span class="legend-chip legend-chip-front"></span> FRONT edge (debug)</div>
@@ -1834,6 +1920,15 @@ function _recalcStudy() {
   const maxHeightFt = assumptionOverrides.maxHeightFtOverride ?? defaultMaxHeightFt ?? 120;
 
   const allowableFloorArea = lotAreaFt2 * far;
+  console.log("[zoning] selected lot", {
+    bbl: activeLotData?.bbl || "n/a",
+    address: activeLotData?.address || "n/a",
+    zone: zoningStudyDefaults?.primaryDistrict || activeLotData?.zonedist1 || activeLotData?.zone || "n/a",
+  });
+  console.log("[zoning] parsed district", zoningStudyDefaults?.parsedDistricts || []);
+  if (zoningStudyDefaults?.mixedUseDetected) {
+    console.log("[zoning] mixed district detected", true);
+  }
   const {
     lotGeometry,
     yardAdjustedGeometry,
@@ -1850,6 +1945,10 @@ function _recalcStudy() {
     sideYardFt,
     rearYardFt
   );
+  console.log("[zoning] lot type", classification?.lotType || "Irregular");
+  console.log("[zoning] front edge", classification?.frontEdgeIndices || []);
+  console.log("[zoning] side edges", classification?.sideEdgeIndices || []);
+  console.log("[zoning] rear edge", classification?.rearEdgeIndex ?? null);
 
   const openSpaceRequired = Math.max(0, allowableFloorArea * osr / 100);
   const openSpaceProvided = Math.max(0, lotAreaFt2 - maxFootprintAreaFt2);
@@ -1868,6 +1967,10 @@ function _recalcStudy() {
   console.log("[buildability] open space provided", openSpaceProvided);
   console.log("[buildability] open space deficit", openSpaceDeficit);
   console.log("[buildability] final footprint", finalBuildableFootprintFt2);
+  console.log("[zoning] required open space", openSpaceRequired);
+  console.log("[zoning] provided open space", openSpaceProvided);
+  console.log("[zoning] buildable footprint", finalBuildableFootprintFt2);
+  console.log("[zoning] allowable floor area", allowableFloorArea);
 
   const areaRatio = Math.max(0.01, Math.min(1, finalBuildableFootprintFt2 / Math.max(1, maxFootprintAreaFt2)));
   let finalBuildableGeometry = yardAdjustedGeometry;
@@ -1894,6 +1997,8 @@ function _recalcStudy() {
 
   console.log("[buildability] required height", requiredHeightFt);
   console.log("[buildability] final envelope height", envelopeHeightFt);
+  console.log("[zoning] required height", requiredHeightFt);
+  console.log("[zoning] final envelope height", envelopeHeightFt);
 
   console.log("[assumptions] recalculated zoning study", {
     osr, rearYardFt, floorHeightFt, maxHeightFt,
@@ -1950,6 +2055,9 @@ function _updateStudyPanelNumbers(result) {
   set("study-val-ros", `${formatNumber(result.openSpaceRequired, 0)} sf`);
   set("study-val-pos", `${formatNumber(result.openSpaceProvided, 0)} sf`);
   set("study-val-osd", `${formatNumber(result.openSpaceDeficit, 0)} sf`);
+  set("study-val-front-yard", `${formatNumber(result.frontYardFt, 0)} ft`);
+  set("study-val-side-yard", `${formatNumber(result.sideYardFt, 0)} ft`);
+  set("study-val-rear-yard", `${formatNumber(result.rearYardFt, 0)} ft`);
   set("study-val-bfp", result.finalBuildableFootprintFt2 > 0 ? `${formatNumber(result.finalBuildableFootprintFt2, 0)} sf` : "—");
   set("study-val-floors", result.estimatedFloors != null ? formatNumber(result.estimatedFloors, 2) : "—");
   set("study-val-reqheight", `${formatNumber(result.requiredHeightFt, 0)} ft`);
@@ -2045,17 +2153,27 @@ function _buildStudyOverlayFeaturesFromAssumptions(result) {
     },
   ];
 
-  const yardBufferUnion = _unionFeatures([
-    result.frontBufferGeometry ? { type: "Feature", geometry: result.frontBufferGeometry, properties: {} } : null,
-    result.rearBufferGeometry ? { type: "Feature", geometry: result.rearBufferGeometry, properties: {} } : null,
-    result.sideBufferGeometry ? { type: "Feature", geometry: result.sideBufferGeometry, properties: {} } : null,
-  ]);
-
-  if (yardBufferUnion?.geometry) {
+  if (result.frontBufferGeometry) {
     features.push({
       type: "Feature",
-      properties: { kind: "rear_yard_zone", area_ft2: Math.round(Math.max(0, result.lotAreaFt2 - result.yardAdjustedFootprintFt2)), color: "#f59e0b" },
-      geometry: yardBufferUnion.geometry,
+      properties: { kind: "front_yard_zone", color: "#2563eb" },
+      geometry: result.frontBufferGeometry,
+    });
+  }
+
+  if (result.sideBufferGeometry) {
+    features.push({
+      type: "Feature",
+      properties: { kind: "side_yard_zone", color: "#f97316" },
+      geometry: result.sideBufferGeometry,
+    });
+  }
+
+  if (result.rearBufferGeometry) {
+    features.push({
+      type: "Feature",
+      properties: { kind: "rear_yard_zone", area_ft2: Math.round(Math.max(0, result.lotAreaFt2 - result.yardAdjustedFootprintFt2)), color: "#dc2626" },
+      geometry: result.rearBufferGeometry,
     });
   }
 
