@@ -1475,12 +1475,6 @@ function _farthestEdgeFrom(edges, candidateIndices, fromPoint) {
   return best;
 }
 
-function _oppositeEdgeIndex(edgeIdx, edgeCount) {
-  if (edgeCount <= 1) return edgeIdx;
-  const raw = (edgeIdx + Math.floor(edgeCount / 2)) % edgeCount;
-  return raw;
-}
-
 function _closestEdgeToRoad(edges) {
   let best = null;
   for (const edge of edges) {
@@ -1490,6 +1484,22 @@ function _closestEdgeToRoad(edges) {
     }
   }
   return best ? best.idx : (edges[0]?.idx ?? 0);
+}
+
+function _nearestRoadLineToPoint(pointCoords, roads) {
+  const pt = turf.point(pointCoords);
+  let nearest = null;
+  for (const road of roads || []) {
+    try {
+      const distM = turf.pointToLineDistance(pt, road, { units: "meters" });
+      if (!nearest || distM < nearest.distM) {
+        nearest = { road, distM };
+      }
+    } catch (_err) {
+      // skip malformed road geometry
+    }
+  }
+  return nearest;
 }
 
 function _edgeTouchesNeighbor(edge, neighborLines, toleranceFt = 3) {
@@ -1513,6 +1523,8 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
   const roads = _getNearbyRoadLines();
   const neighborLines = _getNeighborLotBoundaryLines(lotRing);
   const toleranceM = toleranceFt * 0.3048;
+  const lotCentroid = turf.centroid({ type: "Feature", geometry: { type: "Polygon", coordinates: [_closeRing(lotRing)] }, properties: {} });
+  const nearestRoad = _nearestRoadLineToPoint(lotCentroid.geometry.coordinates, roads);
 
   const streetEdgeIndices = [];
   for (const edge of edges) {
@@ -1544,8 +1556,16 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
   const primaryFrontEdge = streetEdgeIndices.length
     ? edges
       .filter((e) => streetEdgeIndices.includes(e.idx))
-      .sort((a, b) => (a.minRoadDistM || Number.POSITIVE_INFINITY) - (b.minRoadDistM || Number.POSITIVE_INFINITY))[0]
-    : edges.find((e) => e.idx === _closestEdgeToRoad(edges));
+      .sort((a, b) => b.lengthM - a.lengthM)[0]
+    : (nearestRoad
+      ? edges
+        .slice()
+        .sort((a, b) => {
+          const da = turf.pointToLineDistance(turf.point(a.midpoint), nearestRoad.road, { units: "meters" });
+          const db = turf.pointToLineDistance(turf.point(b.midpoint), nearestRoad.road, { units: "meters" });
+          return da - db;
+        })[0]
+      : edges.find((e) => e.idx === _closestEdgeToRoad(edges)));
 
   if (!streetEdgeIndices.length) {
     warnings.push("Street edge detection fails. Using nearest road-facing edge as FRONT.");
@@ -1577,12 +1597,9 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
     sideEdgeIndices = allIndices.filter((idx) => !frontEdgeIndices.includes(idx));
   } else {
     const frontIdx = primaryFrontEdge?.idx ?? frontEdgeIndices[0] ?? 0;
-    const oppositeIdxGuess = _oppositeEdgeIndex(frontIdx, edges.length);
     const nonFront = allIndices.filter((idx) => !frontEdgeIndices.includes(idx));
-    if (nonFront.includes(oppositeIdxGuess)) {
-      rearEdgeIndex = oppositeIdxGuess;
-    } else {
-      rearEdgeIndex = _farthestEdgeFrom(edges, nonFront, edges.find((e) => e.idx === frontIdx)?.midpoint || [0, 0]);
+    rearEdgeIndex = _farthestEdgeFrom(edges, nonFront, edges.find((e) => e.idx === frontIdx)?.midpoint || [0, 0]);
+    if (rearEdgeIndex == null) {
       rearEstimated = true;
       warnings.push("Rear yard edge is estimated.");
     }
@@ -1601,8 +1618,8 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
 
   console.log("[lot-edges] street edges found", streetEdgeIndices);
   console.log("[lot-edges] lot type", lotType);
-  console.log("[lot-edges] front edge", frontEdgeIndices);
-  console.log("[lot-edges] rear edge", rearEdgeIndex);
+  console.log("[lot-edges] front edge index", primaryFrontEdge?.idx ?? null);
+  console.log("[lot-edges] rear edge index", rearEdgeIndex);
   console.log("[lot-edges] side edges", sideEdgeIndices);
 
   return {
@@ -1743,6 +1760,12 @@ function _computeYardAdjustedGeometry(lotRing, frontYardFt, sideYardFt, rearYard
   const frontBufferUnion = _unionFeatures(frontBuffers);
   const sideBufferUnion = _unionFeatures(sideBuffers);
   const combinedBuffer = _unionFeatures([frontBufferUnion, rearBuffer, sideBufferUnion]);
+  console.log("[yard-geometry] buffers created", {
+    front_count: frontBuffers.length,
+    rear_count: rearBuffer ? 1 : 0,
+    side_count: sideBuffers.length,
+    has_union: !!combinedBuffer,
+  });
 
   let yardAdjustedFeature = lotFeature;
   let geometryFallbackUsed = false;
@@ -1855,6 +1878,7 @@ function _recalcStudy() {
     area_ft2: _areaFt2FromGeometry(finalBuildableGeometry),
     target_area_ft2: finalBuildableFootprintFt2,
   });
+  console.log("[yard-geometry] final footprint area", _areaFt2FromGeometry(finalBuildableGeometry));
 
   let estimatedFloors = null;
   let envelopeHeightFt = 0;
