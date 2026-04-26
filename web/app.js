@@ -19,6 +19,8 @@ async function resolveMapboxToken() {
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
 const ZONING_RULES_URL = "/zoning-rules.jsonld";
 
+const feetToMeters = (ft) => Number(ft || 0) * 0.3048;
+
 function _defaultAssumptionOverrides() {
   return {
     floorHeightFt: 10,
@@ -1434,6 +1436,52 @@ function _areaFt2FromGeometry(geometry) {
   }
 }
 
+function _signedRingArea(ring) {
+  let area = 0;
+  for (let i = 0; i < ring.length - 1; i += 1) {
+    area += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+  }
+  return area / 2;
+}
+
+function _normalizePolygonRing(ring) {
+  const closed = _closeRing(ring);
+  if (_signedRingArea(closed) > 0) {
+    return closed.slice().reverse();
+  }
+  return closed;
+}
+
+function _largestPolygonGeometry(geometry) {
+  if (!geometry) return null;
+  if (geometry.type === "Polygon") {
+    return {
+      type: "Polygon",
+      coordinates: [
+        _normalizePolygonRing(geometry.coordinates?.[0] || []),
+        ...(geometry.coordinates || []).slice(1),
+      ],
+    };
+  }
+  if (geometry.type !== "MultiPolygon") return null;
+  let best = null;
+  let bestArea = -1;
+  for (const polygonCoords of geometry.coordinates || []) {
+    const candidate = { type: "Polygon", coordinates: polygonCoords };
+    const area = _areaFt2FromGeometry(candidate);
+    if (area > bestArea) {
+      bestArea = area;
+      best = candidate;
+    }
+  }
+  return best ? _largestPolygonGeometry(best) : null;
+}
+
+function _normalizeStudyGeometry(geometry) {
+  const largest = _largestPolygonGeometry(geometry);
+  return largest || geometry;
+}
+
 function _bboxRing(ring) {
   const xs = ring.map((p) => p[0]);
   const ys = ring.map((p) => p[1]);
@@ -1722,7 +1770,7 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
 
 function _bufferInwardGeometry(geometry, insetFt) {
   if (!geometry || insetFt <= 0) return geometry;
-  const insetMeters = insetFt * 0.3048;
+  const insetMeters = feetToMeters(insetFt);
   try {
     const buffered = turf.buffer({ type: "Feature", geometry, properties: {} }, -insetMeters, { units: "meters" });
     if (buffered?.geometry?.coordinates?.length) {
@@ -1751,13 +1799,14 @@ function _bufferEdgeInsideLot(edge, distanceFt, lotFeature, logLabel) {
     console.log(logLabel, { distanceFt: 0, area_ft2: 0 });
     return null;
   }
-  const distanceM = distanceFt * 0.3048;
+  const distanceM = feetToMeters(distanceFt);
   try {
     const buffered = turf.buffer(edge.line, distanceM, { units: "meters" });
     const clipped = turf.intersect(_featureGeometryOnly(buffered), lotFeature);
-    const area = clipped?.geometry ? _areaFt2FromGeometry(clipped.geometry) : 0;
+    const geometry = clipped?.geometry ? _normalizeStudyGeometry(clipped.geometry) : null;
+    const area = geometry ? _areaFt2FromGeometry(geometry) : 0;
     console.log(logLabel, { distanceFt, area_ft2: area });
-    return clipped?.geometry ? clipped : null;
+    return geometry ? { ...clipped, geometry } : null;
   } catch (_err) {
     console.log(logLabel, { distanceFt, area_ft2: 0, failed: true });
     return null;
@@ -1791,7 +1840,7 @@ function _shrinkGeometryToArea(geometry, targetAreaFt2) {
   try {
     const buffered = turf.buffer({ type: "Feature", geometry, properties: {} }, -insetM, { units: "meters" });
     if (buffered?.geometry?.coordinates?.length) {
-      return buffered.geometry;
+      return _normalizeStudyGeometry(buffered.geometry);
     }
   } catch (_err) {
     // fallback below
@@ -1859,7 +1908,7 @@ function _computeYardAdjustedGeometry(lotRing, frontYardFt, sideYardFt, rearYard
     try {
       const diff = turf.difference(lotFeature, _featureGeometryOnly(combinedBuffer));
       if (diff?.geometry) {
-        yardAdjustedFeature = diff;
+        yardAdjustedFeature = { ...diff, geometry: _normalizeStudyGeometry(diff.geometry) };
       } else {
         geometryFallbackUsed = true;
       }
@@ -1872,7 +1921,7 @@ function _computeYardAdjustedGeometry(lotRing, frontYardFt, sideYardFt, rearYard
     // Fallback uses box clipping only when geometric difference fails; primary path remains directional edge subtraction.
     const insetFt = Math.max(2, (Math.max(0, frontYardFt) + Math.max(0, rearYardFt) + (2 * Math.max(0, sideYardFt))) / 4);
     const fallback = _fallbackInsetGeometry(lotRing, insetFt).geometry;
-    yardAdjustedFeature = { type: "Feature", geometry: fallback, properties: {} };
+    yardAdjustedFeature = { type: "Feature", geometry: _normalizeStudyGeometry(fallback), properties: {} };
   }
 
   const maxFootprintAreaFt2 = _areaFt2FromGeometry(yardAdjustedFeature.geometry);
@@ -1973,10 +2022,21 @@ function _recalcStudy() {
   console.log("[zoning] allowable floor area", allowableFloorArea);
 
   const areaRatio = Math.max(0.01, Math.min(1, finalBuildableFootprintFt2 / Math.max(1, maxFootprintAreaFt2)));
-  let finalBuildableGeometry = yardAdjustedGeometry;
+  let finalBuildableGeometry = _normalizeStudyGeometry(yardAdjustedGeometry);
   if (areaRatio < 0.999) {
     finalBuildableGeometry = _shrinkGeometryToArea(yardAdjustedGeometry, finalBuildableFootprintFt2);
   }
+  if (_areaFt2FromGeometry(finalBuildableGeometry) < minFootprintFt2) {
+    const fallbackScale = Math.sqrt(0.1);
+    const fallbackRing = _closeRing(activeLotPolygon).map((point, _, ring) => {
+      const centroid = turf.centroid({ type: "Feature", geometry: { type: "Polygon", coordinates: [ring] }, properties: {} }).geometry.coordinates;
+      return [centroid[0] + (point[0] - centroid[0]) * fallbackScale, centroid[1] + (point[1] - centroid[1]) * fallbackScale];
+    });
+    finalBuildableGeometry = { type: "Polygon", coordinates: [_normalizePolygonRing(fallbackRing)] };
+  }
+  console.log("[debug] lot area", lotAreaFt2);
+  console.log("[debug] footprint", finalBuildableFootprintFt2);
+  console.log("[debug] allowable floor area", allowableFloorArea);
   console.log("[yard-geometry] final buildable footprint", {
     area_ft2: _areaFt2FromGeometry(finalBuildableGeometry),
     target_area_ft2: finalBuildableFootprintFt2,
@@ -1997,6 +2057,8 @@ function _recalcStudy() {
 
   console.log("[buildability] required height", requiredHeightFt);
   console.log("[buildability] final envelope height", envelopeHeightFt);
+  console.log("[debug] required height", requiredHeightFt);
+  console.log("[debug] final height", envelopeHeightFt);
   console.log("[zoning] required height", requiredHeightFt);
   console.log("[zoning] final envelope height", envelopeHeightFt);
 
@@ -2153,7 +2215,7 @@ function _buildStudyOverlayFeaturesFromAssumptions(result) {
     },
   ];
 
-  if (result.frontBufferGeometry) {
+  if (showYardEdgeTypes && result.frontBufferGeometry) {
     features.push({
       type: "Feature",
       properties: { kind: "front_yard_zone", color: "#2563eb" },
@@ -2161,7 +2223,7 @@ function _buildStudyOverlayFeaturesFromAssumptions(result) {
     });
   }
 
-  if (result.sideBufferGeometry) {
+  if (showYardEdgeTypes && result.sideBufferGeometry) {
     features.push({
       type: "Feature",
       properties: { kind: "side_yard_zone", color: "#f97316" },
@@ -2169,7 +2231,7 @@ function _buildStudyOverlayFeaturesFromAssumptions(result) {
     });
   }
 
-  if (result.rearBufferGeometry) {
+  if (showYardEdgeTypes && result.rearBufferGeometry) {
     features.push({
       type: "Feature",
       properties: { kind: "rear_yard_zone", area_ft2: Math.round(Math.max(0, result.lotAreaFt2 - result.yardAdjustedFootprintFt2)), color: "#dc2626" },
@@ -2177,7 +2239,7 @@ function _buildStudyOverlayFeaturesFromAssumptions(result) {
     });
   }
 
-  if (result.openSpaceDeficit > 0) {
+  if (showYardEdgeTypes && result.openSpaceDeficit > 0) {
     try {
       const openDiff = turf.difference(
         { type: "Feature", geometry: result.yardAdjustedGeometry, properties: {} },
