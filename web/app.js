@@ -1402,6 +1402,28 @@ function _toRoadLineFeatures(features) {
   return lines;
 }
 
+function _toLotBoundaryLines(features) {
+  const lines = [];
+  for (const feature of features || []) {
+    const geometry = feature?.geometry;
+    if (!geometry) continue;
+    if (geometry.type === "Polygon") {
+      const ring = geometry.coordinates?.[0];
+      if (ring && ring.length > 3) {
+        lines.push({ type: "Feature", geometry: { type: "LineString", coordinates: ring }, properties: {} });
+      }
+    } else if (geometry.type === "MultiPolygon") {
+      for (const poly of geometry.coordinates || []) {
+        const ring = poly?.[0];
+        if (ring && ring.length > 3) {
+          lines.push({ type: "Feature", geometry: { type: "LineString", coordinates: ring }, properties: {} });
+        }
+      }
+    }
+  }
+  return lines;
+}
+
 function _getNearbyRoadLines() {
   if (!map) return [];
   let roadFeatures = [];
@@ -1411,6 +1433,26 @@ function _getNearbyRoadLines() {
     roadFeatures = [];
   }
   return _toRoadLineFeatures(roadFeatures);
+}
+
+function _getNeighborLotBoundaryLines(selectedRing) {
+  const neighbors = [];
+  const selected = { type: "Feature", geometry: { type: "Polygon", coordinates: [_closeRing(selectedRing)] }, properties: {} };
+  for (const feature of activeNeighborhoodData?.features || []) {
+    const ring = featureGeometryToLotPolygon(feature);
+    if (!ring || ring.length < 4) continue;
+    const candidate = { type: "Feature", geometry: { type: "Polygon", coordinates: [_closeRing(ring)] }, properties: {} };
+    try {
+      // Skip selected/self geometry; keep nearby intersecting/touching neighbors.
+      if (turf.booleanEqual(selected, candidate)) continue;
+      if (!turf.booleanDisjoint(selected, candidate)) {
+        neighbors.push(feature);
+      }
+    } catch (_err) {
+      // ignore invalid geometries
+    }
+  }
+  return _toLotBoundaryLines(neighbors);
 }
 
 function _isAdjacentEdge(a, b, edgeCount) {
@@ -1433,9 +1475,43 @@ function _farthestEdgeFrom(edges, candidateIndices, fromPoint) {
   return best;
 }
 
+function _oppositeEdgeIndex(edgeIdx, edgeCount) {
+  if (edgeCount <= 1) return edgeIdx;
+  const raw = (edgeIdx + Math.floor(edgeCount / 2)) % edgeCount;
+  return raw;
+}
+
+function _closestEdgeToRoad(edges) {
+  let best = null;
+  for (const edge of edges) {
+    const score = Number.isFinite(edge.minRoadDistM) ? edge.minRoadDistM : Number.POSITIVE_INFINITY;
+    if (!best || score < best.score) {
+      best = { idx: edge.idx, score };
+    }
+  }
+  return best ? best.idx : (edges[0]?.idx ?? 0);
+}
+
+function _edgeTouchesNeighbor(edge, neighborLines, toleranceFt = 3) {
+  const toleranceM = toleranceFt * 0.3048;
+  const pt = turf.point(edge.midpoint);
+  for (const line of neighborLines || []) {
+    try {
+      const d = turf.pointToLineDistance(pt, line, { units: "meters" });
+      if (d <= toleranceM) {
+        return true;
+      }
+    } catch (_err) {
+      // ignore malformed line
+    }
+  }
+  return false;
+}
+
 function _classifyLotEdges(lotRing, toleranceFt = 30) {
   const edges = _ringEdges(lotRing);
   const roads = _getNearbyRoadLines();
+  const neighborLines = _getNeighborLotBoundaryLines(lotRing);
   const toleranceM = toleranceFt * 0.3048;
 
   const streetEdgeIndices = [];
@@ -1454,9 +1530,10 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
     if (Number.isFinite(minDistM) && minDistM <= toleranceM) {
       streetEdgeIndices.push(edge.idx);
     }
+    edge.touchesNeighbor = _edgeTouchesNeighbor(edge, neighborLines);
   }
 
-  let lotType = "Irregular";
+  let lotType = "Interior";
   const warnings = [];
   const allIndices = edges.map((e) => e.idx);
   let frontEdgeIndices = [];
@@ -1464,55 +1541,62 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
   let sideEdgeIndices = [];
   let rearEstimated = false;
 
-  if (streetEdgeIndices.length === 1) {
-    lotType = "Interior";
-    frontEdgeIndices = [streetEdgeIndices[0]];
-    const nonStreet = allIndices.filter((idx) => !frontEdgeIndices.includes(idx));
-    rearEdgeIndex = _farthestEdgeFrom(edges, nonStreet, edges.find((e) => e.idx === frontEdgeIndices[0])?.midpoint || [0, 0]);
-    sideEdgeIndices = allIndices.filter((idx) => !frontEdgeIndices.includes(idx) && idx !== rearEdgeIndex);
-  } else if (streetEdgeIndices.length === 2) {
-    const [a, b] = streetEdgeIndices;
-    if (_isAdjacentEdge(a, b, edges.length)) {
+  const primaryFrontEdge = streetEdgeIndices.length
+    ? edges
+      .filter((e) => streetEdgeIndices.includes(e.idx))
+      .sort((a, b) => (a.minRoadDistM || Number.POSITIVE_INFINITY) - (b.minRoadDistM || Number.POSITIVE_INFINITY))[0]
+    : edges.find((e) => e.idx === _closestEdgeToRoad(edges));
+
+  if (!streetEdgeIndices.length) {
+    warnings.push("Street edge detection fails. Using nearest road-facing edge as FRONT.");
+  }
+
+  if (streetEdgeIndices.length > 2) {
+    lotType = "Irregular";
+    warnings.push("Lot edge classification uncertain. Yard geometry is approximate.");
+  } else if (streetEdgeIndices.length > 1) {
+    const unique = [...streetEdgeIndices];
+    const adjacentPair = unique.some((idx, i) => unique.slice(i + 1).some((jdx) => _isAdjacentEdge(idx, jdx, edges.length)));
+    if (adjacentPair) {
       lotType = "Corner";
       warnings.push("Corner lot detected.");
     } else {
       lotType = "Through";
       warnings.push("Through lot detected. Rear yard rules may differ.");
     }
+  }
+
+  if (streetEdgeIndices.length) {
     frontEdgeIndices = [...streetEdgeIndices];
-    const primaryFront = edges
-      .filter((e) => frontEdgeIndices.includes(e.idx))
-      .sort((x, y) => y.lengthM - x.lengthM)[0];
-    const nonStreet = allIndices.filter((idx) => !frontEdgeIndices.includes(idx));
-    if (lotType === "Corner" && primaryFront) {
-      rearEdgeIndex = _farthestEdgeFrom(edges, nonStreet, primaryFront.midpoint);
-      sideEdgeIndices = nonStreet.filter((idx) => idx !== rearEdgeIndex);
-      if (rearEdgeIndex == null) {
-        rearEstimated = true;
-        warnings.push("Rear yard edge is estimated.");
-      }
-    } else {
-      rearEdgeIndex = null;
-      sideEdgeIndices = nonStreet;
-    }
-  } else {
-    lotType = "Irregular";
-    warnings.push("Lot edge classification uncertain. Yard geometry is approximate.");
-    if (!streetEdgeIndices.length) {
-      warnings.push("Street edge detection fails for this lot.");
-    }
-    frontEdgeIndices = [...streetEdgeIndices];
+  } else if (primaryFrontEdge) {
+    frontEdgeIndices = [primaryFrontEdge.idx];
+  }
+
+  if (lotType === "Through") {
+    rearEdgeIndex = null;
     sideEdgeIndices = allIndices.filter((idx) => !frontEdgeIndices.includes(idx));
-    if (frontEdgeIndices.length) {
-      rearEdgeIndex = _farthestEdgeFrom(
-        edges,
-        sideEdgeIndices,
-        edges.find((e) => e.idx === frontEdgeIndices[0])?.midpoint || [0, 0]
-      );
-      sideEdgeIndices = sideEdgeIndices.filter((idx) => idx !== rearEdgeIndex);
-      rearEstimated = rearEdgeIndex != null;
-      if (rearEstimated) warnings.push("Rear yard edge is estimated.");
+  } else {
+    const frontIdx = primaryFrontEdge?.idx ?? frontEdgeIndices[0] ?? 0;
+    const oppositeIdxGuess = _oppositeEdgeIndex(frontIdx, edges.length);
+    const nonFront = allIndices.filter((idx) => !frontEdgeIndices.includes(idx));
+    if (nonFront.includes(oppositeIdxGuess)) {
+      rearEdgeIndex = oppositeIdxGuess;
+    } else {
+      rearEdgeIndex = _farthestEdgeFrom(edges, nonFront, edges.find((e) => e.idx === frontIdx)?.midpoint || [0, 0]);
+      rearEstimated = true;
+      warnings.push("Rear yard edge is estimated.");
     }
+    sideEdgeIndices = allIndices.filter((idx) => !frontEdgeIndices.includes(idx) && idx !== rearEdgeIndex);
+  }
+
+  // Favor neighboring-lot boundaries as SIDE edges when available.
+  const touchingSides = sideEdgeIndices.filter((idx) => edges.find((e) => e.idx === idx)?.touchesNeighbor);
+  if (touchingSides.length) {
+    const nonTouchingSides = sideEdgeIndices.filter((idx) => !touchingSides.includes(idx));
+    sideEdgeIndices = [...touchingSides, ...nonTouchingSides];
+  }
+  if (!touchingSides.length && sideEdgeIndices.length) {
+    warnings.push("Side lot line detection is approximate for this lot.");
   }
 
   console.log("[lot-edges] street edges found", streetEdgeIndices);
@@ -1640,35 +1724,6 @@ function _computeYardAdjustedGeometry(lotRing, frontYardFt, sideYardFt, rearYard
   const lotFeature = { type: "Feature", geometry: lotGeometry, properties: {} };
   const classification = _classifyLotEdges(lotRing);
 
-  if (classification.lotType === "Irregular") {
-    const totalInsetFt = Math.max(0, frontYardFt) + Math.max(0, rearYardFt) + (2 * Math.max(0, sideYardFt));
-    const effectiveInsetFt = totalInsetFt / 4;
-    let fallbackGeometry = _bufferInwardGeometry(lotGeometry, effectiveInsetFt);
-    let geometryFallbackUsed = false;
-    if (!fallbackGeometry) {
-      const fallback = _fallbackInsetGeometry(lotRing, effectiveInsetFt);
-      fallbackGeometry = fallback.geometry;
-      geometryFallbackUsed = fallback.usedFallback;
-    }
-    const maxFootprintAreaFt2 = _areaFt2FromGeometry(fallbackGeometry);
-    console.log("[buildability] yard-adjusted footprint", {
-      effectiveInsetFt,
-      maxFootprintAreaFt2,
-      geometryFallbackUsed,
-    });
-    return {
-      lotGeometry,
-      yardAdjustedGeometry: fallbackGeometry,
-      maxFootprintAreaFt2,
-      geometryFallbackUsed,
-      classification,
-      frontBufferGeometry: null,
-      rearBufferGeometry: null,
-      sideBufferGeometry: null,
-      usedSimplifiedFallback: true,
-    };
-  }
-
   const frontBuffers = classification.frontEdgeIndices
     .map((idx) => _bufferEdgeInsideLot(classification.edges.find((e) => e.idx === idx), frontYardFt, lotFeature, "[yard-geometry] front yard buffer"))
     .filter(Boolean);
@@ -1705,9 +1760,9 @@ function _computeYardAdjustedGeometry(lotRing, frontYardFt, sideYardFt, rearYard
   }
 
   if (geometryFallbackUsed) {
-    const totalInsetFt = Math.max(0, frontYardFt) + Math.max(0, rearYardFt) + (2 * Math.max(0, sideYardFt));
-    const effectiveInsetFt = totalInsetFt / 4;
-    const fallback = _bufferInwardGeometry(lotGeometry, effectiveInsetFt) || _fallbackInsetGeometry(lotRing, effectiveInsetFt).geometry;
+    // Fallback uses box clipping only when geometric difference fails; primary path remains directional edge subtraction.
+    const insetFt = Math.max(2, (Math.max(0, frontYardFt) + Math.max(0, rearYardFt) + (2 * Math.max(0, sideYardFt))) / 4);
+    const fallback = _fallbackInsetGeometry(lotRing, insetFt).geometry;
     yardAdjustedFeature = { type: "Feature", geometry: fallback, properties: {} };
   }
 
@@ -1726,7 +1781,7 @@ function _computeYardAdjustedGeometry(lotRing, frontYardFt, sideYardFt, rearYard
     frontBufferGeometry: frontBufferUnion?.geometry || null,
     rearBufferGeometry: rearBuffer?.geometry || null,
     sideBufferGeometry: sideBufferUnion?.geometry || null,
-    usedSimplifiedFallback: false,
+      usedSimplifiedFallback: false,
   };
 }
 
