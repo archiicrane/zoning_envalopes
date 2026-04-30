@@ -651,32 +651,48 @@ function refreshZoningEnvelopeFromNeighborhood() {
   console.log("[zoning-envelope] sample FAR/height values:", built.samples);
 }
 
+function neighborhoodBoundsToPolygon(bounds) {
+  if (!bounds || bounds.isEmpty()) return null;
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+  return {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [[
+        [sw.lng, sw.lat],
+        [ne.lng, sw.lat],
+        [ne.lng, ne.lat],
+        [sw.lng, ne.lat],
+        [sw.lng, sw.lat],
+      ]],
+    },
+    properties: {},
+  };
+}
+
 function refreshExistingBuildingsForNeighborhood() {
   if (!map || !map.getLayer("existing-buildings-mapbox") || !map.getSource("existing-buildings-source")) {
     return;
   }
 
+  // Use the neighborhood bounding polygon derived from the same split-pluto file
+  // that drives the zoning envelope, so both layers share the same spatial boundary.
   const bounds = computeNeighborhoodBounds(activeNeighborhoodData || EMPTY_FC);
   if (!bounds || bounds.isEmpty()) {
     map.getSource("existing-buildings-source").setData(EMPTY_FC);
-    console.log("[existing-buildings] no active neighborhood bounds, cleared neighborhood buildings source");
+    console.log("[existing-buildings] no neighborhood bounds, cleared source");
     return;
   }
 
-  const lotFilters = buildNeighborhoodLotFilters(activeNeighborhoodData || EMPTY_FC);
-  if (!lotFilters.length) {
-    map.getSource("existing-buildings-source").setData(EMPTY_FC);
-    console.log("[existing-buildings] no valid lot polygons from split file, cleared neighborhood buildings source");
-    return;
-  }
+  const neighborhoodPolygon = neighborhoodBoundsToPolygon(bounds);
+  const neighborhoodBbox = turf.bbox(neighborhoodPolygon);
 
   const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
   const seen = new Set();
-  let features = [];
+  const features = [];
   let nonZeroHeightCount = 0;
-  let filteredOutBySplitMask = 0;
-  let skippedDuplicateGeometry = 0;
-  let usedSplitFallback = false;
+  let filteredOutsideBounds = 0;
 
   for (const candidate of candidates) {
     const geometry = candidate && candidate.geometry ? candidate.geometry : null;
@@ -684,18 +700,22 @@ function refreshExistingBuildingsForNeighborhood() {
       continue;
     }
 
-    // Mapbox vector-tile feature ids are not guaranteed globally unique across tiles.
-    // Use geometry fingerprinting for dedupe to avoid collapsing many valid buildings.
+    // Dedupe by geometry coordinates to avoid duplicate tile features.
     const key = JSON.stringify(geometry.coordinates || []);
-    if (seen.has(key)) {
-      skippedDuplicateGeometry += 1;
-      continue;
-    }
+    if (seen.has(key)) continue;
     seen.add(key);
 
+    // Clip to neighborhood boundary — the same boundary the pluto split used.
     const candidateFeature = { type: "Feature", geometry, properties: {} };
-    if (!intersectsNeighborhoodLots(candidateFeature, lotFilters)) {
-      filteredOutBySplitMask += 1;
+    let candidateBbox;
+    try {
+      candidateBbox = turf.bbox(candidateFeature);
+    } catch (_err) {
+      continue;
+    }
+
+    if (!bboxesIntersect(candidateBbox, neighborhoodBbox)) {
+      filteredOutsideBounds += 1;
       continue;
     }
 
@@ -708,39 +728,24 @@ function refreshExistingBuildingsForNeighborhood() {
       coerceNumber(candidate.properties?.min_height)
       || coerceNumber(candidate.properties?.render_min_height)
       || 0;
-    if (height > 0) {
-      nonZeroHeightCount += 1;
-    }
+    if (height > 0) nonZeroHeightCount += 1;
 
     features.push({
       type: "Feature",
       geometry,
-      properties: {
-        height,
-        min_height: minHeight,
-      },
+      properties: { height, min_height: minHeight },
     });
-  }
-
-  const sparseMapboxMatches = features.length <= 1 && lotFilters.length >= 50;
-  if (!features.length || sparseMapboxMatches) {
-    features = buildExistingBuildingsFromSplitLots(activeNeighborhoodData || EMPTY_FC);
-    usedSplitFallback = features.length > 0;
   }
 
   map.getSource("existing-buildings-source").setData({
     type: "FeatureCollection",
     features,
   });
-  console.log("[existing-buildings] selected neighborhood:", activeNeighborhood?.name || "n/a");
-  console.log("[existing-buildings] lots loaded:", (activeNeighborhoodData?.features || []).length);
-  console.log("[existing-buildings] mapbox building candidates loaded:", candidates.length);
-  console.log("[existing-buildings] duplicate candidate geometries skipped:", skippedDuplicateGeometry);
-  console.log("[existing-buildings] candidates removed by split-lot mask:", filteredOutBySplitMask);
-  console.log("[existing-buildings] mapbox building features loaded:", features.length);
-  console.log("[existing-buildings] mapbox buildings with non-zero height:", nonZeroHeightCount);
-  console.log("[existing-buildings] sparse-mapbox fallback triggered:", sparseMapboxMatches);
-  console.log("[existing-buildings] used split-lot fallback:", usedSplitFallback);
+  console.log("[existing-buildings] neighborhood:", activeNeighborhood?.name || "n/a");
+  console.log("[existing-buildings] mapbox candidates loaded:", candidates.length);
+  console.log("[existing-buildings] outside neighborhood bounds (filtered):", filteredOutsideBounds);
+  console.log("[existing-buildings] buildings shown:", features.length);
+  console.log("[existing-buildings] buildings with non-zero height:", nonZeroHeightCount);
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
