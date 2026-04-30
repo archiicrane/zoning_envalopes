@@ -688,6 +688,23 @@ function findNtaPolygon(neighborhoodName) {
   return null;
 }
 
+function buildNeighborhoodMaskGeometry(geojson) {
+  const multiPolygonCoords = [];
+  for (const feature of geojson?.features || []) {
+    const geometry = feature?.geometry;
+    if (!geometry) continue;
+    if (geometry.type === "Polygon") {
+      multiPolygonCoords.push(geometry.coordinates);
+    } else if (geometry.type === "MultiPolygon") {
+      for (const poly of geometry.coordinates) {
+        multiPolygonCoords.push(poly);
+      }
+    }
+  }
+  if (!multiPolygonCoords.length) return null;
+  return { type: "MultiPolygon", coordinates: multiPolygonCoords };
+}
+
 function refreshExistingBuildingsForNeighborhood() {
   if (!map || !map.getLayer("existing-buildings-mapbox")) {
     return;
@@ -722,6 +739,27 @@ function refreshExistingBuildingsForNeighborhood() {
   map.setFilter("existing-buildings-mapbox", ["within", ntaFeature.geometry]);
   console.log("[existing-buildings] NTA:", ntaFeature.properties?.ntaname);
   console.log("[existing-buildings] updated layer filter using NTA boundary");
+
+  // If NTA filter yields no rendered buildings (common with some source-layer
+  // geometry edge cases), fall back to the same split-lot mask that drives the
+  // zoning envelope neighborhood scope.
+  map.once("idle", () => {
+    if (!map || !map.getLayer("existing-buildings-mapbox")) return;
+    const rendered = map.queryRenderedFeatures({ layers: ["existing-buildings-mapbox"] }) || [];
+    if (rendered.length > 0) {
+      console.log("[existing-buildings] rendered with NTA filter:", rendered.length);
+      return;
+    }
+
+    const lotMaskGeometry = buildNeighborhoodMaskGeometry(activeNeighborhoodData || EMPTY_FC);
+    if (!lotMaskGeometry) {
+      console.warn("[existing-buildings] NTA filter empty and no lot-mask fallback available");
+      return;
+    }
+
+    map.setFilter("existing-buildings-mapbox", ["within", lotMaskGeometry]);
+    console.warn("[existing-buildings] NTA filter returned 0; switched to neighborhood lot-mask fallback");
+  });
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
