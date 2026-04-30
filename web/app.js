@@ -666,7 +666,26 @@ function findNtaPolygon(neighborhoodName) {
       best = feature;
     }
   }
-  return best;
+  if (best) return best;
+
+  // Geometric fallback: choose the NTA containing the neighborhood center.
+  const bounds = computeNeighborhoodBounds(activeNeighborhoodData || EMPTY_FC);
+  if (!bounds || bounds.isEmpty()) return null;
+  const center = bounds.getCenter();
+  const centerPoint = turf.point([center.lng, center.lat]);
+
+  for (const feature of ntaData.features || []) {
+    try {
+      const contains = typeof turf.booleanPointInPolygon === "function"
+        ? turf.booleanPointInPolygon(centerPoint, feature)
+        : Boolean(turf.intersect(centerPoint, feature));
+      if (contains) return feature;
+    } catch (_err) {
+      // Continue scanning if one feature is malformed.
+    }
+  }
+
+  return null;
 }
 
 function refreshExistingBuildingsForNeighborhood() {
@@ -3102,6 +3121,25 @@ async function loadNeighborhoodOptions() {
   await loadNeighborhoodById(availableNeighborhoods[0].id);
 }
 
+async function loadNtaBoundaries() {
+  // Try both paths to be resilient across local and deployed routing setups.
+  for (const url of ["/nta.geojson", "/web/nta.geojson"]) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && Array.isArray(data.features) && data.features.length) {
+        ntaData = data;
+        console.log("[existing-buildings] loaded NTA boundaries:", data.features.length, "from", url);
+        return;
+      }
+    } catch (_err) {
+      // Continue trying fallback URLs.
+    }
+  }
+  console.warn("[existing-buildings] failed to load NTA boundaries");
+}
+
 async function loadNeighborhoodById(id) {
   const neighborhood = availableNeighborhoods.find((item) => item.id === id);
   if (!neighborhood) {
@@ -3351,11 +3389,9 @@ lotSummary.addEventListener("click", (event) => {
     await loadZoningRules();
     const token = await resolveMapboxToken();
     await initMap(token);
-    // Load NTA boundaries in parallel with neighborhood list.
-    await Promise.all([
-      loadNeighborhoodOptions(),
-      fetch("/nta.geojson").then(r => r.ok ? r.json() : null).then(d => { if (d) ntaData = d; }).catch(() => {}),
-    ]);
+    // Ensure NTA boundaries are ready before first neighborhood render.
+    await loadNtaBoundaries();
+    await loadNeighborhoodOptions();
   } catch (err) {
     setReport(String(err));
   }
