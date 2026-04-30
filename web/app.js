@@ -656,78 +656,35 @@ function refreshExistingBuildingsForNeighborhood() {
     return;
   }
 
-  // Build the per-lot spatial index from the same split-pluto data that
-  // buildZoningEnvelopeFeatures uses.  A Mapbox building is shown iff it
-  // intersects at least one lot polygon — identical boundary to the envelopes.
-  const lotFilters = buildNeighborhoodLotFilters(activeNeighborhoodData || EMPTY_FC);
-  if (!lotFilters.length) {
-    map.getSource("existing-buildings-source").setData(EMPTY_FC);
-    console.log("[existing-buildings] no lots in index, cleared source");
-    return;
-  }
-
-  // Compute overall neighborhood bbox for a fast first-pass exclusion.
-  const neighborhoodBbox = lotFilters.reduce(
-    (acc, { bbox: b }) => [
-      Math.min(acc[0], b[0]),
-      Math.min(acc[1], b[1]),
-      Math.max(acc[2], b[2]),
-      Math.max(acc[3], b[3]),
-    ],
-    [Infinity, Infinity, -Infinity, -Infinity]
-  );
-
-  const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
-  const seen = new Set();
+  // For every PLUTO lot in the neighborhood that has a building (numfloors > 0
+  // or bldgarea > 0), extrude its lot polygon to the estimated building height.
+  // This uses the exact same lot polygons as the zoning envelope layer, so the
+  // clip boundary is automatically identical — no Mapbox tile queries needed.
+  const geojson = activeNeighborhoodData || EMPTY_FC;
   const features = [];
-  let nonZeroHeightCount = 0;
-  let filteredOut = 0;
+  let skippedVacant = 0;
 
-  for (const candidate of candidates) {
-    const geometry = candidate && candidate.geometry ? candidate.geometry : null;
+  for (const feature of geojson.features || []) {
+    const geometry = feature?.geometry;
     if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) {
       continue;
     }
+    const props = extractProps(feature);
+    const numFloors = coerceNumber(props.numfloors ?? props.NumFloors);
+    const bldgArea  = coerceNumber(props.bldgarea  ?? props.BldgArea);
 
-    const key = JSON.stringify(geometry.coordinates || []);
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    const candidateFeature = { type: "Feature", geometry, properties: {} };
-    let candidateBbox;
-    try {
-      candidateBbox = turf.bbox(candidateFeature);
-    } catch (_err) {
+    // Skip vacant / unbuilt lots.
+    if (!numFloors && !bldgArea) {
+      skippedVacant++;
       continue;
     }
 
-    // Fast neighborhood bbox pre-filter.
-    if (!bboxesIntersect(candidateBbox, neighborhoodBbox)) {
-      filteredOut++;
-      continue;
-    }
-
-    // Precise per-lot check — same boundary as the zoning envelope layer.
-    if (!intersectsNeighborhoodLots(candidateFeature, lotFilters)) {
-      filteredOut++;
-      continue;
-    }
-
-    const height =
-      coerceNumber(candidate.properties?.height)
-      || coerceNumber(candidate.properties?.render_height)
-      || (coerceNumber(candidate.properties?.levels) ? coerceNumber(candidate.properties?.levels) * 3 : null)
-      || 10;
-    const minHeight =
-      coerceNumber(candidate.properties?.min_height)
-      || coerceNumber(candidate.properties?.render_min_height)
-      || 0;
-    if (height > 0) nonZeroHeightCount++;
+    const height = coerceNumber(props.existing_height_ft) || estimateExistingHeightFt(props) || 10;
 
     features.push({
       type: "Feature",
       geometry,
-      properties: { height, min_height: minHeight },
+      properties: { height, min_height: 0 },
     });
   }
 
@@ -735,11 +692,9 @@ function refreshExistingBuildingsForNeighborhood() {
     type: "FeatureCollection",
     features,
   });
-  console.log("[existing-buildings] lots in index:", lotFilters.length);
-  console.log("[existing-buildings] mapbox candidates:", candidates.length);
-  console.log("[existing-buildings] filtered out:", filteredOut);
+  console.log("[existing-buildings] lots total:", (geojson.features || []).length);
+  console.log("[existing-buildings] vacant/skipped:", skippedVacant);
   console.log("[existing-buildings] buildings shown:", features.length);
-  console.log("[existing-buildings] non-zero height:", nonZeroHeightCount);
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
