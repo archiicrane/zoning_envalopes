@@ -231,6 +231,61 @@ function computeNeighborhoodBounds(geojson) {
   return bounds;
 }
 
+function buildNeighborhoodLotFilters(geojson) {
+  const lotFilters = [];
+  for (const feature of geojson.features || []) {
+    const geometry = feature?.geometry;
+    if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) {
+      continue;
+    }
+    try {
+      const lotFeature = _featureGeometryOnly({ geometry });
+      const bbox = turf.bbox(lotFeature);
+      lotFilters.push({ lotFeature, bbox });
+    } catch (_err) {
+      // Skip malformed geometries and continue with valid lots.
+    }
+  }
+  return lotFilters;
+}
+
+function bboxesIntersect(a, b) {
+  if (!a || !b || a.length !== 4 || b.length !== 4) {
+    return false;
+  }
+  return !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3]);
+}
+
+function intersectsNeighborhoodLots(candidateFeature, lotFilters) {
+  if (!candidateFeature || !Array.isArray(lotFilters) || !lotFilters.length) {
+    return false;
+  }
+
+  let candidateBbox = null;
+  try {
+    candidateBbox = turf.bbox(candidateFeature);
+  } catch (_err) {
+    return false;
+  }
+
+  for (const lot of lotFilters) {
+    if (!bboxesIntersect(candidateBbox, lot.bbox)) {
+      continue;
+    }
+    try {
+      const intersects = typeof turf.booleanIntersects === "function"
+        ? turf.booleanIntersects(candidateFeature, lot.lotFeature)
+        : Boolean(turf.intersect(candidateFeature, lot.lotFeature));
+      if (intersects) {
+        return true;
+      }
+    } catch (_err) {
+      // Keep scanning remaining lots if one geometry comparison fails.
+    }
+  }
+  return false;
+}
+
 function estimateExistingHeightFt(props) {
   const floorHeight = Number(document.getElementById("floorHeight").value) || 10;
   const numFloors = coerceNumber(props.numfloors ?? props.NumFloors);
@@ -587,10 +642,18 @@ function refreshExistingBuildingsForNeighborhood() {
     return;
   }
 
+  const lotFilters = buildNeighborhoodLotFilters(activeNeighborhoodData || EMPTY_FC);
+  if (!lotFilters.length) {
+    map.getSource("existing-buildings-source").setData(EMPTY_FC);
+    console.log("[existing-buildings] no valid lot polygons from split file, cleared neighborhood buildings source");
+    return;
+  }
+
   const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
   const seen = new Set();
   const features = [];
   let nonZeroHeightCount = 0;
+  let filteredOutBySplitMask = 0;
 
   for (const candidate of candidates) {
     const geometry = candidate && candidate.geometry ? candidate.geometry : null;
@@ -604,6 +667,12 @@ function refreshExistingBuildingsForNeighborhood() {
       continue;
     }
     seen.add(key);
+
+    const candidateFeature = { type: "Feature", geometry, properties: {} };
+    if (!intersectsNeighborhoodLots(candidateFeature, lotFilters)) {
+      filteredOutBySplitMask += 1;
+      continue;
+    }
 
     const height =
       coerceNumber(candidate.properties?.height)
@@ -635,6 +704,7 @@ function refreshExistingBuildingsForNeighborhood() {
   console.log("[existing-buildings] selected neighborhood:", activeNeighborhood?.name || "n/a");
   console.log("[existing-buildings] lots loaded:", (activeNeighborhoodData?.features || []).length);
   console.log("[existing-buildings] mapbox building candidates loaded:", candidates.length);
+  console.log("[existing-buildings] candidates removed by split-lot mask:", filteredOutBySplitMask);
   console.log("[existing-buildings] mapbox building features loaded:", features.length);
   console.log("[existing-buildings] mapbox buildings with non-zero height:", nonZeroHeightCount);
 }
