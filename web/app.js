@@ -675,6 +675,7 @@ function refreshExistingBuildingsForNeighborhood() {
   let features = [];
   let nonZeroHeightCount = 0;
   let filteredOutBySplitMask = 0;
+  let skippedDuplicateGeometry = 0;
   let usedSplitFallback = false;
 
   for (const candidate of candidates) {
@@ -683,9 +684,11 @@ function refreshExistingBuildingsForNeighborhood() {
       continue;
     }
 
-    const idVal = candidate.id ?? JSON.stringify(geometry.coordinates || []);
-    const key = String(idVal);
+    // Mapbox vector-tile feature ids are not guaranteed globally unique across tiles.
+    // Use geometry fingerprinting for dedupe to avoid collapsing many valid buildings.
+    const key = JSON.stringify(geometry.coordinates || []);
     if (seen.has(key)) {
+      skippedDuplicateGeometry += 1;
       continue;
     }
     seen.add(key);
@@ -719,7 +722,8 @@ function refreshExistingBuildingsForNeighborhood() {
     });
   }
 
-  if (!features.length) {
+  const sparseMapboxMatches = features.length <= 1 && lotFilters.length >= 50;
+  if (!features.length || sparseMapboxMatches) {
     features = buildExistingBuildingsFromSplitLots(activeNeighborhoodData || EMPTY_FC);
     usedSplitFallback = features.length > 0;
   }
@@ -731,9 +735,11 @@ function refreshExistingBuildingsForNeighborhood() {
   console.log("[existing-buildings] selected neighborhood:", activeNeighborhood?.name || "n/a");
   console.log("[existing-buildings] lots loaded:", (activeNeighborhoodData?.features || []).length);
   console.log("[existing-buildings] mapbox building candidates loaded:", candidates.length);
+  console.log("[existing-buildings] duplicate candidate geometries skipped:", skippedDuplicateGeometry);
   console.log("[existing-buildings] candidates removed by split-lot mask:", filteredOutBySplitMask);
   console.log("[existing-buildings] mapbox building features loaded:", features.length);
   console.log("[existing-buildings] mapbox buildings with non-zero height:", nonZeroHeightCount);
+  console.log("[existing-buildings] sparse-mapbox fallback triggered:", sparseMapboxMatches);
   console.log("[existing-buildings] used split-lot fallback:", usedSplitFallback);
 }
 
