@@ -706,88 +706,22 @@ function buildNeighborhoodMaskGeometry(geojson) {
 }
 
 function refreshExistingBuildingsForNeighborhood() {
-  if (!map || !map.getLayer("existing-buildings-mapbox") || !map.getSource("existing-buildings-source")) {
-    return;
-  }
+  if (!map || !map.getLayer("existing-buildings-mapbox")) return;
 
   const ntaFeature = findNtaPolygon(activeNeighborhood?.name);
-  const clipGeometry = ntaFeature?.geometry || buildNeighborhoodMaskGeometry(activeNeighborhoodData || EMPTY_FC);
-  if (!clipGeometry) {
-    map.getSource("existing-buildings-source").setData(EMPTY_FC);
-    console.warn("[existing-buildings] no clip geometry available for:", activeNeighborhood?.name);
+  if (!ntaFeature) {
+    map.setFilter("existing-buildings-mapbox", ["==", "extrude", "false"]); // show nothing
+    console.warn("[existing-buildings] no NTA polygon found for:", activeNeighborhood?.name);
     return;
   }
 
-  let clipBbox;
   try {
-    clipBbox = turf.bbox({ type: "Feature", geometry: clipGeometry, properties: {} });
-  } catch (_err) {
-    map.getSource("existing-buildings-source").setData(EMPTY_FC);
-    return;
+    map.setFilter("existing-buildings-mapbox", ["within", ntaFeature.geometry]);
+    map.setLayoutProperty("existing-buildings-mapbox", "visibility", "visible");
+    console.log("[existing-buildings] within filter applied for NTA:", ntaFeature.properties?.ntaname);
+  } catch (err) {
+    console.error("[existing-buildings] setFilter error:", err);
   }
-
-  const canvas = map.getCanvas();
-  const candidates = map.queryRenderedFeatures(
-    [[0, 0], [canvas.clientWidth, canvas.clientHeight]]
-  ).filter((feature) => feature?.source === "composite" && feature?.sourceLayer === "building");
-  const features = [];
-  let filtered = 0;
-
-  for (const candidate of candidates) {
-    const geometry = candidate?.geometry;
-    if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) continue;
-
-    const candidateFeature = { type: "Feature", geometry, properties: {} };
-    let candidateBbox;
-    try {
-      candidateBbox = turf.bbox(candidateFeature);
-    } catch (_err) {
-      continue;
-    }
-
-    if (!bboxesIntersect(candidateBbox, clipBbox)) {
-      filtered += 1;
-      continue;
-    }
-
-    try {
-      const cx = (candidateBbox[0] + candidateBbox[2]) / 2;
-      const cy = (candidateBbox[1] + candidateBbox[3]) / 2;
-      const centerPt = turf.point([cx, cy]);
-      const inside = typeof turf.booleanPointInPolygon === "function"
-        ? turf.booleanPointInPolygon(centerPt, { type: "Feature", geometry: clipGeometry, properties: {} })
-        : Boolean(turf.intersect(centerPt, { type: "Feature", geometry: clipGeometry, properties: {} }));
-      if (!inside) {
-        filtered += 1;
-        continue;
-      }
-    } catch (_err) {
-      filtered += 1;
-      continue;
-    }
-
-    const height =
-      coerceNumber(candidate.properties?.height)
-      || coerceNumber(candidate.properties?.render_height)
-      || (coerceNumber(candidate.properties?.levels) ? coerceNumber(candidate.properties?.levels) * 3 : null)
-      || 10;
-    const minHeight =
-      coerceNumber(candidate.properties?.min_height)
-      || coerceNumber(candidate.properties?.render_min_height)
-      || 0;
-
-    features.push({
-      type: "Feature",
-      geometry,
-      properties: { height, min_height: minHeight },
-    });
-  }
-
-  map.getSource("existing-buildings-source").setData({ type: "FeatureCollection", features });
-  console.log("[existing-buildings] clip source:", ntaFeature?.properties?.ntaname || "lot-mask");
-  console.log("[existing-buildings] mapbox candidates:", candidates.length);
-  console.log("[existing-buildings] filtered outside clip:", filtered);
-  console.log("[existing-buildings] buildings loaded:", features.length);
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
@@ -857,10 +791,6 @@ function ensureSourcesAndLayers() {
   }
 
   if (!map.getLayer("existing-buildings-mapbox")) {
-    if (!map.getSource("existing-buildings-source")) {
-      map.addSource("existing-buildings-source", { type: "geojson", data: EMPTY_FC });
-    }
-
     const layers = map.getStyle().layers || [];
     const labelLayerId = layers.find(
       (layer) => layer.type === "symbol" && layer.layout && layer.layout["text-field"]
@@ -870,18 +800,20 @@ function ensureSourcesAndLayers() {
       {
         id: "existing-buildings-mapbox",
         type: "fill-extrusion",
-        source: "existing-buildings-source",
+        source: "composite",
+        "source-layer": "building",
         minzoom: 12,
+        filter: ["==", "$type", "Polygon"],
         paint: {
           "fill-extrusion-color": "#64748b",
-          "fill-extrusion-height": ["get", "height"],
-          "fill-extrusion-base": ["get", "min_height"],
+          "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 10],
+          "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
           "fill-extrusion-opacity": 0.75,
         },
       },
       labelLayerId
     );
-    console.log("[existing-buildings] added neighborhood-scoped mapbox buildings layer");
+    console.log("[existing-buildings] added composite/building layer");
   }
 
   if (map.getLayer("neighborhood-building-fill")) {
