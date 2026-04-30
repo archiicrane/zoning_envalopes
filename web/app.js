@@ -689,7 +689,7 @@ function findNtaPolygon(neighborhoodName) {
 }
 
 function refreshExistingBuildingsForNeighborhood() {
-  if (!map || !map.getLayer("existing-buildings-mapbox") || !map.getSource("existing-buildings-source")) {
+  if (!map || !map.getLayer("existing-buildings-mapbox")) {
     return;
   }
 
@@ -697,68 +697,14 @@ function refreshExistingBuildingsForNeighborhood() {
   const ntaFeature = findNtaPolygon(activeNeighborhood?.name);
   if (!ntaFeature) {
     console.warn("[existing-buildings] no NTA polygon found for:", activeNeighborhood?.name);
-    map.getSource("existing-buildings-source").setData(EMPTY_FC);
+    map.setFilter("existing-buildings-mapbox", ["==", ["get", "height"], -999999]);
     return;
   }
 
-  let ntaBbox;
-  try { ntaBbox = turf.bbox(ntaFeature); } catch (_) {
-    map.getSource("existing-buildings-source").setData(EMPTY_FC);
-    return;
-  }
-
-  // Query real Mapbox building footprints from the loaded tiles.
-  const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
-  const seen = new Set();
-  const features = [];
-  let filtered = 0;
-
-  for (const candidate of candidates) {
-    const geometry = candidate?.geometry;
-    if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) continue;
-
-    const key = JSON.stringify(geometry.coordinates);
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    const candidateFeature = { type: "Feature", geometry, properties: {} };
-    let candidateBbox;
-    try { candidateBbox = turf.bbox(candidateFeature); } catch (_) { continue; }
-
-    // Fast bbox pre-filter against NTA bounds.
-    if (!bboxesIntersect(candidateBbox, ntaBbox)) { filtered++; continue; }
-
-    // Robust inclusion test: classify by footprint centroid against NTA polygon.
-    // This avoids brittle polygon-vs-polygon edge cases from vector-tile geometry.
-    try {
-      const cx = (candidateBbox[0] + candidateBbox[2]) / 2;
-      const cy = (candidateBbox[1] + candidateBbox[3]) / 2;
-      const centerPt = turf.point([cx, cy]);
-      const inside = typeof turf.booleanPointInPolygon === "function"
-        ? turf.booleanPointInPolygon(centerPt, ntaFeature)
-        : Boolean(turf.intersect(centerPt, ntaFeature));
-      if (!inside) { filtered++; continue; }
-    } catch (_) { filtered++; continue; }
-
-    // Height from Mapbox tile properties.
-    const height =
-      coerceNumber(candidate.properties?.height)
-      || coerceNumber(candidate.properties?.render_height)
-      || (coerceNumber(candidate.properties?.levels) ? coerceNumber(candidate.properties.levels) * 3 : null)
-      || 10;
-    const minHeight =
-      coerceNumber(candidate.properties?.min_height)
-      || coerceNumber(candidate.properties?.render_min_height)
-      || 0;
-
-    features.push({ type: "Feature", geometry, properties: { height, min_height: minHeight } });
-  }
-
-  map.getSource("existing-buildings-source").setData({ type: "FeatureCollection", features });
+  // Native Mapbox clipping: render composite/building footprints within NTA.
+  map.setFilter("existing-buildings-mapbox", ["within", ntaFeature.geometry]);
   console.log("[existing-buildings] NTA:", ntaFeature.properties?.ntaname);
-  console.log("[existing-buildings] mapbox candidates:", candidates.length);
-  console.log("[existing-buildings] outside NTA (filtered):", filtered);
-  console.log("[existing-buildings] buildings shown:", features.length);
+  console.log("[existing-buildings] updated layer filter using NTA boundary");
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
@@ -828,10 +774,6 @@ function ensureSourcesAndLayers() {
   }
 
   if (!map.getLayer("existing-buildings-mapbox")) {
-    if (!map.getSource("existing-buildings-source")) {
-      map.addSource("existing-buildings-source", { type: "geojson", data: EMPTY_FC });
-    }
-
     const layers = map.getStyle().layers || [];
     const labelLayerId = layers.find(
       (layer) => layer.type === "symbol" && layer.layout && layer.layout["text-field"]
@@ -841,12 +783,24 @@ function ensureSourcesAndLayers() {
       {
         id: "existing-buildings-mapbox",
         type: "fill-extrusion",
-        source: "existing-buildings-source",
+        source: "composite",
+        "source-layer": "building",
         minzoom: 12,
         paint: {
           "fill-extrusion-color": "#64748b",
-          "fill-extrusion-height": ["get", "height"],
-          "fill-extrusion-base": ["get", "min_height"],
+          "fill-extrusion-height": [
+            "case",
+            ["has", "height"], ["to-number", ["get", "height"]],
+            ["has", "render_height"], ["to-number", ["get", "render_height"]],
+            ["has", "levels"], ["*", ["to-number", ["get", "levels"]], 3],
+            10
+          ],
+          "fill-extrusion-base": [
+            "case",
+            ["has", "min_height"], ["to-number", ["get", "min_height"]],
+            ["has", "render_min_height"], ["to-number", ["get", "render_min_height"]],
+            0
+          ],
           "fill-extrusion-opacity": 0.75,
         },
       },
