@@ -726,7 +726,10 @@ function refreshExistingBuildingsForNeighborhood() {
     return;
   }
 
-  const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
+  const canvas = map.getCanvas();
+  const candidates = map.queryRenderedFeatures(
+    [[0, 0], [canvas.clientWidth, canvas.clientHeight]]
+  ).filter((feature) => feature?.source === "composite" && feature?.sourceLayer === "building");
   const features = [];
   let filtered = 0;
 
