@@ -52,6 +52,7 @@ let lastStudyResult = null;
 let activeNeighborhood = null;
 let activeNeighborhoodData = EMPTY_FC;
 let availableNeighborhoods = [];
+let ntaData = null; // loaded once from /nta.geojson
 let zoningRuleIndex = new Map();
 
 const report = document.getElementById("report");
@@ -651,45 +652,47 @@ function refreshZoningEnvelopeFromNeighborhood() {
   console.log("[zoning-envelope] sample FAR/height values:", built.samples);
 }
 
+function findNtaPolygon(neighborhoodName) {
+  if (!ntaData || !neighborhoodName) return null;
+  // Normalize: underscores → spaces, lowercase for fuzzy compare.
+  const normalize = (s) => String(s).replace(/_/g, " ").toLowerCase().trim();
+  const target = normalize(neighborhoodName);
+  let best = null;
+  for (const feature of ntaData.features || []) {
+    const ntaname = normalize(feature.properties?.ntaname || "");
+    if (ntaname === target) return feature; // exact match
+    // Partial match fallback (target starts with NTA name or vice-versa)
+    if (!best && (ntaname.includes(target) || target.includes(ntaname))) {
+      best = feature;
+    }
+  }
+  return best;
+}
+
 function refreshExistingBuildingsForNeighborhood() {
   if (!map || !map.getLayer("existing-buildings-mapbox") || !map.getSource("existing-buildings-source")) {
     return;
   }
 
-  // Build a spatial index of every PLUTO lot in the neighborhood that has a
-  // building (numfloors > 0 or bldgarea > 0). Start with matched=false so we
-  // can track which lots were covered by a Mapbox footprint.
-  const geojson = activeNeighborhoodData || EMPTY_FC;
-  const lotIndex = [];
-  for (const feature of geojson.features || []) {
-    const geometry = feature?.geometry;
-    if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) continue;
-    const props = extractProps(feature);
-    const numFloors = coerceNumber(props.numfloors ?? props.NumFloors);
-    const bldgArea  = coerceNumber(props.bldgarea  ?? props.BldgArea);
-    if (!numFloors && !bldgArea) continue; // vacant lot — skip
-
-    let bbox;
-    try { bbox = turf.bbox({ type: "Feature", geometry, properties: {} }); } catch (_) { continue; }
-    const height = coerceNumber(props.existing_height_ft) || estimateExistingHeightFt(props) || 10;
-    lotIndex.push({ feature: { type: "Feature", geometry, properties: {} }, bbox, height, matched: false });
-  }
-
-  if (!lotIndex.length) {
+  // Find the NTA polygon that matches the active neighborhood name.
+  const ntaFeature = findNtaPolygon(activeNeighborhood?.name);
+  if (!ntaFeature) {
+    console.warn("[existing-buildings] no NTA polygon found for:", activeNeighborhood?.name);
     map.getSource("existing-buildings-source").setData(EMPTY_FC);
     return;
   }
 
-  const neighborhoodBbox = lotIndex.reduce(
-    (acc, { bbox: b }) => [Math.min(acc[0], b[0]), Math.min(acc[1], b[1]), Math.max(acc[2], b[2]), Math.max(acc[3], b[3])],
-    [Infinity, Infinity, -Infinity, -Infinity]
-  );
+  let ntaBbox;
+  try { ntaBbox = turf.bbox(ntaFeature); } catch (_) {
+    map.getSource("existing-buildings-source").setData(EMPTY_FC);
+    return;
+  }
 
-  // Pass 1 — Mapbox building footprints: use the real traced shape for every
-  // lot whose Mapbox footprint is currently in the loaded tiles.
+  // Query real Mapbox building footprints from the loaded tiles.
   const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
   const seen = new Set();
   const features = [];
+  let filtered = 0;
 
   for (const candidate of candidates) {
     const geometry = candidate?.geometry;
@@ -703,38 +706,36 @@ function refreshExistingBuildingsForNeighborhood() {
     let candidateBbox;
     try { candidateBbox = turf.bbox(candidateFeature); } catch (_) { continue; }
 
-    if (!bboxesIntersect(candidateBbox, neighborhoodBbox)) continue;
+    // Fast bbox pre-filter against NTA bounds.
+    if (!bboxesIntersect(candidateBbox, ntaBbox)) { filtered++; continue; }
 
-    for (const lot of lotIndex) {
-      if (lot.matched) continue; // already covered
-      if (!bboxesIntersect(candidateBbox, lot.bbox)) continue;
-      try {
-        const hits = typeof turf.booleanIntersects === "function"
-          ? turf.booleanIntersects(candidateFeature, lot.feature)
-          : Boolean(turf.intersect(candidateFeature, lot.feature));
-        if (hits) {
-          features.push({ type: "Feature", geometry, properties: { height: lot.height, min_height: 0 } });
-          lot.matched = true;
-          break;
-        }
-      } catch (_) { /* skip bad geometry */ }
-    }
-  }
+    // Precise intersection check against the actual NTA polygon.
+    try {
+      const inside = typeof turf.booleanIntersects === "function"
+        ? turf.booleanIntersects(candidateFeature, ntaFeature)
+        : Boolean(turf.intersect(candidateFeature, ntaFeature));
+      if (!inside) { filtered++; continue; }
+    } catch (_) { /* keep it if check fails — passed bbox */ }
 
-  // Pass 2 — fallback: for any lot not covered by a Mapbox footprint (tile not
-  // loaded, or Mapbox has no building there), use the PLUTO lot polygon itself.
-  let fallbackCount = 0;
-  for (const lot of lotIndex) {
-    if (lot.matched) continue;
-    features.push({ type: "Feature", geometry: lot.feature.geometry, properties: { height: lot.height, min_height: 0 } });
-    fallbackCount++;
+    // Height from Mapbox tile properties.
+    const height =
+      coerceNumber(candidate.properties?.height)
+      || coerceNumber(candidate.properties?.render_height)
+      || (coerceNumber(candidate.properties?.levels) ? coerceNumber(candidate.properties.levels) * 3 : null)
+      || 10;
+    const minHeight =
+      coerceNumber(candidate.properties?.min_height)
+      || coerceNumber(candidate.properties?.render_min_height)
+      || 0;
+
+    features.push({ type: "Feature", geometry, properties: { height, min_height: minHeight } });
   }
 
   map.getSource("existing-buildings-source").setData({ type: "FeatureCollection", features });
-  console.log("[existing-buildings] pluto lots with buildings:", lotIndex.length);
-  console.log("[existing-buildings] mapbox footprints used:", features.length - fallbackCount);
-  console.log("[existing-buildings] pluto lot fallbacks:", fallbackCount);
-  console.log("[existing-buildings] total shown:", features.length);
+  console.log("[existing-buildings] NTA:", ntaFeature.properties?.ntaname);
+  console.log("[existing-buildings] mapbox candidates:", candidates.length);
+  console.log("[existing-buildings] outside NTA (filtered):", filtered);
+  console.log("[existing-buildings] buildings shown:", features.length);
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
@@ -3350,7 +3351,11 @@ lotSummary.addEventListener("click", (event) => {
     await loadZoningRules();
     const token = await resolveMapboxToken();
     await initMap(token);
-    await loadNeighborhoodOptions();
+    // Load NTA boundaries in parallel with neighborhood list.
+    await Promise.all([
+      loadNeighborhoodOptions(),
+      fetch("/nta.geojson").then(r => r.ok ? r.json() : null).then(d => { if (d) ntaData = d; }).catch(() => {}),
+    ]);
   } catch (err) {
     setReport(String(err));
   }
