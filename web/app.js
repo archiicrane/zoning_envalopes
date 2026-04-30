@@ -656,9 +656,9 @@ function refreshExistingBuildingsForNeighborhood() {
     return;
   }
 
-  // Build a spatial index of PLUTO lots that have a building, keyed by their
-  // bbox. Each entry stores the lot feature + the PLUTO-derived height so we
-  // can look it up when a Mapbox footprint intersects the lot.
+  // Build a spatial index of every PLUTO lot in the neighborhood that has a
+  // building (numfloors > 0 or bldgarea > 0). Start with matched=false so we
+  // can track which lots were covered by a Mapbox footprint.
   const geojson = activeNeighborhoodData || EMPTY_FC;
   const lotIndex = [];
   for (const feature of geojson.features || []) {
@@ -672,7 +672,7 @@ function refreshExistingBuildingsForNeighborhood() {
     let bbox;
     try { bbox = turf.bbox({ type: "Feature", geometry, properties: {} }); } catch (_) { continue; }
     const height = coerceNumber(props.existing_height_ft) || estimateExistingHeightFt(props) || 10;
-    lotIndex.push({ feature: { type: "Feature", geometry, properties: {} }, bbox, height });
+    lotIndex.push({ feature: { type: "Feature", geometry, properties: {} }, bbox, height, matched: false });
   }
 
   if (!lotIndex.length) {
@@ -680,23 +680,21 @@ function refreshExistingBuildingsForNeighborhood() {
     return;
   }
 
-  // Overall bbox for fast first-pass exclusion.
   const neighborhoodBbox = lotIndex.reduce(
     (acc, { bbox: b }) => [Math.min(acc[0], b[0]), Math.min(acc[1], b[1]), Math.max(acc[2], b[2]), Math.max(acc[3], b[3])],
     [Infinity, Infinity, -Infinity, -Infinity]
   );
 
-  // Query real Mapbox building footprints from the vector tiles.
+  // Pass 1 — Mapbox building footprints: use the real traced shape for every
+  // lot whose Mapbox footprint is currently in the loaded tiles.
   const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
   const seen = new Set();
   const features = [];
-  let filteredOut = 0;
 
   for (const candidate of candidates) {
     const geometry = candidate?.geometry;
     if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) continue;
 
-    // Dedupe across tile boundaries.
     const key = JSON.stringify(geometry.coordinates);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -705,36 +703,38 @@ function refreshExistingBuildingsForNeighborhood() {
     let candidateBbox;
     try { candidateBbox = turf.bbox(candidateFeature); } catch (_) { continue; }
 
-    // Fast neighborhood pre-filter.
-    if (!bboxesIntersect(candidateBbox, neighborhoodBbox)) { filteredOut++; continue; }
+    if (!bboxesIntersect(candidateBbox, neighborhoodBbox)) continue;
 
-    // Find which PLUTO lot this Mapbox footprint sits on.
-    let matchedHeight = null;
     for (const lot of lotIndex) {
+      if (lot.matched) continue; // already covered
       if (!bboxesIntersect(candidateBbox, lot.bbox)) continue;
       try {
         const hits = typeof turf.booleanIntersects === "function"
           ? turf.booleanIntersects(candidateFeature, lot.feature)
           : Boolean(turf.intersect(candidateFeature, lot.feature));
-        if (hits) { matchedHeight = lot.height; break; }
+        if (hits) {
+          features.push({ type: "Feature", geometry, properties: { height: lot.height, min_height: 0 } });
+          lot.matched = true;
+          break;
+        }
       } catch (_) { /* skip bad geometry */ }
     }
+  }
 
-    if (matchedHeight === null) { filteredOut++; continue; }
-
-    // Use the Mapbox footprint geometry with the PLUTO-derived height.
-    features.push({
-      type: "Feature",
-      geometry,
-      properties: { height: matchedHeight, min_height: 0 },
-    });
+  // Pass 2 — fallback: for any lot not covered by a Mapbox footprint (tile not
+  // loaded, or Mapbox has no building there), use the PLUTO lot polygon itself.
+  let fallbackCount = 0;
+  for (const lot of lotIndex) {
+    if (lot.matched) continue;
+    features.push({ type: "Feature", geometry: lot.feature.geometry, properties: { height: lot.height, min_height: 0 } });
+    fallbackCount++;
   }
 
   map.getSource("existing-buildings-source").setData({ type: "FeatureCollection", features });
   console.log("[existing-buildings] pluto lots with buildings:", lotIndex.length);
-  console.log("[existing-buildings] mapbox candidates:", candidates.length);
-  console.log("[existing-buildings] no matching lot (filtered):", filteredOut);
-  console.log("[existing-buildings] buildings shown:", features.length);
+  console.log("[existing-buildings] mapbox footprints used:", features.length - fallbackCount);
+  console.log("[existing-buildings] pluto lot fallbacks:", fallbackCount);
+  console.log("[existing-buildings] total shown:", features.length);
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
