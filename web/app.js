@@ -651,53 +651,37 @@ function refreshZoningEnvelopeFromNeighborhood() {
   console.log("[zoning-envelope] sample FAR/height values:", built.samples);
 }
 
-function buildNeighborhoodHullPolygon(geojson) {
-  // Collect all lot polygon vertices and compute a convex hull — this gives the
-  // actual neighborhood shape used to split the pluto file, not just a rectangle.
-  const points = [];
-  for (const feature of geojson.features || []) {
-    const geometry = feature?.geometry;
-    if (!geometry) continue;
-    const rings = geometry.type === "Polygon"
-      ? geometry.coordinates
-      : geometry.type === "MultiPolygon"
-        ? geometry.coordinates.flat()
-        : [];
-    for (const ring of rings) {
-      for (const pt of ring) {
-        points.push(turf.point(pt));
-      }
-    }
-  }
-  if (points.length < 3) return null;
-  try {
-    return turf.convex(turf.featureCollection(points));
-  } catch (_err) {
-    return null;
-  }
-}
-
 function refreshExistingBuildingsForNeighborhood() {
   if (!map || !map.getLayer("existing-buildings-mapbox") || !map.getSource("existing-buildings-source")) {
     return;
   }
 
-  // Build a convex hull from the actual lot polygons in the split-pluto file.
-  // This is the same neighborhood shape that was used to split pluto, so both
-  // the envelope layer and the existing-buildings layer share the same boundary.
-  const hullFeature = buildNeighborhoodHullPolygon(activeNeighborhoodData || EMPTY_FC);
-  if (!hullFeature) {
+  // Build the per-lot spatial index from the same split-pluto data that
+  // buildZoningEnvelopeFeatures uses.  A Mapbox building is shown iff it
+  // intersects at least one lot polygon — identical boundary to the envelopes.
+  const lotFilters = buildNeighborhoodLotFilters(activeNeighborhoodData || EMPTY_FC);
+  if (!lotFilters.length) {
     map.getSource("existing-buildings-source").setData(EMPTY_FC);
-    console.log("[existing-buildings] could not compute neighborhood hull, cleared source");
+    console.log("[existing-buildings] no lots in index, cleared source");
     return;
   }
-  const hullBbox = turf.bbox(hullFeature);
+
+  // Compute overall neighborhood bbox for a fast first-pass exclusion.
+  const neighborhoodBbox = lotFilters.reduce(
+    (acc, { bbox: b }) => [
+      Math.min(acc[0], b[0]),
+      Math.min(acc[1], b[1]),
+      Math.max(acc[2], b[2]),
+      Math.max(acc[3], b[3]),
+    ],
+    [Infinity, Infinity, -Infinity, -Infinity]
+  );
 
   const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
   const seen = new Set();
   const features = [];
   let nonZeroHeightCount = 0;
-  let filteredOutsideHull = 0;
+  let filteredOut = 0;
 
   for (const candidate of candidates) {
     const geometry = candidate && candidate.geometry ? candidate.geometry : null;
@@ -717,21 +701,16 @@ function refreshExistingBuildingsForNeighborhood() {
       continue;
     }
 
-    // Quick bbox pre-filter, then precise hull intersection check.
-    if (!bboxesIntersect(candidateBbox, hullBbox)) {
-      filteredOutsideHull += 1;
+    // Fast neighborhood bbox pre-filter.
+    if (!bboxesIntersect(candidateBbox, neighborhoodBbox)) {
+      filteredOut++;
       continue;
     }
-    try {
-      const inside = typeof turf.booleanIntersects === "function"
-        ? turf.booleanIntersects(candidateFeature, hullFeature)
-        : Boolean(turf.intersect(candidateFeature, hullFeature));
-      if (!inside) {
-        filteredOutsideHull += 1;
-        continue;
-      }
-    } catch (_err) {
-      // If precise check fails keep the feature — it passed the bbox test.
+
+    // Precise per-lot check — same boundary as the zoning envelope layer.
+    if (!intersectsNeighborhoodLots(candidateFeature, lotFilters)) {
+      filteredOut++;
+      continue;
     }
 
     const height =
@@ -743,7 +722,7 @@ function refreshExistingBuildingsForNeighborhood() {
       coerceNumber(candidate.properties?.min_height)
       || coerceNumber(candidate.properties?.render_min_height)
       || 0;
-    if (height > 0) nonZeroHeightCount += 1;
+    if (height > 0) nonZeroHeightCount++;
 
     features.push({
       type: "Feature",
@@ -756,9 +735,9 @@ function refreshExistingBuildingsForNeighborhood() {
     type: "FeatureCollection",
     features,
   });
-  console.log("[existing-buildings] neighborhood:", activeNeighborhood?.name || "n/a");
+  console.log("[existing-buildings] lots in index:", lotFilters.length);
   console.log("[existing-buildings] mapbox candidates:", candidates.length);
-  console.log("[existing-buildings] outside hull (filtered):", filteredOutsideHull);
+  console.log("[existing-buildings] filtered out:", filteredOut);
   console.log("[existing-buildings] buildings shown:", features.length);
   console.log("[existing-buildings] non-zero height:", nonZeroHeightCount);
 }
