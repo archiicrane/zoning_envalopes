@@ -349,6 +349,27 @@ function normalizeNeighborhoodData(geojson, neighborhoodName) {
   };
 }
 
+function buildExistingBuildingsFromSplitLots(geojson) {
+  const features = [];
+  for (const feature of geojson.features || []) {
+    const geometry = feature?.geometry;
+    if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) {
+      continue;
+    }
+    const props = extractProps(feature);
+    const height = coerceNumber(props.existing_height_ft) || estimateExistingHeightFt(props) || 10;
+    features.push({
+      type: "Feature",
+      geometry,
+      properties: {
+        height,
+        min_height: 0,
+      },
+    });
+  }
+  return features;
+}
+
 function computeEnvelopeHeight(props) {
   const zoneRule = resolveZoneRule(props);
   const ruleHeight = coerceNumber(zoneRule?.maximumBuildingHeightFt ?? zoneRule?.ridgeHeightFt);
@@ -651,9 +672,10 @@ function refreshExistingBuildingsForNeighborhood() {
 
   const candidates = map.querySourceFeatures("composite", { sourceLayer: "building" }) || [];
   const seen = new Set();
-  const features = [];
+  let features = [];
   let nonZeroHeightCount = 0;
   let filteredOutBySplitMask = 0;
+  let usedSplitFallback = false;
 
   for (const candidate of candidates) {
     const geometry = candidate && candidate.geometry ? candidate.geometry : null;
@@ -697,6 +719,11 @@ function refreshExistingBuildingsForNeighborhood() {
     });
   }
 
+  if (!features.length) {
+    features = buildExistingBuildingsFromSplitLots(activeNeighborhoodData || EMPTY_FC);
+    usedSplitFallback = features.length > 0;
+  }
+
   map.getSource("existing-buildings-source").setData({
     type: "FeatureCollection",
     features,
@@ -707,6 +734,7 @@ function refreshExistingBuildingsForNeighborhood() {
   console.log("[existing-buildings] candidates removed by split-lot mask:", filteredOutBySplitMask);
   console.log("[existing-buildings] mapbox building features loaded:", features.length);
   console.log("[existing-buildings] mapbox buildings with non-zero height:", nonZeroHeightCount);
+  console.log("[existing-buildings] used split-lot fallback:", usedSplitFallback);
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
@@ -790,7 +818,7 @@ function ensureSourcesAndLayers() {
         id: "existing-buildings-mapbox",
         type: "fill-extrusion",
         source: "existing-buildings-source",
-        minzoom: 14,
+        minzoom: 12,
         paint: {
           "fill-extrusion-color": "#cbd5e1",
           "fill-extrusion-height": ["get", "height"],
