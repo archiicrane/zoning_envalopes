@@ -728,13 +728,17 @@ function refreshExistingBuildingsForNeighborhood() {
     // Fast bbox pre-filter against NTA bounds.
     if (!bboxesIntersect(candidateBbox, ntaBbox)) { filtered++; continue; }
 
-    // Precise intersection check against the actual NTA polygon.
+    // Robust inclusion test: classify by footprint centroid against NTA polygon.
+    // This avoids brittle polygon-vs-polygon edge cases from vector-tile geometry.
     try {
-      const inside = typeof turf.booleanIntersects === "function"
-        ? turf.booleanIntersects(candidateFeature, ntaFeature)
-        : Boolean(turf.intersect(candidateFeature, ntaFeature));
+      const cx = (candidateBbox[0] + candidateBbox[2]) / 2;
+      const cy = (candidateBbox[1] + candidateBbox[3]) / 2;
+      const centerPt = turf.point([cx, cy]);
+      const inside = typeof turf.booleanPointInPolygon === "function"
+        ? turf.booleanPointInPolygon(centerPt, ntaFeature)
+        : Boolean(turf.intersect(centerPt, ntaFeature));
       if (!inside) { filtered++; continue; }
-    } catch (_) { /* keep it if check fails — passed bbox */ }
+    } catch (_) { filtered++; continue; }
 
     // Height from Mapbox tile properties.
     const height =
