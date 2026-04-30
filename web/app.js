@@ -699,7 +699,7 @@ function refreshExistingBuildingsForNeighborhood() {
     console.warn("[existing-buildings] no NTA polygon found for:", activeNeighborhood?.name, "- using neighborhood bbox fallback");
     const bounds = computeNeighborhoodBounds(activeNeighborhoodData || EMPTY_FC);
     if (!bounds || bounds.isEmpty()) {
-      map.setFilter("existing-buildings-mapbox", ["==", 1, 0]);
+      map.setFilter("existing-buildings-mapbox", ["==", "$type", "Point"]);
       return;
     }
     const sw = bounds.getSouthWest();
@@ -714,12 +714,12 @@ function refreshExistingBuildingsForNeighborhood() {
         [sw.lng, sw.lat],
       ]],
     };
-    map.setFilter("existing-buildings-mapbox", ["within", ["literal", bboxPolygon]]);
+    map.setFilter("existing-buildings-mapbox", ["within", bboxPolygon]);
     return;
   }
 
   // Native Mapbox clipping: render composite/building footprints within NTA.
-  map.setFilter("existing-buildings-mapbox", ["within", ["literal", ntaFeature.geometry]]);
+  map.setFilter("existing-buildings-mapbox", ["within", ntaFeature.geometry]);
   console.log("[existing-buildings] NTA:", ntaFeature.properties?.ntaname);
   console.log("[existing-buildings] updated layer filter using NTA boundary");
 }
@@ -802,7 +802,7 @@ function ensureSourcesAndLayers() {
         type: "fill-extrusion",
         source: "composite",
         "source-layer": "building",
-        filter: ["==", 1, 0],
+        filter: ["==", "$type", "Point"],
         minzoom: 12,
         paint: {
           "fill-extrusion-color": "#64748b",
