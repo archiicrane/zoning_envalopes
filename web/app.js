@@ -4218,21 +4218,18 @@ function _disposeIsometricRenderer() {
 
 function _ensureThreeLoaded() {
   if (window.THREE) return Promise.resolve(window.THREE);
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector('script[data-three="true"]');
-    if (existing) {
-      existing.addEventListener("load", () => resolve(window.THREE));
-      existing.addEventListener("error", () => reject(new Error("Three.js failed to load")));
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/three@0.161.0/build/three.min.js";
-    script.async = true;
-    script.dataset.three = "true";
-    script.onload = () => resolve(window.THREE);
-    script.onerror = () => reject(new Error("Three.js failed to load"));
-    document.head.appendChild(script);
-  });
+  if (!window.__threeModulePromise) {
+    window.__threeModulePromise = import("/web/vendor/three.module.js")
+      .then((mod) => {
+        window.THREE = mod;
+        return mod;
+      })
+      .catch((err) => {
+        window.__threeModulePromise = null;
+        throw new Error(`Three.js failed to load from local bundle: ${String(err)}`);
+      });
+  }
+  return window.__threeModulePromise;
 }
 
 function _lotToLocalProjector(ring) {
