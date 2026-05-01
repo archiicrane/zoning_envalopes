@@ -709,16 +709,17 @@ function refreshExistingBuildingsForNeighborhood() {
   if (!map || !map.getLayer("existing-buildings-mapbox")) return;
 
   const ntaFeature = findNtaPolygon(activeNeighborhood?.name);
-  if (!ntaFeature) {
-    map.setFilter("existing-buildings-mapbox", ["==", "extrude", "false"]); // show nothing
-    console.warn("[existing-buildings] no NTA polygon found for:", activeNeighborhood?.name);
-    return;
-  }
+  const fallbackGeometry = buildNeighborhoodMaskGeometry(activeNeighborhoodData || EMPTY_FC);
+  const clipGeometry = ntaFeature?.geometry || fallbackGeometry;
+  if (!clipGeometry) return;
 
   try {
-    map.setFilter("existing-buildings-mapbox", ["within", ntaFeature.geometry]);
+    map.setFilter("existing-buildings-mapbox", ["within", clipGeometry]);
     map.setLayoutProperty("existing-buildings-mapbox", "visibility", "visible");
-    console.log("[existing-buildings] within filter applied for NTA:", ntaFeature.properties?.ntaname);
+    console.log(
+      "[existing-buildings] within filter clip source:",
+      ntaFeature?.properties?.ntaname || "neighborhood-lot-mask"
+    );
   } catch (err) {
     console.error("[existing-buildings] setFilter error:", err);
   }
@@ -3096,6 +3097,9 @@ async function loadNtaBoundaries() {
       if (data && Array.isArray(data.features) && data.features.length) {
         ntaData = data;
         console.log("[existing-buildings] loaded NTA boundaries:", data.features.length, "from", url);
+        if (activeNeighborhood && map?.getLayer("existing-buildings-mapbox")) {
+          refreshExistingBuildingsForNeighborhood();
+        }
         return;
       }
     } catch (_err) {
