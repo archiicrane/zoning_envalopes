@@ -4981,6 +4981,34 @@ function drawPolygon(ctx, points, style = {}) {
     ctx.fillStyle = style.fill;
     ctx.fill();
   }
+  if (style.hatch) {
+    ctx.save();
+    const hatchCanvas = document.createElement("canvas");
+    hatchCanvas.width = 12;
+    hatchCanvas.height = 12;
+    const hatchCtx = hatchCanvas.getContext("2d");
+    if (hatchCtx) {
+      hatchCtx.strokeStyle = style.hatchColor || style.stroke || "#4b5563";
+      hatchCtx.lineWidth = 1;
+      hatchCtx.globalAlpha = 0.45;
+      hatchCtx.beginPath();
+      hatchCtx.moveTo(0, 12);
+      hatchCtx.lineTo(12, 0);
+      hatchCtx.stroke();
+      hatchCtx.beginPath();
+      hatchCtx.moveTo(-3, 9);
+      hatchCtx.lineTo(3, 3);
+      hatchCtx.moveTo(9, 15);
+      hatchCtx.lineTo(15, 9);
+      hatchCtx.stroke();
+      const pattern = ctx.createPattern(hatchCanvas, "repeat");
+      if (pattern) {
+        ctx.fillStyle = pattern;
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
   ctx.lineWidth = style.lineWidth || 1.5;
   ctx.strokeStyle = style.stroke || "#111827";
   if (style.dash) ctx.setLineDash(style.dash);
@@ -5013,6 +5041,17 @@ function drawTextCentered(ctx, text, x, y, color = "#111827") {
   ctx.fillText(text, x, y);
 }
 
+function polygonCentroid(points) {
+  if (!points || !points.length) return { x: 0, y: 0 };
+  let sx = 0;
+  let sy = 0;
+  for (const p of points) {
+    sx += p.x;
+    sy += p.y;
+  }
+  return { x: sx / points.length, y: sy / points.length };
+}
+
 function drawTick(ctx, point, dir) {
   const tickDir = rotate(dir, Math.PI / 4);
   const p1 = add(point, multiply(tickDir, -6));
@@ -5025,7 +5064,17 @@ function drawDimensionLine(ctx, dim) {
   const b = dim.end;
 
   const dir = normalize(subtract(b, a));
-  const normal = perpendicular(dir);
+  let normal = perpendicular(dir);
+  if (dim.centroid) {
+    const edgeMid = midpoint(a, b);
+    const candidateA = add(edgeMid, multiply(normal, dim.offsetPx));
+    const candidateB = add(edgeMid, multiply(normal, -dim.offsetPx));
+    const distA = Math.hypot(candidateA.x - dim.centroid.x, candidateA.y - dim.centroid.y);
+    const distB = Math.hypot(candidateB.x - dim.centroid.x, candidateB.y - dim.centroid.y);
+    if (distA < distB) {
+      normal = multiply(normal, -1);
+    }
+  }
 
   const a2 = add(a, multiply(normal, dim.offsetPx));
   const b2 = add(b, multiply(normal, dim.offsetPx));
@@ -5038,26 +5087,40 @@ function drawDimensionLine(ctx, dim) {
   drawTick(ctx, b2, dir);
 
   const mid = midpoint(a2, b2);
-  drawTextCentered(ctx, dim.label, mid.x, mid.y - 6);
+  const labelPt = add(mid, multiply(normal, 12));
+  drawTextCentered(ctx, dim.label, labelPt.x, labelPt.y);
 }
 
 function drawArchitecturalDimensions(ctx, transform, dimensions) {
+  const transformedEdges = (dimensions.edges || []).map((edge) => transform(edge.start));
+  const centroid = polygonCentroid(transformedEdges);
   dimensions.dimensionLines.forEach((dim, i) => {
     drawDimensionLine(ctx, {
       start: transform(dim.start),
       end: transform(dim.end),
       offsetPx: dim.offsetPx + (i * 10),
       label: dim.label,
+      centroid,
     });
   });
 }
 
 function drawLotEdgeLabels(ctx, transform, edges) {
+  const pts = (edges || []).flatMap((edge) => [transform(edge.start), transform(edge.end)]);
+  const centroid = polygonCentroid(pts);
   for (const edge of edges || []) {
     const a = transform(edge.start);
     const b = transform(edge.end);
     const m = midpoint(a, b);
-    drawTextCentered(ctx, edge.label, m.x, m.y - 4);
+    const dir = normalize(subtract(b, a));
+    let normal = perpendicular(dir);
+    const aOut = add(m, multiply(normal, 18));
+    const bOut = add(m, multiply(normal, -18));
+    const distA = Math.hypot(aOut.x - centroid.x, aOut.y - centroid.y);
+    const distB = Math.hypot(bOut.x - centroid.x, bOut.y - centroid.y);
+    if (distA < distB) normal = multiply(normal, -1);
+    const labelPt = add(m, multiply(normal, 18));
+    drawTextCentered(ctx, edge.label, labelPt.x, labelPt.y);
   }
 }
 
@@ -5069,6 +5132,8 @@ function clearCanvas(canvas) {
 function drawPlan(canvas, g) {
   const ctx = canvas.getContext("2d");
   const transform = fitGeometryToCanvas(g.lot, canvas, 80);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   drawPolygon(ctx, transform(g.buildable), {
     fill: "rgba(0,180,150,0.12)",
@@ -5086,12 +5151,15 @@ function drawPlan(canvas, g) {
     fill: "rgba(90,95,105,0.35)",
     stroke: "#4b5563",
     lineWidth: 1.5,
+    hatch: true,
+    hatchColor: "#4b5563",
   });
 
   drawPolygon(ctx, transform(g.lot), {
     fill: "transparent",
     stroke: "#111827",
     lineWidth: 2.5,
+    dash: [8, 5],
   });
 
   drawLotEdgeLabels(ctx, transform, g.dimensions.edges);
@@ -5103,13 +5171,20 @@ function createIsoTransform(lot, canvas, opts = {}) {
   const angleX = (Number(opts.angleX || 35) * Math.PI) / 180;
   const angleZ = (Number(opts.angleZ || 45) * Math.PI) / 180;
   const padding = Number(opts.padding || 120);
+  const maxHeightFt = Number(opts.maxHeightFt || 0);
+  const dimOffsetPx = Number(opts.dimOffsetPx || 110);
 
   const projector = _lotToLocalProjectorFromRings([lot]);
   const local = lot.map((pt) => projector(pt));
-  const isoBase = local.map(([x, y]) => ({
-    x: (x * Math.cos(angleZ)) - (y * Math.cos(angleX)),
-    y: (x * Math.sin(angleZ)) + (y * Math.sin(angleX)),
-  }));
+  const projectRaw = (x, y, hFt = 0) => ({
+    x: (x - y) * Math.cos(angleZ),
+    y: ((x + y) * Math.sin(angleX)) - (hFt * zScale),
+  });
+  const isoBase = [];
+  for (const [x, y] of local) {
+    isoBase.push(projectRaw(x, y, 0));
+    isoBase.push(projectRaw(x, y, maxHeightFt));
+  }
   const xs = isoBase.map((p) => p.x);
   const ys = isoBase.map((p) => p.y);
   const minX = Math.min(...xs);
@@ -5118,16 +5193,15 @@ function createIsoTransform(lot, canvas, opts = {}) {
   const maxY = Math.max(...ys);
   const spanX = maxX - minX || 1;
   const spanY = maxY - minY || 1;
-  const scale = Math.min((canvas.width - (padding * 2)) / spanX, (canvas.height - (padding * 2)) / spanY);
+  const scale = Math.min((canvas.width - ((padding * 2) + dimOffsetPx)) / spanX, (canvas.height - (padding * 2.4)) / spanY);
 
   return {
     project(lng, lat, hFt = 0) {
       const [lx, ly] = projector([lng, lat]);
-      const ix = (lx * Math.cos(angleZ)) - (ly * Math.cos(angleX));
-      const iy = (lx * Math.sin(angleZ)) + (ly * Math.sin(angleX)) - (hFt * zScale);
+      const raw = projectRaw(lx, ly, hFt);
       return {
-        x: padding + ((ix - minX) * scale),
-        y: canvas.height - padding - ((iy - minY) * scale),
+        x: padding + ((raw.x - minX) * scale),
+        y: padding + ((raw.y - minY) * scale),
       };
     },
   };
@@ -5135,7 +5209,7 @@ function createIsoTransform(lot, canvas, opts = {}) {
 
 function drawIsoBase(ctx, iso, lot) {
   const pts = lot.map((pt) => iso.project(pt[0], pt[1], 0));
-  drawPolygon(ctx, pts, { fill: "rgba(15,23,42,0.04)", stroke: "#334155", lineWidth: 1.2 });
+  drawPolygon(ctx, pts, { fill: "rgba(15,23,42,0.04)", stroke: "#334155", lineWidth: 1.2, dash: [8, 5] });
 }
 
 function drawIsoExtrusion(ctx, iso, mass, style) {
@@ -5214,11 +5288,15 @@ function drawIsoHeightDimensions(ctx, iso, g) {
 
 function drawIso(canvas, g) {
   const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   const iso = createIsoTransform(g.lot, canvas, {
-    padding: 120,
+    padding: 90,
     zScale: 2.2,
     angleX: 35,
     angleZ: 45,
+    maxHeightFt: g.maxHeight,
+    dimOffsetPx: 120,
   });
 
   drawIsoBase(ctx, iso, g.lot);
@@ -5239,6 +5317,8 @@ function drawIso(canvas, g) {
     fill: "rgba(90,95,105,0.65)",
     stroke: "#4b5563",
     lineWidth: 1.5,
+    hatch: true,
+    hatchColor: "#4b5563",
   });
 
   drawIsoHeightDimensions(ctx, iso, g);
