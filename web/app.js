@@ -106,12 +106,11 @@ function applyEnvelopeOpacityToLayers() {
   }
   // Also apply (scaled down) to the neighborhood ghost-volume envelope
   if (map.getLayer("zoning-envelope-layer")) {
-    // Envelope opacity: lower base for ghost effect, higher when selected
-    const baseOpacity = presentationMode ? 0.08 : 0.20;
-    const selectedOpacity = 0.32;
-    // Envelope opacity scales slightly with slider but stays in subtle range
-    const minOpacity = baseOpacity + scenarioOpacity * 0.05;
-    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", minOpacity);
+    // Envelope opacity: higher base for visibility
+    const baseOpacity = presentationMode ? 0.12 : 0.40;
+    // Opacity scales with slider across full range
+    const opacity = baseOpacity + scenarioOpacity * 0.15;
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", opacity);
   }
   if (map.getLayer("zoning-envelope-outline")) {
     const outlineOpacity = presentationMode ? 0.0 : (0.5 + scenarioOpacity * 0.15);
@@ -169,7 +168,7 @@ function applyDiagramMode() {
     );
   }
   if (map.getLayer("zoning-envelope-layer")) {
-    const fillOpacity = presentationMode ? 0.08 : diagramMode ? 0.24 : 0.20;
+    const fillOpacity = presentationMode ? 0.12 : 0.40;
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", fillOpacity);
   }
 }
@@ -196,7 +195,7 @@ function applyPresentationMode() {
     );
   }
   if (map.getLayer("zoning-envelope-layer")) {
-    const fillOpacity = presentationMode ? 0.08 : 0.20;
+    const fillOpacity = presentationMode ? 0.12 : 0.40;
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", fillOpacity);
   }
 }
@@ -570,9 +569,35 @@ function getAvailableZoningOptions() {
 }
 
 function pickZoneColor(props) {
-  // Uniform ghost-volume color — the fill-extrusion layer paints all envelopes
-  // the same pale blue. Keep this function for any future per-zone override.
-  return "#7DB7FF";
+  const zone = pickPrimaryZoneToken(
+    props.zonedist1,
+    props.ZoneDist1,
+    props.zonedist2,
+    props.ZoneDist2,
+    props.zone,
+    props.ZoningDist
+  );
+
+  const explicit = {
+    "R7": "#2563eb",
+    "R7-2": "#60a5fa",
+    "R6": "#ec4899",
+  };
+  if (explicit[zone]) {
+    return explicit[zone];
+  }
+
+  if (zone.startsWith("R")) {
+    return "#3b82f6";  // Residential: bright blue
+  }
+  if (zone.startsWith("C")) {
+    return "#14b8a6";  // Commercial: teal
+  }
+  if (zone.startsWith("M")) {
+    return "#f59e0b";  // Manufacturing: orange
+  }
+
+  return "#6b7280";  // Default: gray
 }
 
 // Returns the SIDE-yard setback in meters.
@@ -897,9 +922,9 @@ function ensureSourcesAndLayers() {
       type: "fill-extrusion",
       source: "zoning-envelope-source",
       paint: {
-        // Clean ghost volume: pale blue, low opacity for transparent effect
-        "fill-extrusion-color": "#7DB7FF",
-        "fill-extrusion-opacity": 0.20,  // dynamically updated by applyEnvelopeOpacityToLayers
+        // Darker, visible envelope volumes with zone-based colors
+        "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#3b82f6"],
+        "fill-extrusion-opacity": 0.40,  // dynamically updated by applyEnvelopeOpacityToLayers
         "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
         "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
         "fill-extrusion-vertical-gradient": false,
