@@ -78,6 +78,16 @@ let isoScene = null;
 let isoCamera = null;
 let isoAnimationFrame = null;
 let analysisModalLots = [];
+let studyState = {
+  floorHeight: 10,
+  farUsed: 3.0,
+  footprintCoverage: 80,
+  envelopeOpacity: 0.35,
+  massingType: "fullBlock",
+  analysis: null,
+  controls: null,
+  maxEnvelope: null,
+};
 
 const report = document.getElementById("report");
 const coverageInput = document.getElementById("coverage");
@@ -124,10 +134,10 @@ if (floorHeightBottomSlider) {
     const fh = document.getElementById("floorHeight");
     if (fh) fh.value = floorHeightBottomSlider.value;
     // Sync to analysis panel slider
-    const apFh = document.getElementById("amFloorHeight") || document.getElementById("apFloorHeight");
+    const apFh = document.getElementById("floorHeightSlider") || document.getElementById("amFloorHeight") || document.getElementById("apFloorHeight");
     if (apFh) {
       apFh.value = floorHeightBottomSlider.value;
-      const disp = document.getElementById("am-floor-display");
+      const disp = document.getElementById("floor-height-display") || document.getElementById("am-floor-display");
       if (disp) disp.textContent = `${floorHeightBottomSlider.value} ft`;
     }
     if (analysisPanelOpen) {
@@ -3977,7 +3987,8 @@ function buildFarEnvelopeForSelectedLot() {
     );
     const coveragePct = Number(coverageInput.value || 80);
     const maxHeightFt = coerceNumber(controls.maxBuildingHeight) ?? 120;
-    const massingOption = document.getElementById("apMassingSelect")?.value || "full-block";
+    const rawMassingOption = document.getElementById("massingTypeSelect")?.value || document.getElementById("apMassingSelect")?.value || "fullBlock";
+    const massingOption = rawMassingOption === "fullBlock" ? "full-block" : rawMassingOption;
 
     const { features, warnings, numFloors, buildingHeightFt } = buildFarMassing({
       buildableFootprintGeometry: buildableFootprintFeature?.geometry || lotGeometry,
@@ -4003,8 +4014,6 @@ function buildFarEnvelopeForSelectedLot() {
     // Sync analysis panel live stats if open
     if (analysisPanelOpen) {
       _updateAnalysisPanelFarStats();
-      _updateIsometricDiagram();
-      _updateTopPlanDiagram();
     }
   } catch (err) {
     console.warn("[far-envelope] build error:", err);
@@ -4415,87 +4424,21 @@ function _updateTopPlanDiagram() {
 }
 
 function updateStudySheetGeometry() {
-  if (!analysisPanelOpen) return;
+  if (!analysisPanelOpen || !studyState.analysis) return;
 
-  const amFar = document.getElementById("amFarSlider");
-  const amFloorHeight = document.getElementById("amFloorHeight");
-  const amCoverage = document.getElementById("amCoverageSlider");
-  const amOpacity = document.getElementById("amOpacitySlider");
-  const massingSelect = document.getElementById("apMassingSelect");
+  const floorHeightSlider = document.getElementById("floorHeightSlider");
+  const farSlider = document.getElementById("farSliderModal");
+  const coverageSlider = document.getElementById("coverageSliderModal");
+  const opacitySlider = document.getElementById("opacitySliderModal");
+  const massingTypeSelect = document.getElementById("massingTypeSelect");
 
-  const floorHeight = Number(amFloorHeight?.value || 10);
-  const farUsed = Number(amFar?.value || farInput.value || 0);
-  const footprintCoverage = Number(amCoverage?.value || coverageInput.value || 80);
-  const envelopeOpacity = Number(amOpacity?.value || 35);
-  const massingType = massingSelect?.value || "full-block";
+  if (floorHeightSlider) studyState.floorHeight = Number(floorHeightSlider.value);
+  if (farSlider) studyState.farUsed = Number(farSlider.value);
+  if (coverageSlider) studyState.footprintCoverage = Number(coverageSlider.value);
+  if (opacitySlider) studyState.envelopeOpacity = Number(opacitySlider.value) / 100;
+  if (massingTypeSelect) studyState.massingType = String(massingTypeSelect.value || "fullBlock");
 
-  const state = _analysisPlanContext();
-  const maxZoningHeight = coerceNumber(state.study.envelope_height_ft) ?? coerceNumber(state.zoning.max_height_ft) ?? 120;
-  const allowedFloorArea = state.lotAreaFt2 * farUsed;
-  const footprintArea = state.maxBuildableAreaFt2 * (footprintCoverage / 100);
-  const floorCount = footprintArea > 0 ? (allowedFloorArea / footprintArea) : 0;
-  const roundedFloorCount = Math.max(1, Math.floor(floorCount));
-  const farEnvelopeHeight = Math.min(roundedFloorCount * floorHeight, maxZoningHeight);
-  const isCapped = (roundedFloorCount * floorHeight) > maxZoningHeight;
-
-  if (amFar) {
-    farInput.value = amFar.value;
-    farVal.textContent = farUsed.toFixed(2);
-  }
-  if (amFloorHeight) {
-    const fh = document.getElementById("floorHeight");
-    if (fh) fh.value = String(floorHeight);
-    if (floorHeightBottomSlider) floorHeightBottomSlider.value = String(floorHeight);
-    if (floorHeightBottomVal) floorHeightBottomVal.textContent = `${floorHeight} ft`;
-  }
-  if (amCoverage) {
-    coverageInput.value = amCoverage.value;
-    covVal.textContent = `${footprintCoverage}%`;
-  }
-
-  const setText = (id, text) => {
-    const node = document.getElementById(id);
-    if (node) node.textContent = text;
-  };
-  setText("am-floor-display", `${floorHeight} ft`);
-  setText("am-far-display", farUsed.toFixed(2));
-  setText("am-cov-display", `${footprintCoverage}%`);
-  setText("am-opacity-display", `${envelopeOpacity}%`);
-  setText("ap-stat-floors", String(roundedFloorCount));
-  setText("ap-stat-far", farUsed.toFixed(2));
-  setText("ap-stat-height", `${Math.round(farEnvelopeHeight)} ft`);
-  setText("am-height-max", `${Math.round(maxZoningHeight)} ft`);
-  setText("ap-stat-area", `${Math.round(allowedFloorArea).toLocaleString()} sf (coverage ${Math.round(footprintArea).toLocaleString()} sf)`);
-  setText("amLabelFar", `${massingType.toUpperCase()} FAR Envelope (${Math.round(farEnvelopeHeight)} ft)`);
-
-  const capNote = document.getElementById("ap-cap-note");
-  if (capNote) {
-    capNote.textContent = isCapped ? "FAR massing capped by max zoning height." : "";
-    capNote.style.display = isCapped ? "block" : "none";
-  }
-
-  envelopeOpacitySlider.value = Math.round((envelopeOpacity / 35) * 75);
-  envelopeOpacityVal.textContent = `${envelopeOpacitySlider.value}%`;
-  applyEnvelopeOpacityToLayers();
-
-  window.__studySheetState = {
-    ...state,
-    floorHeight,
-    farUsed,
-    footprintCoverage,
-    envelopeOpacity,
-    massingType,
-    allowedFloorArea,
-    footprintArea,
-    roundedFloorCount,
-    farEnvelopeHeight,
-    isCapped,
-  };
-
-  _rebuildFarEnvelope();
-  _updateTopPlanDiagram();
-  _updateIsometricDiagram();
-  _updateAnalysisPanelFarStats();
+  renderStudySheet();
 }
 
 function _disposeIsometricRenderer() {
@@ -4764,6 +4707,674 @@ async function _updateIsometricDiagram() {
   }
 }
 
+function _ringToPolygonGeometry(ring) {
+  return { type: "Polygon", coordinates: [_closeRing(ring)] };
+}
+
+function polygonArea(ring) {
+  return _polygonAreaFt2(ring);
+}
+
+function scalePolygonInside(ring, ratio) {
+  const scaled = _scaleGeometryFromCenter(_ringToPolygonGeometry(ring), ratio);
+  return _shapeRingFromGeometry(scaled);
+}
+
+function extrudePolygon(ring, heightFt) {
+  return {
+    footprint: _closeRing(ring || []),
+    heightFt: Math.max(0, Number(heightFt || 0)),
+  };
+}
+
+function analyzeSelectedLots(selectedLots) {
+  const features = (selectedLots || []).filter((f) => f?.geometry);
+  const primaryFeature = features[0] || _makeAnalysisFeatureFromActive();
+  if (!primaryFeature) return null;
+
+  const lotPolygon = _shapeRingFromGeometry(primaryFeature.geometry);
+  const props = primaryFeature.properties || activeLotData || {};
+  const lotAnalysis = analyzeLot({
+    lotFeature: primaryFeature,
+    lotRing: lotPolygon,
+    map,
+    neighborhoodFeatures: activeNeighborhoodData?.features || [],
+  });
+
+  const primaryZone = pickPrimaryZoneToken(props.zonedist1, props.zonedist2, props.zone);
+  const controlsResult = getControlsForLot(
+    {
+      ...lotAnalysis,
+      primaryZone,
+      zoneTokens: extractZoneTokensModule(props.zonedist1, props.zonedist2, props.zone),
+    },
+    zoningRuleIndex
+  );
+  const controlsByZone = controlsResult?.controlsByZone || [];
+  const primaryControls = controlsByZone[0]?.controls || {};
+  const zoneCode = controlsByZone[0]?.zoneCode || primaryZone || "";
+
+  const lotGeometry = _ringToPolygonGeometry(lotPolygon);
+  const generated = generateEnvelopeFromControls({
+    lotGeometry,
+    controls: primaryControls,
+    envelopeColor: "#3b82f6",
+    zoneCode,
+  });
+  const buildablePolygon = _shapeRingFromGeometry(generated?.buildableFootprintFeature?.geometry || lotGeometry);
+
+  const builtFar = coerceNumber(props.built_far ?? props.BuiltFAR) ?? 0.9;
+  const baseFar = coerceNumber(primaryControls.far) ?? coerceNumber(props.resid_far ?? props.comm_far ?? props.facil_far) ?? 3;
+  const existingScale = Math.max(0.2, Math.min(0.95, Math.sqrt(Math.max(0.05, builtFar / Math.max(0.25, baseFar)))));
+  const existingFootprint = scalePolygonInside(buildablePolygon.length ? buildablePolygon : lotPolygon, existingScale);
+  const existingHeightFt = coerceNumber(props.existing_height_ft) ?? estimateExistingHeightFt(props) ?? 10;
+
+  const ringEdges = _ringEdges(lotPolygon);
+  const frontIndices = lotAnalysis?.frontEdgeIndices || [];
+  const rearIndex = Number.isInteger(lotAnalysis?.rearEdgeIndex) ? lotAnalysis.rearEdgeIndex : -1;
+  const edges = ringEdges.map((edge) => {
+    let type = "SIDE";
+    if (frontIndices.includes(edge.idx)) type = "FRONT";
+    else if (edge.idx === rearIndex) type = "REAR";
+    return {
+      start: edge.start,
+      end: edge.end,
+      idx: edge.idx,
+      type,
+      lengthFt: edge.lengthM * 3.28084,
+    };
+  });
+
+  const primaryFrontEdge = edges.find((e) => e.type === "FRONT") || edges[0];
+  const rearEdge = edges.find((e) => e.type === "REAR") || edges[edges.length - 1];
+  const widthLine = edges.slice().sort((a, b) => b.lengthFt - a.lengthFt)[0] || primaryFrontEdge;
+  const depthLine = edges.slice().sort((a, b) => b.lengthFt - a.lengthFt)[1] || rearEdge;
+
+  const lotWidthFt = coerceNumber(props.lotwidth ?? props.lot_width ?? props.LotWidth) ?? widthLine?.lengthFt ?? 0;
+  const lotDepthFt = coerceNumber(props.lotdepth ?? props.lot_depth ?? props.LotDepth) ?? depthLine?.lengthFt ?? 0;
+
+  return {
+    lotPolygon,
+    buildablePolygon,
+    existingFootprint,
+    existingHeightFt,
+    edges,
+    primaryFrontEdge,
+    rearEdge,
+    widthLine,
+    depthLine,
+    lotWidthFt,
+    lotDepthFt,
+    controlsRaw: primaryControls,
+    zoneCode,
+    selectedFeatures: features,
+  };
+}
+
+function getApplicableControls(analysis) {
+  const c = analysis?.controlsRaw || {};
+  const zoning = activeLotData?.zoning_analysis || {};
+  return {
+    maximumBuildingHeightFt: coerceNumber(c.maxBuildingHeight) ?? coerceNumber(zoning.max_height_ft) ?? 120,
+    streetSetbackFt: coerceNumber(c.streetWallInset) ?? coerceNumber(c.streetSetbackFt) ?? (String(zoning.street_type || "narrow").toLowerCase().includes("wide") ? 15 : 10),
+    frontYardFt: coerceNumber(c.frontYard) ?? 0,
+    rearYardFt: coerceNumber(c.rearYard) ?? 0,
+    sideYardFt: coerceNumber(c.sideYardEach) ?? coerceNumber(c.sideYardTotal) ?? 0,
+    setbacks: {
+      street: coerceNumber(c.streetWallInset) ?? 0,
+      front: coerceNumber(c.frontYard) ?? 0,
+      rear: coerceNumber(c.rearYard) ?? 0,
+      side: coerceNumber(c.sideYardEach) ?? 0,
+    },
+  };
+}
+
+function generateMaxEnvelope(analysis, controls) {
+  const footprint = analysis?.buildablePolygon?.length ? analysis.buildablePolygon : analysis.lotPolygon;
+  return extrudePolygon(footprint, controls.maximumBuildingHeightFt);
+}
+
+function computeDimensions(analysis, controls) {
+  return {
+    edges: (analysis.edges || []).map((edge) => ({
+      start: edge.start,
+      end: edge.end,
+      type: edge.type,
+      label: edge.type,
+    })),
+    dimensionLines: [
+      {
+        type: "setback",
+        label: `Street setback: ${Math.round(controls.streetSetbackFt)} ft`,
+        start: analysis.primaryFrontEdge?.start,
+        end: analysis.primaryFrontEdge?.end,
+        offsetPx: 30,
+      },
+      {
+        type: "front-yard",
+        label: `Front yard setback: ${Math.round(controls.frontYardFt)} ft`,
+        start: analysis.primaryFrontEdge?.start,
+        end: analysis.primaryFrontEdge?.end,
+        offsetPx: 55,
+      },
+      {
+        type: "rear-yard",
+        label: `Rear yard setback: ${Math.round(controls.rearYardFt)} ft`,
+        start: analysis.rearEdge?.start,
+        end: analysis.rearEdge?.end,
+        offsetPx: 30,
+      },
+      {
+        type: "side-yard",
+        label: `Side yard setback: ${Math.round(controls.sideYardFt)} ft`,
+        start: analysis.widthLine?.start,
+        end: analysis.widthLine?.end,
+        offsetPx: 70,
+      },
+      {
+        type: "lot-width",
+        label: `Lot width: ${Math.round(analysis.lotWidthFt)} ft`,
+        start: analysis.widthLine?.start,
+        end: analysis.widthLine?.end,
+        offsetPx: 92,
+      },
+      {
+        type: "lot-depth",
+        label: `Lot depth: ${Math.round(analysis.lotDepthFt)} ft`,
+        start: analysis.depthLine?.start,
+        end: analysis.depthLine?.end,
+        offsetPx: 48,
+      },
+    ].filter((d) => d.start && d.end),
+  };
+}
+
+function computeStudyGeometry(state) {
+  const lot = state.analysis.lotPolygon;
+  const buildable = state.analysis.buildablePolygon;
+  const existing = state.analysis.existingFootprint;
+
+  const lotArea = polygonArea(lot);
+  const buildableArea = polygonArea(buildable);
+
+  const allowedFloorArea = lotArea * state.farUsed;
+  const farFootprintArea = buildableArea * (state.footprintCoverage / 100);
+
+  const rawFloorCount = farFootprintArea > 0 ? (allowedFloorArea / farFootprintArea) : 0;
+  const floorCount = Math.max(1, Math.floor(rawFloorCount));
+
+  const rawFarHeight = floorCount * state.floorHeight;
+  const maxHeight = state.controls.maximumBuildingHeightFt;
+  const farHeight = Math.min(rawFarHeight, maxHeight);
+
+  const farFootprint = scalePolygonInside(buildable, state.footprintCoverage / 100);
+
+  const farEnvelope = extrudePolygon(farFootprint, farHeight);
+  const maxEnvelope = state.maxEnvelope;
+  const existingMass = extrudePolygon(existing, state.analysis.existingHeightFt);
+
+  return {
+    analysis: state.analysis,
+    lot,
+    buildable,
+    existing,
+    existingMass,
+    farFootprint,
+    farEnvelope,
+    maxEnvelope,
+    lotArea,
+    buildableArea,
+    allowedFloorArea,
+    farFootprintArea,
+    floorCount,
+    farHeight,
+    maxHeight,
+    floorHeight: state.floorHeight,
+    farUsed: state.farUsed,
+    coverage: state.footprintCoverage,
+    opacity: state.envelopeOpacity,
+    setbacks: state.controls.setbacks,
+    dimensions: computeDimensions(state.analysis, state.controls),
+    isCapped: rawFarHeight > maxHeight,
+  };
+}
+
+function fitGeometryToCanvas(lot, canvas, padding = 80) {
+  const ring = _closeRing(lot || []);
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const [x, y] of ring) {
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+  }
+  const spanX = maxX - minX || 0.0001;
+  const spanY = maxY - minY || 0.0001;
+  const scale = Math.min((canvas.width - (padding * 2)) / spanX, (canvas.height - (padding * 2)) / spanY);
+
+  const transformPoint = (pt) => ({
+    x: padding + ((pt[0] - minX) * scale),
+    y: canvas.height - padding - ((pt[1] - minY) * scale),
+  });
+
+  return (input) => {
+    if (!Array.isArray(input) || !input.length) return [];
+    if (Array.isArray(input[0])) {
+      return input.map((p) => transformPoint(p));
+    }
+    return transformPoint(input);
+  };
+}
+
+function drawPolygon(ctx, points, style = {}) {
+  if (!points || points.length < 3) return;
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i += 1) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+  ctx.closePath();
+  if (style.fill && style.fill !== "transparent") {
+    ctx.fillStyle = style.fill;
+    ctx.fill();
+  }
+  ctx.lineWidth = style.lineWidth || 1.5;
+  ctx.strokeStyle = style.stroke || "#111827";
+  if (style.dash) ctx.setLineDash(style.dash);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawLine(ctx, a, b, color = "#111827", width = 1) {
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.stroke();
+}
+
+function add(a, b) { return { x: a.x + b.x, y: a.y + b.y }; }
+function subtract(a, b) { return { x: a.x - b.x, y: a.y - b.y }; }
+function multiply(a, k) { return { x: a.x * k, y: a.y * k }; }
+function midpoint(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+function normalize(v) { const m = Math.hypot(v.x, v.y) || 1; return { x: v.x / m, y: v.y / m }; }
+function perpendicular(v) { return { x: -v.y, y: v.x }; }
+function rotate(v, r) { return { x: (v.x * Math.cos(r)) - (v.y * Math.sin(r)), y: (v.x * Math.sin(r)) + (v.y * Math.cos(r)) }; }
+
+function drawTextCentered(ctx, text, x, y, color = "#111827") {
+  ctx.fillStyle = color;
+  ctx.font = "11px 'Segoe UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.fillText(text, x, y);
+}
+
+function drawTick(ctx, point, dir) {
+  const tickDir = rotate(dir, Math.PI / 4);
+  const p1 = add(point, multiply(tickDir, -6));
+  const p2 = add(point, multiply(tickDir, 6));
+  drawLine(ctx, p1, p2, "#111827", 1.5);
+}
+
+function drawDimensionLine(ctx, dim) {
+  const a = dim.start;
+  const b = dim.end;
+
+  const dir = normalize(subtract(b, a));
+  const normal = perpendicular(dir);
+
+  const a2 = add(a, multiply(normal, dim.offsetPx));
+  const b2 = add(b, multiply(normal, dim.offsetPx));
+
+  drawLine(ctx, a, a2, "#111827", 1);
+  drawLine(ctx, b, b2, "#111827", 1);
+  drawLine(ctx, a2, b2, "#111827", 1);
+
+  drawTick(ctx, a2, dir);
+  drawTick(ctx, b2, dir);
+
+  const mid = midpoint(a2, b2);
+  drawTextCentered(ctx, dim.label, mid.x, mid.y - 6);
+}
+
+function drawArchitecturalDimensions(ctx, transform, dimensions) {
+  dimensions.dimensionLines.forEach((dim, i) => {
+    drawDimensionLine(ctx, {
+      start: transform(dim.start),
+      end: transform(dim.end),
+      offsetPx: dim.offsetPx + (i * 10),
+      label: dim.label,
+    });
+  });
+}
+
+function drawLotEdgeLabels(ctx, transform, edges) {
+  for (const edge of edges || []) {
+    const a = transform(edge.start);
+    const b = transform(edge.end);
+    const m = midpoint(a, b);
+    drawTextCentered(ctx, edge.label, m.x, m.y - 4);
+  }
+}
+
+function clearCanvas(canvas) {
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawPlan(canvas, g) {
+  const ctx = canvas.getContext("2d");
+  const transform = fitGeometryToCanvas(g.lot, canvas, 80);
+
+  drawPolygon(ctx, transform(g.buildable), {
+    fill: "rgba(0,180,150,0.12)",
+    stroke: "#007c70",
+    dash: [6, 4],
+  });
+
+  drawPolygon(ctx, transform(g.farFootprint), {
+    fill: g.isCapped ? "rgba(220,38,38,0.28)" : "rgba(80,220,150,0.28)",
+    stroke: g.isCapped ? "#b91c1c" : "#17a35b",
+    lineWidth: 2,
+  });
+
+  drawPolygon(ctx, transform(g.existing), {
+    fill: "rgba(90,95,105,0.35)",
+    stroke: "#4b5563",
+    lineWidth: 1.5,
+  });
+
+  drawPolygon(ctx, transform(g.lot), {
+    fill: "transparent",
+    stroke: "#111827",
+    lineWidth: 2.5,
+  });
+
+  drawLotEdgeLabels(ctx, transform, g.dimensions.edges);
+  drawArchitecturalDimensions(ctx, transform, g.dimensions);
+}
+
+function createIsoTransform(lot, canvas, opts = {}) {
+  const zScale = Number(opts.zScale || 2.2);
+  const angleX = (Number(opts.angleX || 35) * Math.PI) / 180;
+  const angleZ = (Number(opts.angleZ || 45) * Math.PI) / 180;
+  const padding = Number(opts.padding || 120);
+
+  const projector = _lotToLocalProjectorFromRings([lot]);
+  const local = lot.map((pt) => projector(pt));
+  const isoBase = local.map(([x, y]) => ({
+    x: (x * Math.cos(angleZ)) - (y * Math.cos(angleX)),
+    y: (x * Math.sin(angleZ)) + (y * Math.sin(angleX)),
+  }));
+  const xs = isoBase.map((p) => p.x);
+  const ys = isoBase.map((p) => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const spanX = maxX - minX || 1;
+  const spanY = maxY - minY || 1;
+  const scale = Math.min((canvas.width - (padding * 2)) / spanX, (canvas.height - (padding * 2)) / spanY);
+
+  return {
+    project(lng, lat, hFt = 0) {
+      const [lx, ly] = projector([lng, lat]);
+      const ix = (lx * Math.cos(angleZ)) - (ly * Math.cos(angleX));
+      const iy = (lx * Math.sin(angleZ)) + (ly * Math.sin(angleX)) - (hFt * zScale);
+      return {
+        x: padding + ((ix - minX) * scale),
+        y: canvas.height - padding - ((iy - minY) * scale),
+      };
+    },
+  };
+}
+
+function drawIsoBase(ctx, iso, lot) {
+  const pts = lot.map((pt) => iso.project(pt[0], pt[1], 0));
+  drawPolygon(ctx, pts, { fill: "rgba(15,23,42,0.04)", stroke: "#334155", lineWidth: 1.2 });
+}
+
+function drawIsoExtrusion(ctx, iso, mass, style) {
+  const ring = mass?.footprint || [];
+  const h = Number(mass?.heightFt || 0);
+  if (!ring.length || h <= 0) return;
+  const base = ring.map((pt) => iso.project(pt[0], pt[1], 0));
+  const top = ring.map((pt) => iso.project(pt[0], pt[1], h));
+
+  for (let i = 0; i < base.length - 1; i += 1) {
+    const quad = [base[i], base[i + 1], top[i + 1], top[i]];
+    drawPolygon(ctx, quad, { fill: style.fill, stroke: style.stroke, lineWidth: 1 });
+  }
+  drawPolygon(ctx, top, { fill: style.fill, stroke: style.stroke, lineWidth: style.lineWidth || 2 });
+}
+
+function getRightSideAnchor(lot, _offset) {
+  const ring = _closeRing(lot || []);
+  return ring.reduce((best, p) => (p[0] > best[0] ? p : best), ring[0] || [0, 0]);
+}
+
+function drawRotatedText(ctx, text, point, angle, color = "#111827") {
+  ctx.save();
+  ctx.translate(point.x, point.y);
+  ctx.rotate(angle);
+  ctx.fillStyle = color;
+  ctx.font = "11px 'Segoe UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+
+function drawVerticalDimension(ctx, iso, dim) {
+  const bottom = iso.project(dim.basePoint[0], dim.basePoint[1], 0);
+  const top = iso.project(dim.basePoint[0], dim.basePoint[1], dim.heightFt);
+
+  const b = { x: bottom.x + dim.xOffsetPx, y: bottom.y };
+  const t = { x: top.x + dim.xOffsetPx, y: top.y };
+
+  drawLine(ctx, b, t, dim.color, 1.5);
+  drawTick(ctx, b, { x: 1, y: 0 });
+  drawTick(ctx, t, { x: 1, y: 0 });
+
+  drawLine(ctx, bottom, b, dim.color, 1);
+  drawLine(ctx, top, t, dim.color, 1);
+
+  drawRotatedText(ctx, dim.label, midpoint(b, t), -Math.PI / 2, dim.color);
+}
+
+function drawIsoHeightDimensions(ctx, iso, g) {
+  drawVerticalDimension(ctx, iso, {
+    basePoint: getRightSideAnchor(g.lot, 20),
+    heightFt: g.analysis.existingHeightFt,
+    label: `Existing: ${Math.round(g.analysis.existingHeightFt)} ft`,
+    color: "#6b7280",
+    xOffsetPx: 30,
+  });
+
+  drawVerticalDimension(ctx, iso, {
+    basePoint: getRightSideAnchor(g.lot, 40),
+    heightFt: g.farHeight,
+    label: `FAR massing: ${Math.round(g.farHeight)} ft`,
+    color: g.isCapped ? "#b91c1c" : "#17a35b",
+    xOffsetPx: 60,
+  });
+
+  drawVerticalDimension(ctx, iso, {
+    basePoint: getRightSideAnchor(g.lot, 60),
+    heightFt: g.maxHeight,
+    label: `Max envelope: ${Math.round(g.maxHeight)} ft`,
+    color: "#1e5aa8",
+    xOffsetPx: 90,
+  });
+}
+
+function drawIso(canvas, g) {
+  const ctx = canvas.getContext("2d");
+  const iso = createIsoTransform(g.lot, canvas, {
+    padding: 120,
+    zScale: 2.2,
+    angleX: 35,
+    angleZ: 45,
+  });
+
+  drawIsoBase(ctx, iso, g.lot);
+
+  drawIsoExtrusion(ctx, iso, g.maxEnvelope, {
+    fill: `rgba(125,183,255,${g.opacity})`,
+    stroke: "#1e5aa8",
+    lineWidth: 2,
+  });
+
+  drawIsoExtrusion(ctx, iso, g.farEnvelope, {
+    fill: g.isCapped ? "rgba(220,38,38,0.35)" : "rgba(80,220,150,0.35)",
+    stroke: g.isCapped ? "#b91c1c" : "#17a35b",
+    lineWidth: 2.5,
+  });
+
+  drawIsoExtrusion(ctx, iso, g.existingMass, {
+    fill: "rgba(90,95,105,0.65)",
+    stroke: "#4b5563",
+    lineWidth: 1.5,
+  });
+
+  drawIsoHeightDimensions(ctx, iso, g);
+}
+
+function setText(selector, value) {
+  const node = document.querySelector(selector);
+  if (node) node.textContent = String(value);
+}
+
+function updateStudyLabels(g) {
+  setText("#floor-count", g.floorCount);
+  setText("#far-displayed", g.farUsed.toFixed(2));
+  setText("#buildable-area", `${Math.round(g.buildableArea).toLocaleString()} sf`);
+  setText("#far-footprint-area", `${Math.round(g.farFootprintArea).toLocaleString()} sf`);
+  setText("#far-envelope-height", `${Math.round(g.farHeight)} ft`);
+  setText("#max-zoning-height", `${Math.round(g.maxHeight)} ft`);
+  setText("#floor-height-display", `${g.floorHeight} ft`);
+  setText("#far-used-display", g.farUsed.toFixed(2));
+  setText("#coverage-display", `${Math.round(g.coverage)}%`);
+  setText("#opacity-display", `${Math.round(g.opacity * 100)}%`);
+  const capNote = document.getElementById("ap-cap-note");
+  if (capNote) {
+    capNote.textContent = g.isCapped ? "FAR massing capped by max zoning height." : "";
+    capNote.style.display = g.isCapped ? "block" : "none";
+  }
+}
+
+function bindStudySheetSliders() {
+  const floorHeightSlider = document.getElementById("floorHeightSlider");
+  const farSlider = document.getElementById("farSliderModal");
+  const coverageSlider = document.getElementById("coverageSliderModal");
+  const opacitySlider = document.getElementById("opacitySliderModal");
+  const massingTypeSelect = document.getElementById("massingTypeSelect");
+
+  if (floorHeightSlider) {
+    floorHeightSlider.oninput = (e) => {
+      studyState.floorHeight = Number(e.target.value);
+      renderStudySheet();
+    };
+  }
+
+  if (farSlider) {
+    farSlider.oninput = (e) => {
+      studyState.farUsed = Number(e.target.value);
+      renderStudySheet();
+    };
+  }
+
+  if (coverageSlider) {
+    coverageSlider.oninput = (e) => {
+      studyState.footprintCoverage = Number(e.target.value);
+      renderStudySheet();
+    };
+  }
+
+  if (opacitySlider) {
+    opacitySlider.oninput = (e) => {
+      studyState.envelopeOpacity = Number(e.target.value) / 100;
+      renderStudySheet();
+    };
+  }
+
+  if (massingTypeSelect) {
+    massingTypeSelect.onchange = (e) => {
+      studyState.massingType = String(e.target.value || "fullBlock");
+      renderStudySheet();
+    };
+  }
+}
+
+function renderStudySheet() {
+  if (!studyState.analysis || !analysisPanelOpen) return;
+  const geometry = computeStudyGeometry(studyState);
+
+  const planCanvas = document.getElementById("planCanvas");
+  const isoCanvas = document.getElementById("isoCanvas");
+  if (!planCanvas || !isoCanvas) return;
+
+  planCanvas.width = Math.max(520, planCanvas.clientWidth || 620);
+  planCanvas.height = Math.max(360, planCanvas.clientHeight || 420);
+  isoCanvas.width = Math.max(520, isoCanvas.clientWidth || 620);
+  isoCanvas.height = Math.max(360, isoCanvas.clientHeight || 420);
+
+  clearCanvas(planCanvas);
+  clearCanvas(isoCanvas);
+
+  drawPlan(planCanvas, geometry);
+  drawIso(isoCanvas, geometry);
+  updateStudyLabels(geometry);
+
+  // Keep map-side FAR layer synced with sheet sliders.
+  farInput.value = geometry.farUsed;
+  farVal.textContent = Number(geometry.farUsed).toFixed(2);
+  coverageInput.value = geometry.coverage;
+  covVal.textContent = `${Math.round(geometry.coverage)}%`;
+  const floorHeightHidden = document.getElementById("floorHeight");
+  if (floorHeightHidden) floorHeightHidden.value = String(geometry.floorHeight);
+  _rebuildFarEnvelope();
+
+  console.log({
+    floorHeight: geometry.floorHeight,
+    farUsed: geometry.farUsed,
+    footprintCoverage: geometry.coverage,
+    allowedFloorArea: geometry.allowedFloorArea,
+    farFootprintArea: geometry.farFootprintArea,
+    floorCount: geometry.floorCount,
+    farHeight: geometry.farHeight,
+    maxHeight: geometry.maxHeight,
+  });
+}
+
+function openStudySheet(selectedLots) {
+  const analysis = analyzeSelectedLots(selectedLots);
+  if (!analysis) return;
+
+  studyState.analysis = analysis;
+  studyState.controls = getApplicableControls(analysis);
+  studyState.maxEnvelope = generateMaxEnvelope(analysis, studyState.controls);
+
+  const farSlider = document.getElementById("farSliderModal");
+  const floorHeightSlider = document.getElementById("floorHeightSlider");
+  const coverageSlider = document.getElementById("coverageSliderModal");
+  const opacitySlider = document.getElementById("opacitySliderModal");
+  const massingTypeSelect = document.getElementById("massingTypeSelect");
+
+  if (farSlider) farSlider.value = String(studyState.farUsed);
+  if (floorHeightSlider) floorHeightSlider.value = String(studyState.floorHeight);
+  if (coverageSlider) coverageSlider.value = String(studyState.footprintCoverage);
+  if (opacitySlider) opacitySlider.value = String(Math.round(studyState.envelopeOpacity * 100));
+  if (massingTypeSelect) massingTypeSelect.value = studyState.massingType;
+
+  bindStudySheetSliders();
+  renderStudySheet();
+}
+
 function openAnalysisPanel(lots) {
   if (!analysisPanel) return;
   const normalizedLots = (lots || []).map((lot) => {
@@ -4825,12 +5436,16 @@ function _renderAnalysisPanelContent(lots) {
       <div class="analysis-sheet__grid">
         <section class="analysis-sheet__pane">
           <div class="analysis-sheet__pane-title">Top View Plan Diagram</div>
-          <div class="analysis-plan-wrap" id="amPlanDiagram"></div>
+          <div class="analysis-plan-wrap" id="amPlanDiagram">
+            <canvas id="planCanvas" class="analysis-plan-canvas"></canvas>
+          </div>
         </section>
 
         <section class="analysis-sheet__pane">
           <div class="analysis-sheet__pane-title">Isometric Massing Diagram</div>
-          <div class="analysis-iso-wrap" id="amIsoViewport"></div>
+          <div class="analysis-iso-wrap" id="amIsoViewport">
+            <canvas id="isoCanvas" class="analysis-plan-canvas"></canvas>
+          </div>
           <div class="analysis-iso-labels">
             <div id="amLabelExisting">Existing Building</div>
             <div id="amLabelFar">FAR Envelope</div>
@@ -4844,25 +5459,25 @@ function _renderAnalysisPanelContent(lots) {
 
       <div class="analysis-sheet__controls">
         <div class="analysis-control">
-          <label for="amFloorHeight">Floor height <span id="am-floor-display">10 ft</span></label>
-          <input id="amFloorHeight" type="range" min="8" max="20" step="0.5" value="10" />
+          <label for="floorHeightSlider">Floor height <span id="floor-height-display">10 ft</span></label>
+          <input id="floorHeightSlider" type="range" min="8" max="20" step="0.5" value="${studyState.floorHeight}" />
         </div>
         <div class="analysis-control">
-          <label for="amFarSlider">FAR used <span id="am-far-display">${currentFar.toFixed(2)}</span></label>
-          <input id="amFarSlider" type="range" min="0" max="${Math.max(1, maxFar).toFixed(2)}" step="0.05" value="${Math.min(currentFar, Math.max(1, maxFar)).toFixed(2)}" />
+          <label for="farSliderModal">FAR used <span id="far-used-display">${currentFar.toFixed(2)}</span></label>
+          <input id="farSliderModal" type="range" min="0" max="${Math.max(1, maxFar).toFixed(2)}" step="0.05" value="${Math.min(currentFar, Math.max(1, maxFar)).toFixed(2)}" />
         </div>
         <div class="analysis-control">
-          <label for="amCoverageSlider">Footprint coverage <span id="am-cov-display">${Number(coverageInput.value || 80)}%</span></label>
-          <input id="amCoverageSlider" type="range" min="20" max="100" step="5" value="${Number(coverageInput.value || 80)}" />
+          <label for="coverageSliderModal">Footprint coverage <span id="coverage-display">${Number(coverageInput.value || 80)}%</span></label>
+          <input id="coverageSliderModal" type="range" min="20" max="100" step="5" value="${Number(coverageInput.value || 80)}" />
         </div>
         <div class="analysis-control">
-          <label for="amOpacitySlider">Envelope opacity <span id="am-opacity-display">35%</span></label>
-          <input id="amOpacitySlider" type="range" min="10" max="70" step="1" value="35" />
+          <label for="opacitySliderModal">Envelope opacity <span id="opacity-display">${Math.round(studyState.envelopeOpacity * 100)}%</span></label>
+          <input id="opacitySliderModal" type="range" min="10" max="70" step="1" value="${Math.round(studyState.envelopeOpacity * 100)}" />
         </div>
         <div class="analysis-control analysis-control--select">
-          <label for="apMassingSelect">Massing type</label>
-          <select id="apMassingSelect">
-            <option value="full-block">Full Block</option>
+          <label for="massingTypeSelect">Massing type</label>
+          <select id="massingTypeSelect">
+            <option value="fullBlock">Full Block</option>
             <option value="tower">Tower</option>
             <option value="slab">Slab</option>
             <option value="courtyard">Courtyard</option>
@@ -4872,32 +5487,22 @@ function _renderAnalysisPanelContent(lots) {
       </div>
 
       <div class="analysis-sheet__stats">
-        <div>Floor count: <strong id="ap-stat-floors">—</strong></div>
-        <div>FAR displayed: <strong id="ap-stat-far">${currentFar.toFixed(2)}</strong></div>
-        <div>Buildable area: <strong id="ap-stat-area">—</strong></div>
-        <div>FAR envelope height: <strong id="ap-stat-height">—</strong></div>
-        <div>Max zoning height: <strong id="am-height-max">${Math.round(coerceNumber(study.envelope_height_ft) ?? 120)} ft</strong></div>
+        <div>Floor count: <strong id="floor-count">—</strong></div>
+        <div>FAR displayed: <strong id="far-displayed">${currentFar.toFixed(2)}</strong></div>
+        <div>Buildable area: <strong id="buildable-area">—</strong></div>
+        <div>FAR footprint area: <strong id="far-footprint-area">—</strong></div>
+        <div>FAR envelope height: <strong id="far-envelope-height">—</strong></div>
+        <div>Max zoning height: <strong id="max-zoning-height">${Math.round(coerceNumber(study.envelope_height_ft) ?? 120)} ft</strong></div>
       </div>
       <div class="analysis-sheet__cap-note" id="ap-cap-note" style="display:none;"></div>
     </div>
   `;
 
-  const amFar = document.getElementById("amFarSlider");
-  const amFloorHeight = document.getElementById("amFloorHeight");
-  const amCoverage = document.getElementById("amCoverageSlider");
-  const amOpacity = document.getElementById("amOpacitySlider");
+  studyState.farUsed = Number(currentFar || studyState.farUsed || 3);
+  studyState.floorHeight = Number(document.getElementById("floorHeight")?.value || studyState.floorHeight || 10);
+  studyState.footprintCoverage = Number(coverageInput.value || studyState.footprintCoverage || 80);
 
-  if (amFar) amFar.addEventListener("input", updateStudySheetGeometry);
-  if (amFloorHeight) amFloorHeight.addEventListener("input", updateStudySheetGeometry);
-  if (amCoverage) amCoverage.addEventListener("input", updateStudySheetGeometry);
-  if (amOpacity) amOpacity.addEventListener("input", updateStudySheetGeometry);
-
-  const massingSelect = document.getElementById("apMassingSelect");
-  if (massingSelect) {
-    massingSelect.addEventListener("change", updateStudySheetGeometry);
-  }
-
-  updateStudySheetGeometry();
+  openStudySheet(analysisModalLots);
 }
 
 function _updateAnalysisPanelFarStats() {
@@ -4912,9 +5517,10 @@ function _updateAnalysisPanelFarStats() {
     const node = document.getElementById(id);
     if (node) node.textContent = text;
   };
-  set("ap-stat-floors", floorCount > 0 ? `${floorCount}` : "1");
-  set("ap-stat-height", farEnvelopeHeight > 0 ? `${Math.round(farEnvelopeHeight)} ft` : "0 ft");
-  set("ap-stat-area", totalAreaFt2 > 0 ? `${Math.round(totalAreaFt2).toLocaleString()} sf (coverage ${Math.round(footprintAreaFt2).toLocaleString()} sf)` : "0 sf");
+  set("floor-count", floorCount > 0 ? `${floorCount}` : "1");
+  set("far-envelope-height", farEnvelopeHeight > 0 ? `${Math.round(farEnvelopeHeight)} ft` : "0 ft");
+  set("far-footprint-area", footprintAreaFt2 > 0 ? `${Math.round(footprintAreaFt2).toLocaleString()} sf` : "0 sf");
+  set("buildable-area", totalAreaFt2 > 0 ? `${Math.round(totalAreaFt2).toLocaleString()} sf` : "0 sf");
 }
 
 async function generateEnvelopes() {
@@ -5127,10 +5733,10 @@ if (exportReportBtn) {
         zoning: activeLotData?.zonedist1 || activeLotData?.zoning_analysis?.primary_zone || null,
       },
       controls: {
-        floor_height_ft: Number(document.getElementById("amFloorHeight")?.value || 10),
-        far_used: Number(document.getElementById("amFarSlider")?.value || farInput.value || 0),
-        coverage_pct: Number(document.getElementById("amCoverageSlider")?.value || coverageInput.value || 80),
-        massing_type: document.getElementById("apMassingSelect")?.value || "full-block",
+        floor_height_ft: Number(document.getElementById("floorHeightSlider")?.value || 10),
+        far_used: Number(document.getElementById("farSliderModal")?.value || farInput.value || 0),
+        coverage_pct: Number(document.getElementById("coverageSliderModal")?.value || coverageInput.value || 80),
+        massing_type: document.getElementById("massingTypeSelect")?.value || "fullBlock",
       },
       metrics: {
         far_floors: lastFarEnvelopeData?.numFloors || null,
