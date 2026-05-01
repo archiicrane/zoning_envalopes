@@ -67,6 +67,24 @@ export function getStreetType(streetWidthFt) {
   return Number(streetWidthFt) >= 75 ? "wide" : "narrow";
 }
 
+function sideYardSidesRequired(zoneRule, lotAnalysis) {
+  const each = coerceNumber(zoneRule?.sideYardEachFt);
+  if (!Number.isFinite(each) || each <= 0) return 0;
+
+  const lotType = String(lotAnalysis?.lotType || "Interior");
+  const zoneCode = String(zoneRule?.zoneCode || "").toUpperCase();
+  const isLowDensityResidence = /^R([1-5]|2X|3-1|3A|3X|4-1|4A|5A)/.test(zoneCode);
+
+  // Corner lots generally have a single interior side-lot line; through/interior lots
+  // in low-density detached/semi-detached contexts usually need both sides considered.
+  if (lotType === "Corner") return 1;
+  if (lotType === "Through") return 2;
+  if (isLowDensityResidence) return 2;
+
+  // Default conservative assumption when only sideYardEachFt is known.
+  return 1;
+}
+
 export function chooseFAR(zoneRule, lotAnalysis) {
   const qualifying = coerceNumber(zoneRule?.qualifyingFar);
   const standard = coerceNumber(zoneRule?.standardFar);
@@ -79,10 +97,19 @@ export function chooseFAR(zoneRule, lotAnalysis) {
 
 export function getSideYardRequirement(zoneRule, lotAnalysis) {
   const each = coerceNumber(zoneRule?.sideYardEachFt);
-  if (each == null) return 0;
-  // Through lots often treat side conditions differently; keep conservative baseline.
-  if (lotAnalysis?.isThroughLot) return each;
-  return each;
+  if (each == null) {
+    return {
+      eachFt: 0,
+      sidesRequired: 0,
+      totalFt: 0,
+    };
+  }
+  const sidesRequired = sideYardSidesRequired(zoneRule, lotAnalysis);
+  return {
+    eachFt: each,
+    sidesRequired,
+    totalFt: each * sidesRequired,
+  };
 }
 
 export function getRearYardRequirement(zoneRule, lotAnalysis) {
@@ -94,6 +121,7 @@ export function getApplicableControls(lotAnalysis, zoneRule) {
   const warnings = [];
   const streetWidthFt = coerceNumber(lotAnalysis?.primaryStreet?.widthFt) ?? 50;
   const streetType = getStreetType(streetWidthFt);
+  const sideYardReq = getSideYardRequirement(zoneRule, lotAnalysis);
 
   const far = chooseFAR(zoneRule, lotAnalysis);
   if (far == null) warnings.push("FAR missing in zoning rule; envelope simplified.");
@@ -119,7 +147,9 @@ export function getApplicableControls(lotAnalysis, zoneRule) {
     sourceSections: Array.isArray(zoneRule?.sourceSections) ? zoneRule.sourceSections : [],
     far,
     frontYard: coerceNumber(zoneRule?.frontYardFt) ?? 0,
-    sideYard: getSideYardRequirement(zoneRule, lotAnalysis),
+    sideYard: sideYardReq.eachFt,
+    sideYardSidesRequired: sideYardReq.sidesRequired,
+    totalSideYardRequiredFt: sideYardReq.totalFt,
     rearYard: getRearYardRequirement(zoneRule, lotAnalysis),
     maxBaseHeight: coerceNumber(zoneRule?.maximumBaseHeightFt),
     minBaseHeight: coerceNumber(zoneRule?.minimumBaseHeightFt),

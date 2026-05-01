@@ -1759,7 +1759,8 @@ function _buildRuleEngineRows(snapshot) {
     <div class="summary-row"><span>Bulk Regime</span><strong>${primary?.bulkRegime || "n/a"}</strong></div>
     <div class="summary-row"><span>FAR Used</span><strong>${formatNumber(primary?.far, 2)}</strong></div>
     <div class="summary-row"><span>Front Yard</span><strong>${formatNumber(primary?.frontYard, 0)} ft</strong></div>
-    <div class="summary-row"><span>Side Yard</span><strong>${formatNumber(primary?.sideYard, 0)} ft</strong></div>
+    <div class="summary-row"><span>Side Yard</span><strong>${formatNumber(primary?.sideYard, 0)} ft x ${formatNumber(primary?.sideYardSidesRequired, 0)} side(s)</strong></div>
+    <div class="summary-row"><span>Total Side Yard</span><strong>${formatNumber(primary?.totalSideYardRequiredFt, 0)} ft</strong></div>
     <div class="summary-row"><span>Rear Yard</span><strong>${formatNumber(primary?.rearYard, 0)} ft</strong></div>
     <div class="summary-row"><span>Street Setback Applied</span><strong>${formatNumber(primary?.streetSetback, 0)} ft (${String(primary?.streetType || "narrow").toUpperCase()})</strong></div>
     <div class="summary-row"><span>Base Height</span><strong>${formatNumber(primary?.maxBaseHeight, 0)} ft</strong></div>
@@ -2161,6 +2162,20 @@ function _streetClassFromRoad(road) {
   return widthFt >= 75 ? "wide" : "narrow";
 }
 
+function _sideYardSidesRequiredForLot(rule, classification, appliedDistrict) {
+  const sideEachFt = coerceNumber(rule?.sideYardEachFt);
+  if (!Number.isFinite(sideEachFt) || sideEachFt <= 0) return 0;
+
+  const lotType = classification?.lotType || "Interior";
+  const zoneCode = normalizeZoneToken(appliedDistrict || rule?.zoneCode || "");
+  const isLowDensityResidence = /^R([1-5]|2X|3-1|3A|3X|4-1|4A|5A)/.test(zoneCode);
+
+  if (lotType === "Corner") return 1;
+  if (lotType === "Through") return 2;
+  if (isLowDensityResidence) return 2;
+  return 1;
+}
+
 // NYC ZR approximation rules used for study visualization.
 // Approximated references:
 // - ZR 12-10 lot line/street line terms
@@ -2184,6 +2199,17 @@ function _buildEdgeRuleEngine(classification, context) {
   const zrSections = Array.isArray(rule?.sourceSections) && rule.sourceSections.length
     ? rule.sourceSections
     : ["12-10", "23-45", "23-46", "23-47", "23-60"];
+
+  const sideEdges = (classification?.edges || [])
+    .filter((edge) => classification?.sideEdgeIndices?.includes(edge.idx))
+    .slice()
+    .sort((a, b) => {
+      const touchDelta = Number(!!b.touchesNeighbor) - Number(!!a.touchesNeighbor);
+      if (touchDelta !== 0) return touchDelta;
+      return (b.lengthFt || 0) - (a.lengthFt || 0);
+    });
+  const sideYardSidesRequired = _sideYardSidesRequiredForLot(rule, classification, appliedDistrict);
+  const sideYardEdgeSet = new Set(sideEdges.slice(0, sideYardSidesRequired).map((edge) => edge.idx));
 
   const edgeRules = [];
   for (const edge of classification?.edges || []) {
@@ -2217,11 +2243,14 @@ function _buildEdgeRuleEngine(classification, context) {
         : "Rear yard measured from rear lot line.";
     } else {
       const baseSide = Math.max(0, sideYardFt);
-      yardFt = baseSide;
+      yardFt = sideYardEdgeSet.has(edge.idx) ? baseSide : 0;
       zrReference = "ZR 23-46";
       notes = edge.touchesNeighbor
         ? "Side lot line touching another zoning lot."
         : "Side lot line not touching a zoning lot boundary (approximation).";
+      if (!sideYardEdgeSet.has(edge.idx)) {
+        notes += " Side-yard setback not applied on this edge under lot-type side-yard interpretation.";
+      }
       if (isCorner && !edge.touchesNeighbor) {
         notes += " Corner condition may alter side-yard application.";
       }
@@ -2260,7 +2289,7 @@ function _buildEdgeRuleEngine(classification, context) {
     side: {
       appliesTo: "side lot line",
       yardFt: Math.max(0, sideYardFt),
-      notes: "Approx. ZR 23-46 side yard conditions",
+      notes: `Approx. ZR 23-46 side yard conditions (applied on ${sideYardSidesRequired} side lot line${sideYardSidesRequired === 1 ? "" : "s"}).`,
     },
     rear: {
       appliesTo: "rear lot line",
@@ -2276,6 +2305,7 @@ function _buildEdgeRuleEngine(classification, context) {
     lotLineRules,
     lotType,
     streetType,
+    sideYardSidesRequired,
     edgeRules,
   };
 }
