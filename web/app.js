@@ -715,7 +715,24 @@ function refreshExistingBuildingsForNeighborhood() {
   }
 
   const ntaFeature = findNtaPolygon(activeNeighborhood?.name);
-  const fallbackGeometry = buildNeighborhoodMaskGeometry(activeNeighborhoodData || EMPTY_FC);
+  let fallbackGeometry = null;
+  const bounds = computeNeighborhoodBounds(activeNeighborhoodData || EMPTY_FC);
+  if (bounds && !bounds.isEmpty()) {
+    const west = bounds.getWest();
+    const south = bounds.getSouth();
+    const east = bounds.getEast();
+    const north = bounds.getNorth();
+    fallbackGeometry = {
+      type: "Polygon",
+      coordinates: [[
+        [west, south],
+        [east, south],
+        [east, north],
+        [west, north],
+        [west, south],
+      ]],
+    };
+  }
   const clipGeometry = ntaFeature?.geometry || fallbackGeometry;
   if (!clipGeometry) {
     map.setFilter("existing-buildings-mapbox", ["==", "$type", "Point"]);
@@ -820,10 +837,10 @@ function ensureSourcesAndLayers() {
         minzoom: 10,
         filter: ["==", "$type", "Point"],
         paint: {
-          "fill-extrusion-color": "#64748b",
+          "fill-extrusion-color": "#cbd5e1",
           "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 10],
           "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
-          "fill-extrusion-opacity": 0.75,
+          "fill-extrusion-opacity": 0.55,
         },
         layout: {
           visibility: "none",
@@ -848,8 +865,8 @@ function ensureSourcesAndLayers() {
       type: "fill-extrusion",
       source: "zoning-envelope-source",
       paint: {
-        "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#00c2ff"],
-        "fill-extrusion-opacity": 0.35,
+        "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#1d4ed8"],
+        "fill-extrusion-opacity": 0.6,
         "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
         "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
       },
@@ -1122,7 +1139,7 @@ function applyFocusModeVisuals() {
     map.setPaintProperty("neighborhood-lot-outline", "line-opacity", focusSelectedLotMode ? 0.12 : 0.5);
   }
   if (map.getLayer("existing-buildings-mapbox")) {
-    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", focusSelectedLotMode ? 0.2 : 0.75);
+    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", focusSelectedLotMode ? 0.2 : 0.55);
   }
 }
 
