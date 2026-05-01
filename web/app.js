@@ -5206,10 +5206,6 @@ function drawPlan(canvas, g) {
   drawArchitecturalDimensions(ctx, transform, g.dimensions);
 }
 
-function feetToMeters(value) {
-  return Math.max(0, Number(value || 0)) * 0.3048;
-}
-
 function isoProject(x, y, z, scale, origin) {
   const angle = Math.PI / 6;
   return {
