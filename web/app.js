@@ -1,3 +1,11 @@
+import { analyzeLot } from "./lotAnalyzer.js";
+import { generateEnvelopeFromControls } from "./envelopeGenerator.js";
+import {
+  buildRulesIndex as buildRuleIndexModule,
+  getControlsForLot,
+  extractZoneTokens as extractZoneTokensModule,
+} from "./zoningRuleEngine.js";
+
 async function resolveMapboxToken() {
   const local = (window.APP_CONFIG && window.APP_CONFIG.mapboxToken) || "";
   if (local && !local.includes("YOUR_MAPBOX")) {
@@ -17,7 +25,7 @@ async function resolveMapboxToken() {
 }
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
-const ZONING_RULES_URL = "/web/zoning-rules.jsonld";
+const ZONING_RULES_URLS = ["/web/zoningRules.json", "/web/zoning-rules.jsonld"];
 
 const feetToMeters = (ft) => Number(ft || 0) * 0.3048;
 
@@ -235,42 +243,53 @@ function formatNumber(value, digits = 0) {
 
 async function loadZoningRules() {
   try {
-    const res = await fetch(ZONING_RULES_URL);
-    if (!res.ok) {
-      throw new Error(`Failed to load zoning rules: ${res.status}`);
+    let payload = null;
+    let loadedFrom = null;
+    for (const url of ZONING_RULES_URLS) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        payload = await res.json();
+        loadedFrom = url;
+        break;
+      } catch (_err) {
+        // Keep trying fallback URLs.
+      }
     }
 
-    const payload = await res.json();
+    if (!payload) {
+      throw new Error("Failed to load zoning rules from all configured URLs.");
+    }
     const rules = Array.isArray(payload?.rules) ? payload.rules : [];
-    zoningRuleIndex = new Map(
-      rules
-        .filter((rule) => rule && rule.zoneCode)
-        .map((rule) => {
-          const zoneCode = normalizeZoneToken(rule.zoneCode);
-          const maxFar = coerceNumber(rule.qualifyingFar ?? rule.standardFar);
-          const districtType = rule.districtType || (
-            zoneCode.startsWith("R") ? "residential"
-              : zoneCode.startsWith("C") ? "commercial"
-                : zoneCode.startsWith("M") ? "manufacturing"
-                  : "mixed"
-          );
-          const bulkRegime = String(rule.bulkRegime || "").toLowerCase();
-          const usesOpenSpaceRatio =
-            typeof rule.usesOpenSpaceRatio === "boolean"
-              ? rule.usesOpenSpaceRatio
-              : Boolean(coerceNumber(rule.openSpaceRatio) > 0 && !bulkRegime.startsWith("contextual"));
-          const normalizedRule = {
-            ...rule,
-            districtType,
-            maxFar,
-            usesOpenSpaceRatio,
-            notes: rule.notes || (Array.isArray(rule.sourceSections) ? `ZR ${rule.sourceSections.join(", ")}` : ""),
-          };
-          return [zoneCode, normalizedRule];
-        })
-    );
+    const normalizedRules = rules
+      .filter((rule) => rule && rule.zoneCode)
+      .map((rule) => {
+        const zoneCode = normalizeZoneToken(rule.zoneCode);
+        const maxFar = coerceNumber(rule.qualifyingFar ?? rule.standardFar);
+        const districtType = rule.districtType || (
+          zoneCode.startsWith("R") ? "residential"
+            : zoneCode.startsWith("C") ? "commercial"
+              : zoneCode.startsWith("M") ? "manufacturing"
+                : "mixed"
+        );
+        const bulkRegime = String(rule.bulkRegime || "").toLowerCase();
+        const usesOpenSpaceRatio =
+          typeof rule.usesOpenSpaceRatio === "boolean"
+            ? rule.usesOpenSpaceRatio
+            : Boolean(coerceNumber(rule.openSpaceRatio) > 0 && !bulkRegime.startsWith("contextual"));
+        return {
+          ...rule,
+          zoneCode,
+          districtType,
+          maxFar,
+          usesOpenSpaceRatio,
+          notes: rule.notes || (Array.isArray(rule.sourceSections) ? `ZR ${rule.sourceSections.join(", ")}` : ""),
+        };
+      });
 
-    console.log("[zoning-rules] loaded", zoningRuleIndex.size, "rules from", ZONING_RULES_URL);
+    zoningRuleIndex = buildRuleIndexModule(normalizedRules);
+
+    console.log("[zoning-rules] loaded", zoningRuleIndex.size, "rules from", loadedFrom);
   } catch (err) {
     zoningRuleIndex = new Map();
     console.warn("[zoning-rules] falling back to built-in heuristics:", err);
@@ -659,66 +678,70 @@ function buildZoningEnvelopeFeatures(geojson) {
 
     const props = extractProps(feature);
     const zone = normalizeZoneToken(props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? "");
-    
+
     // Skip park and open space zones
     if (zone.startsWith("P") || zone === "OS") {
       continue;
     }
 
-    const zoneRule = resolveZoneRule(props);
-    const envelopeHeight = computeEnvelopeHeight(props);
-    const envelopeColor = pickZoneColor(props);
-    const farVal = coerceNumber(props.FAR ?? props.far ?? props.resid_far ?? props.comm_far ?? props.facil_far);
-
-    if (samples.length < 5) {
-      samples.push({
-        bbl: props.bbl || props.BBL || "n/a",
-        zone: props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? "n/a",
-        far: farVal,
-        envelopeColor,
-        envelopeHeight,
-      });
+    const lotRing = featureGeometryToLotPolygon(feature);
+    if (!lotRing || lotRing.length < 4) {
+      continue;
     }
 
-    const bulkRegime = zoneRule?.bulkRegime ?? "";
-    const baseHeightFt = coerceNumber(zoneRule?.maximumBaseHeightFt);
+    const lotAnalysis = analyzeLot({
+      lotFeature: feature,
+      lotRing,
+      map,
+      neighborhoodFeatures: activeNeighborhoodData?.features || [],
+    });
 
-    // Side-yard inset: only non-zero when the rule explicitly requires a side yard.
-    // Zones like R6A, R7A, R8A, C4, M1 have no side yard requirement → 0 → full lot width.
-    const sideSetbackM = computeSideSetback(props);
-    const baseGeometry = (sideSetbackM > 0)
-      ? (_tryBuffer(geometry, sideSetbackM) ?? geometry)
-      : geometry;
+    const controlResult = getControlsForLot(
+      {
+        ...lotAnalysis,
+        zoneTokens: extractZoneTokensModule(
+          props.zonedist1,
+          props.ZoneDist1,
+          props.zonedist2,
+          props.ZoneDist2,
+          props.zone,
+          props.ZoningDist
+        ),
+      },
+      zoningRuleIndex
+    );
 
-    // Street-wall / upper-step setback: only non-zero when the rule specifies one.
-    const streetSetbackM = computeStreetSetback(props);
-    const upperGeometry = (streetSetbackM > 0)
-      ? (_tryBuffer(geometry, streetSetbackM) ?? geometry)
-      : geometry;
+    const controlEntries = controlResult.controlsByZone || [];
+    const splitGeometries = controlEntries.length > 1
+      ? _splitGeometryByRatios(geometry, controlEntries.map((entry) => entry.overlapRatio || 1))
+      : [geometry];
 
-    const isStepped = bulkRegime && STEPPED_BULK_REGIMES.has(bulkRegime)
-      && baseHeightFt && baseHeightFt > 0 && baseHeightFt < envelopeHeight;
-
-    if (isStepped) {
-      // Base segment: ground → max-base-height at required side-yard footprint
-      features.push({
-        type: "Feature",
-        geometry: baseGeometry,
-        properties: { envelopeHeight: baseHeightFt, envelopeBase: 0, envelopeColor },
+    for (let i = 0; i < controlEntries.length; i += 1) {
+      const entry = controlEntries[i];
+      const controls = entry.controls;
+      const envelopeColor = pickZoneColor({ zone: entry.zone });
+      const lotGeometry = splitGeometries[i] || geometry;
+      const generated = generateEnvelopeFromControls({
+        lotGeometry,
+        controls,
+        envelopeColor,
+        zoneCode: entry.zone,
       });
-      // Upper segment: base-height → top at street-setback-inset footprint
-      features.push({
-        type: "Feature",
-        geometry: upperGeometry,
-        properties: { envelopeHeight, envelopeBase: baseHeightFt, envelopeColor },
-      });
-    } else {
-      // Single prism: only inset when side yards are required
-      features.push({
-        type: "Feature",
-        geometry: baseGeometry,
-        properties: { envelopeHeight, envelopeBase: 0, envelopeColor },
-      });
+      for (const piece of generated.envelopeFeatures || []) {
+        features.push(piece);
+      }
+
+      if (samples.length < 5) {
+        samples.push({
+          bbl: props.bbl || props.BBL || "n/a",
+          zone: entry.zone || props.zonedist1 || props.ZoneDist1 || "n/a",
+          lotType: lotAnalysis.lotType,
+          streetType: controls.streetType,
+          bulkRegime: controls.bulkRegime,
+          far: controls.far,
+          maxHeight: controls.maxBuildingHeight,
+        });
+      }
     }
   }
 
@@ -1648,6 +1671,104 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
   `;
 }
 
+function _buildRuleEngineSnapshot(data) {
+  if (!data?.lot_polygon || !Array.isArray(data.lot_polygon) || data.lot_polygon.length < 4) {
+    return null;
+  }
+
+  const activeFeature = (activeNeighborhoodData?.features || []).find((feature) => {
+    const props = extractProps(feature);
+    if (data.bbl && props.bbl && String(props.bbl) === String(data.bbl)) return true;
+    return String(props.borough || "") === String(data.borough || "")
+      && String(props.block || "") === String(data.block || "")
+      && String(props.lot || "") === String(data.lot || "");
+  });
+
+  const lotFeature = activeFeature || {
+    type: "Feature",
+    properties: { ...data },
+    geometry: { type: "Polygon", coordinates: [_closeRing(data.lot_polygon)] },
+  };
+
+  const lotAnalysis = analyzeLot({
+    lotFeature,
+    lotRing: data.lot_polygon,
+    map,
+    neighborhoodFeatures: activeNeighborhoodData?.features || [],
+  });
+
+  const zoneTokens = extractZoneTokensModule(
+    data.zonedist1,
+    data.ZoneDist1,
+    data.zonedist2,
+    data.ZoneDist2,
+    data.zone,
+    data.ZoningDist
+  );
+
+  const controlsResult = getControlsForLot(
+    {
+      ...lotAnalysis,
+      zoneTokens: zoneTokens.length ? zoneTokens : lotAnalysis.zoneTokens,
+      primaryZone: pickPrimaryZoneToken(data.zonedist1, data.ZoneDist1, data.zonedist2, data.ZoneDist2, data.zone),
+    },
+    zoningRuleIndex
+  );
+
+  return {
+    lotAnalysis,
+    controlsResult,
+    warnings: [
+      ...(lotAnalysis?.warnings || []),
+      ...(controlsResult?.warnings || []),
+    ],
+  };
+}
+
+function _buildRuleEngineRows(snapshot) {
+  if (!snapshot?.lotAnalysis || !snapshot?.controlsResult) return "";
+  const lot = snapshot.lotAnalysis;
+  const controls = snapshot.controlsResult.controlsByZone || [];
+  const primary = controls[0]?.controls || null;
+  const sourceSections = controls
+    .flatMap((entry) => Array.isArray(entry.controls?.sourceSections) ? entry.controls.sourceSections : [])
+    .filter((v, i, arr) => arr.indexOf(v) === i);
+
+  const warningRows = (snapshot.warnings || [])
+    .map((warning) => `<div class="summary-row summary-row--warning"><span>Warning</span><strong>${warning}</strong></div>`)
+    .join("");
+
+  const mixedNote = snapshot.controlsResult.mixedZoning
+    ? `<div class="summary-row summary-row--warning"><span>Mixed Zoning</span><strong>Yes - controls shown per district token; geometric split is simplified.</strong></div>`
+    : "";
+
+  const zones = controls.map((entry) => entry.zone).join(", ") || lot.primaryZone || "n/a";
+
+  return `
+    <div class="summary-section-head">Rule Engine Analysis</div>
+    ${warningRows}
+    ${mixedNote}
+    <div class="summary-row"><span>Zoning District(s)</span><strong>${zones}</strong></div>
+    <div class="summary-row"><span>Lot Type</span><strong>${lot.lotType || "n/a"}</strong></div>
+    <div class="summary-row"><span>Street Type</span><strong>${String(lot.streetType || "narrow").toUpperCase()}</strong></div>
+    <div class="summary-row"><span>Primary Street</span><strong>${lot.primaryStreet?.name || "Unknown"}</strong></div>
+    <div class="summary-row"><span>Primary Street Width</span><strong>${formatNumber(lot.primaryStreet?.widthFt, 0)} ft</strong></div>
+    <div class="summary-row"><span>Lot Area</span><strong>${formatNumber(lot.lotAreaFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Lot Width / Depth</span><strong>${formatNumber(lot.lotWidthFt, 0)} ft / ${formatNumber(lot.lotDepthFt, 0)} ft</strong></div>
+    <div class="summary-row"><span>Front / Side / Rear Edges</span><strong>${lot.frontEdgeIndices?.length || 0} / ${lot.sideEdgeIndices?.length || 0} / ${lot.rearEdgeIndex != null ? 1 : 0}</strong></div>
+    <div class="summary-row"><span>Bulk Regime</span><strong>${primary?.bulkRegime || "n/a"}</strong></div>
+    <div class="summary-row"><span>FAR Used</span><strong>${formatNumber(primary?.far, 2)}</strong></div>
+    <div class="summary-row"><span>Front Yard</span><strong>${formatNumber(primary?.frontYard, 0)} ft</strong></div>
+    <div class="summary-row"><span>Side Yard</span><strong>${formatNumber(primary?.sideYard, 0)} ft</strong></div>
+    <div class="summary-row"><span>Rear Yard</span><strong>${formatNumber(primary?.rearYard, 0)} ft</strong></div>
+    <div class="summary-row"><span>Street Setback Applied</span><strong>${formatNumber(primary?.streetSetback, 0)} ft (${String(primary?.streetType || "narrow").toUpperCase()})</strong></div>
+    <div class="summary-row"><span>Base Height</span><strong>${formatNumber(primary?.maxBaseHeight, 0)} ft</strong></div>
+    <div class="summary-row"><span>Max Height</span><strong>${formatNumber(primary?.maxBuildingHeight, 0)} ft</strong></div>
+    <div class="summary-row"><span>Open Space Ratio</span><strong>${formatNumber(primary?.openSpaceRatio, 2)}</strong></div>
+    <div class="summary-row summary-row--source"><span>ZR Sections</span><span>${sourceSections.join(", ") || "n/a"}</span></div>
+  `;
+}
+
 function updateLotSummary(data, envelopeResults) {
   if (!data) {
     lotSummary.className = "lot-summary empty";
@@ -1661,6 +1782,7 @@ function updateLotSummary(data, envelopeResults) {
   const baselineHeight = baselineEnvelopeResults?.full_envelope_height_ft;
   const scenarioHeight = scenarioEnvelopeResults?.full_envelope_height_ft;
   const effectiveZone = activeZoneOverride || zoning.primary_zone || data.zone || data.zonedist1 || "";
+  const ruleEngineSnapshot = _buildRuleEngineSnapshot(data);
   const zoneOptions = getAvailableZoningOptions();
   const zoneSelect = zoneOptions.length
     ? `<select id="zoneOverrideSelect" class="summary-zone-select">${zoneOptions
@@ -1684,6 +1806,7 @@ function updateLotSummary(data, envelopeResults) {
     <div class="summary-row"><span>Existing Height</span><strong>${formatNumber(existingHeight, 0)} ft</strong></div>
     <div class="summary-row"><span>Baseline Envelope</span><strong>${formatNumber(baselineHeight, 0)} ft</strong></div>
     <div class="summary-row"><span>Scenario Envelope</span><strong>${formatNumber(scenarioHeight ?? envelopeHeight, 0)} ft</strong></div>
+    ${_buildRuleEngineRows(ruleEngineSnapshot)}
     ${_buildZoningReqRows(zoning)}
     ${_buildBuildabilityStudyRows(zoning, envelopeResults)}
   `;
@@ -1701,16 +1824,37 @@ function updateLotSummary(data, envelopeResults) {
 function buildClientLotData(feature) {
   const props = extractProps(feature);
   const primaryZone = pickPrimaryZoneToken(props.zonedist1, props.zonedist2, props.zone);
+  const lotPolygon = featureGeometryToLotPolygon(feature);
+  const lotAnalysis = analyzeLot({
+    lotFeature: feature,
+    lotRing: lotPolygon,
+    map,
+    neighborhoodFeatures: activeNeighborhoodData?.features || [],
+  });
+  const controlsResult = getControlsForLot(
+    {
+      ...lotAnalysis,
+      primaryZone,
+      zoneTokens: extractZoneTokensModule(props.zonedist1, props.zonedist2, props.zone),
+    },
+    zoningRuleIndex
+  );
+  const primaryControls = controlsResult.controlsByZone?.[0]?.controls || {};
+
   return {
     ...props,
     zone: primaryZone || props.zonedist1 || props.zonedist2 || null,
-    lot_polygon: featureGeometryToLotPolygon(feature),
+    lot_polygon: lotPolygon,
     zoning_analysis: {
       primary_zone: primaryZone || null,
-      base_far: props.resid_far || props.comm_far || props.facil_far || 0,
-      scenario_far: props.resid_far || props.comm_far || props.facil_far || 0,
-      max_height_ft: 120,
+      base_far: primaryControls.far ?? props.resid_far ?? props.comm_far ?? props.facil_far ?? 0,
+      scenario_far: primaryControls.far ?? props.resid_far ?? props.comm_far ?? props.facil_far ?? 0,
+      max_height_ft: primaryControls.maxBuildingHeight ?? 120,
+      base_height_ft: primaryControls.maxBaseHeight ?? null,
+      bulk_regime: primaryControls.bulkRegime ?? null,
+      street_type: primaryControls.streetType ?? lotAnalysis.streetType ?? "narrow",
       coverage_ratio: 0.8,
+      warnings: controlsResult.warnings || [],
     },
   };
 }
@@ -2295,6 +2439,57 @@ function _bufferInwardGeometry(geometry, insetFt) {
     // handled by caller fallback
   }
   return null;
+}
+
+function _splitGeometryByRatios(geometry, ratios) {
+  if (!geometry || !Array.isArray(ratios) || !ratios.length) {
+    return [geometry];
+  }
+
+  let bbox;
+  try {
+    bbox = turf.bbox({ type: "Feature", geometry, properties: {} });
+  } catch (_err) {
+    return [geometry];
+  }
+
+  const [minX, minY, maxX, maxY] = bbox;
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const splitAlongX = width >= height;
+  const axisStart = splitAlongX ? minX : minY;
+  const axisEnd = splitAlongX ? maxX : maxY;
+  const axisLength = axisEnd - axisStart;
+  if (!Number.isFinite(axisLength) || axisLength <= 0) {
+    return [geometry];
+  }
+
+  const sum = ratios.reduce((acc, r) => acc + Math.max(0, Number(r) || 0), 0) || ratios.length;
+  const normalized = ratios.map((r) => {
+    const n = Math.max(0, Number(r) || 0);
+    return (n || (1 / ratios.length)) / sum;
+  });
+
+  let cursor = axisStart;
+  const out = [];
+  for (let i = 0; i < normalized.length; i += 1) {
+    const isLast = i === normalized.length - 1;
+    const next = isLast ? axisEnd : (cursor + (axisLength * normalized[i]));
+    const clipBbox = splitAlongX
+      ? [cursor, minY, next, maxY]
+      : [minX, cursor, maxX, next];
+    try {
+      const clipped = turf.intersect(
+        { type: "Feature", geometry, properties: {} },
+        turf.bboxPolygon(clipBbox)
+      );
+      out.push(clipped?.geometry || null);
+    } catch (_err) {
+      out.push(null);
+    }
+    cursor = next;
+  }
+  return out;
 }
 
 function _fallbackInsetGeometry(lotRing, insetFt) {
