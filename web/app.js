@@ -4040,10 +4040,20 @@ function _scaleGeometryFromCenter(geometry, ratio) {
 }
 
 function _analysisPlanContext() {
-  const primary = analysisModalLots[0] || _makeAnalysisFeatureFromActive();
+  const selectedFeatures = (analysisModalLots || [])
+    .filter((f) => f?.geometry && (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"));
+  const fallback = _makeAnalysisFeatureFromActive();
+  if (!selectedFeatures.length && fallback?.geometry) {
+    selectedFeatures.push(fallback);
+  }
+
+  const primary = selectedFeatures[0] || fallback;
   const props = primary?.properties || activeLotData || {};
   const lotGeometry = primary?.geometry || { type: "Polygon", coordinates: [_closeRing(activeLotPolygon || [])] };
   const lotRing = _shapeRingFromGeometry(lotGeometry);
+  const selectedRings = selectedFeatures
+    .map((f) => _shapeRingFromGeometry(f.geometry))
+    .filter((r) => r.length > 3);
   const zoning = props.zoning_analysis || {};
   const study = baselineEnvelopeResults?.zoning_buildability_study || {};
   const lotAreaFt2 = Number(props.lotarea || props.lot_area || study.lot_area_ft2 || 0);
@@ -4064,6 +4074,8 @@ function _analysisPlanContext() {
   const existingGeometry = _scaleGeometryFromCenter(lotGeometry, existingFootprintRatio);
 
   return {
+    selectedFeatures,
+    selectedRings,
     props,
     zoning,
     study,
@@ -4096,11 +4108,13 @@ function _buildPlanDiagramSvg() {
   let maxX = -Infinity;
   let minY = Infinity;
   let maxY = -Infinity;
-  for (const [x, y] of ring) {
-    minX = Math.min(minX, x);
-    maxX = Math.max(maxX, x);
-    minY = Math.min(minY, y);
-    maxY = Math.max(maxY, y);
+  for (const r of (ctx.selectedRings.length ? ctx.selectedRings : [ring])) {
+    for (const [x, y] of r) {
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
   }
   const spanX = maxX - minX || 0.0001;
   const spanY = maxY - minY || 0.0001;
@@ -4114,10 +4128,8 @@ function _buildPlanDiagramSvg() {
 
   const lotPts = ring.map(project);
   const lotPoly = lotPts.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
-  const secondaryPolys = analysisModalLots
+  const secondaryPolys = ctx.selectedRings
     .slice(1)
-    .map((f) => _shapeRingFromGeometry(f?.geometry))
-    .filter((r) => r && r.length > 3)
     .map((r) => r.map(project).map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" "));
   const buildPts = _shapeRingFromGeometry(ctx.buildableGeometry).map(project);
   const existingPts = _shapeRingFromGeometry(ctx.existingGeometry).map(project);
@@ -4232,14 +4244,23 @@ function _ensureThreeLoaded() {
   return window.__threeModulePromise;
 }
 
-function _lotToLocalProjector(ring) {
-  const lat0 = ring[0]?.[1] || 40.7;
+function _lotToLocalProjectorFromRings(rings) {
+  const baseRing = rings?.find((r) => Array.isArray(r) && r.length > 1) || [];
+  const lat0 = baseRing[0]?.[1] || 40.7;
   const cosLat = Math.cos((lat0 * Math.PI) / 180);
   const mPerDegX = 111320 * cosLat;
   const mPerDegY = 110540;
-  const centroid = ring.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0]);
-  centroid[0] /= ring.length;
-  centroid[1] /= ring.length;
+  let sumX = 0;
+  let sumY = 0;
+  let count = 0;
+  for (const ring of rings || []) {
+    for (const p of ring || []) {
+      sumX += p[0];
+      sumY += p[1];
+      count += 1;
+    }
+  }
+  const centroid = count ? [sumX / count, sumY / count] : [0, 0];
   return ([lng, lat]) => {
     const x = (lng - centroid[0]) * mPerDegX;
     const z = (lat - centroid[1]) * mPerDegY;
@@ -4303,8 +4324,8 @@ async function _updateIsometricDiagram() {
   try {
     const THREE = await _ensureThreeLoaded();
     const ctx = _analysisPlanContext();
-    const lotRing = ctx.lotRing;
-    if (!lotRing.length) return;
+    const selectedRings = ctx.selectedRings?.length ? ctx.selectedRings : [ctx.lotRing];
+    if (!selectedRings.length || !selectedRings[0]?.length) return;
 
     _disposeIsometricRenderer();
     viewport.innerHTML = "";
@@ -4314,17 +4335,38 @@ async function _updateIsometricDiagram() {
 
     const width = Math.max(280, viewport.clientWidth || 560);
     const height = Math.max(240, viewport.clientHeight || 420);
-    const cameraSize = 80;
+    const projector = _lotToLocalProjectorFromRings(selectedRings);
+
+    let minLocalX = Infinity;
+    let maxLocalX = -Infinity;
+    let minLocalZ = Infinity;
+    let maxLocalZ = -Infinity;
+    for (const ring of selectedRings) {
+      for (const pt of ring) {
+        const [lx, lz] = projector(pt);
+        minLocalX = Math.min(minLocalX, lx);
+        maxLocalX = Math.max(maxLocalX, lx);
+        minLocalZ = Math.min(minLocalZ, lz);
+        maxLocalZ = Math.max(maxLocalZ, lz);
+      }
+    }
+
+    const spanX = Math.max(1, maxLocalX - minLocalX);
+    const spanZ = Math.max(1, maxLocalZ - minLocalZ);
+    const centerX = (minLocalX + maxLocalX) / 2;
+    const centerZ = (minLocalZ + maxLocalZ) / 2;
+    const cameraSize = Math.max(20, Math.max(spanX, spanZ) * 0.95);
+    const aspect = width / height;
     isoCamera = new THREE.OrthographicCamera(
-      (-cameraSize * width) / height,
-      (cameraSize * width) / height,
+      (-cameraSize * aspect),
+      (cameraSize * aspect),
       cameraSize,
       -cameraSize,
       0.1,
-      1000
+      5000
     );
-    isoCamera.position.set(95, 100, 95);
-    isoCamera.lookAt(0, 12, 0);
+    isoCamera.position.set(centerX + (cameraSize * 1.25), cameraSize * 1.4, centerZ + (cameraSize * 1.25));
+    isoCamera.lookAt(centerX, 0, centerZ);
 
     isoRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     isoRenderer.setSize(width, height);
@@ -4335,20 +4377,33 @@ async function _updateIsometricDiagram() {
     dir.position.set(120, 200, 80);
     isoScene.add(dir);
 
-    const projector = _lotToLocalProjector(lotRing);
-    const lotShape = _shapeFromRingLocal(lotRing, projector, THREE);
-    const lotOutlinePts = lotShape.getPoints().map((p) => new THREE.Vector3(p.x, 0.01, p.y));
-    if (lotOutlinePts.length) {
-      lotOutlinePts.push(lotOutlinePts[0].clone());
+    for (const ring of selectedRings) {
+      const lotShape = _shapeFromRingLocal(ring, projector, THREE);
+      const lotOutlinePts = lotShape.getPoints().map((p) => new THREE.Vector3(p.x, 0.01, p.y));
+      if (lotOutlinePts.length) {
+        lotOutlinePts.push(lotOutlinePts[0].clone());
+      }
+      const lotOutline = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(lotOutlinePts),
+        new THREE.LineBasicMaterial({ color: 0x0f172a })
+      );
+      isoScene.add(lotOutline);
     }
-    const lotOutline = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(lotOutlinePts),
-      new THREE.LineBasicMaterial({ color: 0x0f172a })
-    );
-    isoScene.add(lotOutline);
 
-    const existingRing = _shapeRingFromGeometry(ctx.existingGeometry);
-    _addExtrusion(isoScene, existingRing, projector, ctx.existingHeightFt, 0x9ca3af, 1, 0x4b5563, THREE);
+    const existingHeights = [];
+    const selectedFeatures = ctx.selectedFeatures?.length ? ctx.selectedFeatures : [{ geometry: ctx.lotGeometry, properties: ctx.props }];
+    for (const feature of selectedFeatures) {
+      const featureProps = feature?.properties || {};
+      const lotGeom = feature?.geometry;
+      if (!lotGeom) continue;
+      const builtFar = coerceNumber(featureProps.built_far ?? featureProps.BuiltFAR) ?? 0.85;
+      const existingHeightFt = coerceNumber(featureProps.existing_height_ft) ?? estimateExistingHeightFt(featureProps) ?? 10;
+      existingHeights.push(existingHeightFt);
+      const existingFootprintRatio = Math.max(0.2, Math.min(0.95, Math.sqrt(Math.max(0.05, builtFar / Math.max(ctx.far, 0.25)))));
+      const existingGeometry = _scaleGeometryFromCenter(lotGeom, existingFootprintRatio);
+      const existingRing = _shapeRingFromGeometry(existingGeometry);
+      _addExtrusion(isoScene, existingRing, projector, existingHeightFt, 0x9ca3af, 1, 0x4b5563, THREE);
+    }
 
     const maxOpacity = Number(document.getElementById("amOpacitySlider")?.value || 18) / 100;
     const farOpacity = Number(document.getElementById("amOpacitySlider")?.value || 35) / 100;
@@ -4368,10 +4423,12 @@ async function _updateIsometricDiagram() {
 
     const maxHeightFt = coerceNumber(ctx.study.envelope_height_ft) ?? coerceNumber(ctx.zoning.max_height_ft) ?? 120;
     const farHeightFt = coerceNumber(lastFarEnvelopeData?.buildingHeightFt) ?? Math.min(maxHeightFt, ctx.far * 10);
-    const existingHeightFt = ctx.existingHeightFt;
-    _addHeightDimension(isoScene, -28, -28, existingHeightFt, 0x4b5563, THREE);
-    _addHeightDimension(isoScene, -20, -28, farHeightFt, 0x16a34a, THREE);
-    _addHeightDimension(isoScene, -12, -28, maxHeightFt, 0x1d4ed8, THREE);
+    const existingHeightFt = existingHeights.length ? Math.max(...existingHeights) : ctx.existingHeightFt;
+    const dimX = minLocalX - (cameraSize * 0.15);
+    const dimZ = minLocalZ - (cameraSize * 0.15);
+    _addHeightDimension(isoScene, dimX, dimZ, existingHeightFt, 0x4b5563, THREE);
+    _addHeightDimension(isoScene, dimX + 4, dimZ, farHeightFt, 0x16a34a, THREE);
+    _addHeightDimension(isoScene, dimX + 8, dimZ, maxHeightFt, 0x1d4ed8, THREE);
     _updateIsometricLabels(maxHeightFt, farHeightFt, existingHeightFt);
 
     const render = () => {
