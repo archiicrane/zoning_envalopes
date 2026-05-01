@@ -17,7 +17,7 @@ async function resolveMapboxToken() {
 }
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
-const ZONING_RULES_URL = "/zoning-rules.jsonld";
+const ZONING_RULES_URL = "/web/zoning-rules.jsonld";
 
 const feetToMeters = (ft) => Number(ft || 0) * 0.3048;
 
@@ -3136,7 +3136,7 @@ async function loadNeighborhoodOptions() {
 
 async function loadNtaBoundaries() {
   // Try both paths to be resilient across local and deployed routing setups.
-  for (const url of ["/nta.geojson", "/web/nta.geojson"]) {
+  for (const url of ["/web/nta.geojson"]) {
     try {
       const res = await fetch(url);
       if (!res.ok) continue;

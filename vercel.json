@@ -17,7 +17,7 @@
     },
     {
       "src": "/favicon.ico",
-      "dest": "/web/favicon.svg"
+      "dest": "/web/favicon.ico"
     },
     {
       "src": "/$",
