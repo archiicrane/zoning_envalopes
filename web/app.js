@@ -371,9 +371,16 @@ function buildExistingBuildingsFromSplitLots(geojson) {
   return features;
 }
 
+function ruleMaxHeightFt(rule) {
+  return coerceNumber(
+    rule?.maximumBuildingHeightFt
+      ?? rule?.ridgeHeightFt
+  );
+}
+
 function computeEnvelopeHeight(props) {
   const zoneRule = resolveZoneRule(props);
-  const ruleHeight = coerceNumber(zoneRule?.maximumBuildingHeightFt ?? zoneRule?.ridgeHeightFt);
+  const ruleHeight = ruleMaxHeightFt(zoneRule);
   if (ruleHeight && ruleHeight > 0) {
     return ruleHeight;
   }
@@ -522,9 +529,12 @@ function computeSideSetback(props) {
 // Returns 0 when the zone rule has no street setback requirement.
 function computeStreetSetback(props) {
   const zoneRule = resolveZoneRule(props);
+  const wide = coerceNumber(zoneRule?.streetSetbackWideFt);
+  const narrow = coerceNumber(zoneRule?.streetSetbackNarrowFt);
   const insetFt = coerceNumber(
-    zoneRule?.streetSetbackWideFt ??
-      zoneRule?.simplifiedPlanInsetFt
+    (Number.isFinite(wide) ? wide : null)
+      ?? (Number.isFinite(narrow) ? narrow : null)
+      ?? zoneRule?.simplifiedPlanInsetFt
   );
   return (insetFt && insetFt > 0) ? insetFt * 0.3048 : 0;
 }
@@ -1298,7 +1308,7 @@ function _buildZoningReqRows(zoning) {
 
   const maxBase = rule.maximumBaseHeightFt ?? null;
   const minBase = rule.minimumBaseHeightFt ?? null;
-  const maxHeight = rule.maximumBuildingHeightFt ?? rule.ridgeHeightFt ?? null;
+  const maxHeight = ruleMaxHeightFt(rule);
   const frontWall = rule.maximumFrontWallHeightFt ?? null;
   if (minBase != null) rows.push(`<div class="summary-row"><span>Min Base Height</span><strong>${_ft(minBase)}</strong></div>`);
   if (maxBase != null) rows.push(`<div class="summary-row"><span>Max Base Height</span><strong>${_ft(maxBase)}</strong></div>`);
@@ -1308,13 +1318,15 @@ function _buildZoningReqRows(zoning) {
   const frontYard = rule.frontYardFt ?? null;
   const sideYard = rule.sideYardEachFt ?? null;
   const rearYard = rule.rearYardFt ?? zoning.rear_yard_ft_required ?? null;
-  const streetSetback = rule.streetSetbackWideFt ?? null;
+  const streetSetbackWide = rule.streetSetbackWideFt ?? null;
+  const streetSetbackNarrow = rule.streetSetbackNarrowFt ?? null;
   const openSpaceRatio = zoning.open_space_ratio_required ?? coerceNumber(rule.openSpaceRatio ?? rule.openSpaceRatioRequired);
   const openSpaceRequiredFt2 = zoning.open_space_required_ft2 ?? null;
   if (frontYard != null) rows.push(`<div class="summary-row"><span>Front Yard</span><strong>${_ft(frontYard)}</strong></div>`);
   if (sideYard != null) rows.push(`<div class="summary-row"><span>Side Yard (each)</span><strong>${_ft(sideYard)}</strong></div>`);
   if (rearYard != null) rows.push(`<div class="summary-row"><span>Rear Yard</span><strong>${_ft(rearYard)}</strong></div>`);
-  if (streetSetback != null) rows.push(`<div class="summary-row"><span>Street Setback</span><strong>${_ft(streetSetback)}</strong></div>`);
+  if (streetSetbackWide != null) rows.push(`<div class="summary-row"><span>Street Setback (Wide)</span><strong>${_ft(streetSetbackWide)}</strong></div>`);
+  if (streetSetbackNarrow != null) rows.push(`<div class="summary-row"><span>Street Setback (Narrow)</span><strong>${_ft(streetSetbackNarrow)}</strong></div>`);
   if (openSpaceRatio != null && Number(openSpaceRatio) > 0) {
     rows.push(`<div class="summary-row"><span>Open Space Ratio</span><strong>${formatNumber(openSpaceRatio, 2)}</strong></div>`);
   }
@@ -1846,16 +1858,46 @@ function _edgeTouchesNeighbor(edge, neighborLines, toleranceFt = 3) {
   return false;
 }
 
-function _streetClassFromRoad(road) {
+function _roadWidthFtFromRoad(road) {
+  const props = road?.properties || {};
+  const candidates = [
+    props.street_width,
+    props.streetWidth,
+    props.road_width,
+    props.roadWidth,
+    props.width_ft,
+    props.width,
+  ];
+
+  for (const candidate of candidates) {
+    const numeric = coerceNumber(candidate);
+    if (!numeric || numeric <= 0) continue;
+    // If a width-like value is small, it's likely meters; convert to feet.
+    if (numeric < 30) return numeric * 3.28084;
+    return numeric;
+  }
+
+  // Class-based fallback width estimate (feet) for Mapbox road classes.
   const klass = String(
-    road?.properties?.class
-      || road?.properties?.road_class
-      || road?.properties?.type
+    props.class
+      || props.road_class
+      || props.type
       || ""
   ).toLowerCase();
-  if (!klass) return "unknown";
-  if (/(motorway|trunk|primary|secondary|arterial|avenue|boulevard)/.test(klass)) return "wide";
-  return "narrow";
+
+  if (/(motorway|trunk)/.test(klass)) return 120;
+  if (/(primary|arterial)/.test(klass)) return 90;
+  if (/(secondary|boulevard|avenue)/.test(klass)) return 75;
+  if (/(tertiary)/.test(klass)) return 65;
+  if (/(residential|street|service|link|local)/.test(klass)) return 50;
+  return 50;
+}
+
+function _streetClassFromRoad(road) {
+  // NYC ZR 12-10: "wide street" is generally 75 ft or wider.
+  const widthFt = _roadWidthFtFromRoad(road);
+  if (!Number.isFinite(widthFt) || widthFt <= 0) return "unknown";
+  return widthFt >= 75 ? "wide" : "narrow";
 }
 
 // NYC ZR approximation rules used for study visualization.
@@ -1896,12 +1938,16 @@ function _buildEdgeRuleEngine(classification, context) {
     if (edgeType === "front") {
       const frontBase = Math.max(0, frontYardFt);
       const wideStreetSetback = coerceNumber(rule?.streetSetbackWideFt);
-      const adjustedFront = streetType === "wide" && Number.isFinite(wideStreetSetback)
-        ? Math.max(frontBase, wideStreetSetback)
-        : frontBase;
+      const narrowStreetSetback = coerceNumber(rule?.streetSetbackNarrowFt);
+      let adjustedFront = frontBase;
+      if (streetType === "wide" && Number.isFinite(wideStreetSetback)) {
+        adjustedFront = Math.max(frontBase, wideStreetSetback);
+      } else if (streetType === "narrow" && Number.isFinite(narrowStreetSetback)) {
+        adjustedFront = Math.max(frontBase, narrowStreetSetback);
+      }
       yardFt = adjustedFront;
       zrReference = "ZR 23-45";
-      notes = `Front/street edge setback (${streetType || "unknown"} street).`;
+      notes = `Front/street edge setback (${streetType || "unknown"} street, ${formatNumber(edge.streetWidthFt, 0)} ft est. width).`;
     } else if (edgeType === "rear") {
       yardFt = isThrough ? 0 : Math.max(0, rearYardFt);
       zrReference = "ZR 23-47";
@@ -1929,6 +1975,7 @@ function _buildEdgeRuleEngine(classification, context) {
       isThrough,
       touchesNeighbor: !!edge.touchesNeighbor,
       streetType,
+      streetWidthFt: coerceNumber(edge.streetWidthFt),
       yardFt,
       zrReference,
       notes,
@@ -1946,7 +1993,7 @@ function _buildEdgeRuleEngine(classification, context) {
   const lotLineRules = {
     front: {
       appliesTo: "street line",
-      yardFt: Math.max(0, frontYardFt),
+      yardFt: Math.max(0, ...edgeRules.filter((edge) => edge.edgeType === "front").map((edge) => edge.yardFt), frontYardFt),
       notes: "Approx. ZR 23-45 front yard/street setback by street condition",
     },
     side: {
@@ -1976,8 +2023,6 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
   const edges = _ringEdges(lotRing);
   const roads = _getNearbyRoadLines();
   const neighborLines = _getNeighborLotBoundaryLines(lotRing);
-  const toleranceM = toleranceFt * 0.3048;
-  const lotCentroid = turf.centroid({ type: "Feature", geometry: { type: "Polygon", coordinates: [_closeRing(lotRing)] }, properties: {} });
 
   const edgesByRoadDistance = [];
   for (const edge of edges) {
@@ -1999,6 +2044,7 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
       }
     }
     edge.minRoadDistM = minDistM;
+    edge.streetWidthFt = _roadWidthFtFromRoad(nearestRoad);
     edge.streetClass = _streetClassFromRoad(nearestRoad);
     edge.nearestRoad = nearestRoad;
     edge.nearestRoadName = _roadName(nearestRoad);
@@ -2010,19 +2056,23 @@ function _classifyLotEdges(lotRing, toleranceFt = 30) {
   edgesByRoadDistance.sort((a, b) => a.minRoadDistM - b.minRoadDistM);
   const primaryFrontEdge = edgesByRoadDistance[0] || edges[0] || null;
   const streetEdgeIndices = [];
+  const baseToleranceFt = Math.max(35, toleranceFt);
+  const isStreetFacing = (edge) => {
+    const widthFt = Number.isFinite(edge?.streetWidthFt) ? edge.streetWidthFt : 50;
+    // Edge midpoint should be near the centerline at roughly half street width (+ frontage slack).
+    const thresholdFt = Math.max(baseToleranceFt, (widthFt / 2) + 18);
+    return Number.isFinite(edge?.minRoadDistM) && edge.minRoadDistM <= feetToMeters(thresholdFt);
+  };
+
   if (primaryFrontEdge) {
     streetEdgeIndices.push(primaryFrontEdge.idx);
   }
 
-  const secondaryFrontCandidate = edgesByRoadDistance.find((edge) => {
-    if (!primaryFrontEdge || edge.idx === primaryFrontEdge.idx) return false;
-    if (!Number.isFinite(edge.minRoadDistM) || !Number.isFinite(primaryFrontEdge.minRoadDistM)) return false;
-    const closeToRoad = edge.minRoadDistM <= toleranceM;
-    const closeToPrimary = (edge.minRoadDistM - primaryFrontEdge.minRoadDistM) <= feetToMeters(18);
-    return closeToRoad && closeToPrimary;
-  });
-  if (secondaryFrontCandidate) {
-    streetEdgeIndices.push(secondaryFrontCandidate.idx);
+  for (const edge of edgesByRoadDistance) {
+    if (streetEdgeIndices.includes(edge.idx)) continue;
+    if (isStreetFacing(edge)) {
+      streetEdgeIndices.push(edge.idx);
+    }
   }
 
   let lotType = "Interior";
@@ -2942,7 +2992,7 @@ function applySelectedZoneOverride(zoneCode) {
 
   const rule = resolveZoneRule(zone);
   const standardFar = coerceNumber(rule?.standardFar);
-  const maxHeightFt = coerceNumber(rule?.maximumBuildingHeightFt ?? rule?.ridgeHeightFt);
+  const maxHeightFt = ruleMaxHeightFt(rule);
   const baseHeightFt = coerceNumber(rule?.maximumBaseHeightFt);
 
   activeLotData.zoning_analysis = {
