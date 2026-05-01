@@ -4844,46 +4844,53 @@ function computeDimensions(analysis, controls) {
     })),
     dimensionLines: [
       {
-        type: "setback",
+        type: "street-setback",
         label: `Street setback: ${Math.round(controls.streetSetbackFt)} ft`,
         start: analysis.primaryFrontEdge?.start,
         end: analysis.primaryFrontEdge?.end,
-        offsetPx: 30,
+        offsetPx: 48,
+        labelOffsetPx: 10,
       },
       {
         type: "front-yard",
         label: `Front yard setback: ${Math.round(controls.frontYardFt)} ft`,
         start: analysis.primaryFrontEdge?.start,
         end: analysis.primaryFrontEdge?.end,
-        offsetPx: 55,
+        offsetPx: 28,
+        labelOffsetPx: 10,
       },
       {
         type: "rear-yard",
         label: `Rear yard setback: ${Math.round(controls.rearYardFt)} ft`,
         start: analysis.rearEdge?.start,
         end: analysis.rearEdge?.end,
-        offsetPx: 30,
+        offsetPx: 88,
+        labelOffsetPx: 10,
       },
       {
         type: "side-yard",
         label: `Side yard setback: ${Math.round(controls.sideYardFt)} ft`,
         start: analysis.widthLine?.start,
         end: analysis.widthLine?.end,
-        offsetPx: 70,
+        offsetPx: 68,
+        labelOffsetPx: 10,
       },
       {
         type: "lot-width",
         label: `Lot width: ${Math.round(analysis.lotWidthFt)} ft`,
         start: analysis.widthLine?.start,
         end: analysis.widthLine?.end,
-        offsetPx: 92,
+        offsetPx: 110,
+        labelOffsetPx: 10,
       },
       {
         type: "lot-depth",
         label: `Lot depth: ${Math.round(analysis.lotDepthFt)} ft`,
         start: analysis.depthLine?.start,
         end: analysis.depthLine?.end,
-        offsetPx: 48,
+        offsetPx: 60,
+        sidePreference: "opposite",
+        labelOffsetPx: 10,
       },
     ].filter((d) => d.start && d.end),
   };
@@ -5041,6 +5048,30 @@ function drawTextCentered(ctx, text, x, y, color = "#111827") {
   ctx.fillText(text, x, y);
 }
 
+function drawAlignedDimensionLabel(ctx, label, p1, p2, offsetPx = 10) {
+  const mid = midpoint(p1, p2);
+  let angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+  if (angle > Math.PI / 2 || angle < -Math.PI / 2) {
+    angle += Math.PI;
+  }
+
+  const normal = {
+    x: -Math.sin(angle),
+    y: Math.cos(angle),
+  };
+
+  ctx.save();
+  ctx.translate(mid.x + (normal.x * offsetPx), mid.y + (normal.y * offsetPx));
+  ctx.rotate(angle);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.fillStyle = "#111827";
+  ctx.font = "11px Arial";
+  ctx.fillText(label, 0, 0);
+  ctx.restore();
+}
+
 function polygonCentroid(points) {
   if (!points || !points.length) return { x: 0, y: 0 };
   let sx = 0;
@@ -5059,22 +5090,31 @@ function drawTick(ctx, point, dir) {
   drawLine(ctx, p1, p2, "#111827", 1.5);
 }
 
+function resolveDimensionNormal(a, b, centroid, sidePreference = "outward") {
+  const dir = normalize(subtract(b, a));
+  let normal = perpendicular(dir);
+  if (centroid) {
+    const edgeMid = midpoint(a, b);
+    const candidateA = add(edgeMid, normal);
+    const candidateB = add(edgeMid, multiply(normal, -1));
+    const distA = Math.hypot(candidateA.x - centroid.x, candidateA.y - centroid.y);
+    const distB = Math.hypot(candidateB.x - centroid.x, candidateB.y - centroid.y);
+    if (distA < distB) {
+      normal = multiply(normal, -1);
+    }
+  }
+  if (sidePreference === "opposite") {
+    normal = multiply(normal, -1);
+  }
+  return normal;
+}
+
 function drawDimensionLine(ctx, dim) {
   const a = dim.start;
   const b = dim.end;
 
   const dir = normalize(subtract(b, a));
-  let normal = perpendicular(dir);
-  if (dim.centroid) {
-    const edgeMid = midpoint(a, b);
-    const candidateA = add(edgeMid, multiply(normal, dim.offsetPx));
-    const candidateB = add(edgeMid, multiply(normal, -dim.offsetPx));
-    const distA = Math.hypot(candidateA.x - dim.centroid.x, candidateA.y - dim.centroid.y);
-    const distB = Math.hypot(candidateB.x - dim.centroid.x, candidateB.y - dim.centroid.y);
-    if (distA < distB) {
-      normal = multiply(normal, -1);
-    }
-  }
+  const normal = resolveDimensionNormal(a, b, dim.centroid, dim.sidePreference);
 
   const a2 = add(a, multiply(normal, dim.offsetPx));
   const b2 = add(b, multiply(normal, dim.offsetPx));
@@ -5086,21 +5126,21 @@ function drawDimensionLine(ctx, dim) {
   drawTick(ctx, a2, dir);
   drawTick(ctx, b2, dir);
 
-  const mid = midpoint(a2, b2);
-  const labelPt = add(mid, multiply(normal, 12));
-  drawTextCentered(ctx, dim.label, labelPt.x, labelPt.y);
+  drawAlignedDimensionLabel(ctx, dim.label, a2, b2, dim.labelOffsetPx ?? 10);
 }
 
 function drawArchitecturalDimensions(ctx, transform, dimensions) {
   const transformedEdges = (dimensions.edges || []).map((edge) => transform(edge.start));
   const centroid = polygonCentroid(transformedEdges);
-  dimensions.dimensionLines.forEach((dim, i) => {
+  dimensions.dimensionLines.forEach((dim) => {
     drawDimensionLine(ctx, {
       start: transform(dim.start),
       end: transform(dim.end),
-      offsetPx: dim.offsetPx + (i * 10),
+      offsetPx: dim.offsetPx,
       label: dim.label,
       centroid,
+      sidePreference: dim.sidePreference,
+      labelOffsetPx: dim.labelOffsetPx,
     });
   });
 }
@@ -5166,50 +5206,86 @@ function drawPlan(canvas, g) {
   drawArchitecturalDimensions(ctx, transform, g.dimensions);
 }
 
+function feetToMeters(value) {
+  return Math.max(0, Number(value || 0)) * 0.3048;
+}
+
+function isoProject(x, y, z, scale, origin) {
+  const angle = Math.PI / 6;
+  return {
+    x: origin.x + ((x - y) * Math.cos(angle) * scale),
+    y: origin.y + ((x + y) * Math.sin(angle) * scale) - (z * scale),
+  };
+}
+
+function computeIsoScale(bounds, maxHeight, canvas, dimensionReservePx = 150) {
+  const padding = 90;
+  const widthScale = (canvas.width - (padding * 2) - dimensionReservePx) / Math.max(bounds.width, 1);
+  const depthScale = (canvas.height - (padding * 2)) / Math.max(bounds.depth + maxHeight, 1);
+  return Math.max(0.01, Math.min(widthScale, depthScale));
+}
+
 function createIsoTransform(lot, canvas, opts = {}) {
-  const zScale = Number(opts.zScale || 2.2);
-  const angleX = (Number(opts.angleX || 35) * Math.PI) / 180;
-  const angleZ = (Number(opts.angleZ || 45) * Math.PI) / 180;
-  const padding = Number(opts.padding || 120);
-  const maxHeightFt = Number(opts.maxHeightFt || 0);
-  const dimOffsetPx = Number(opts.dimOffsetPx || 110);
+  const padding = Number(opts.padding || 90);
+  const maxHeightM = feetToMeters(opts.maxHeightFt || 0);
+  const dimOffsetPx = Number(opts.dimOffsetPx || 150);
 
   const projector = _lotToLocalProjectorFromRings([lot]);
   const local = lot.map((pt) => projector(pt));
-  const projectRaw = (x, y, hFt = 0) => ({
-    x: (x - y) * Math.cos(angleZ),
-    y: ((x + y) * Math.sin(angleX)) - (hFt * zScale),
-  });
-  const isoBase = [];
-  for (const [x, y] of local) {
-    isoBase.push(projectRaw(x, y, 0));
-    isoBase.push(projectRaw(x, y, maxHeightFt));
-  }
-  const xs = isoBase.map((p) => p.x);
-  const ys = isoBase.map((p) => p.y);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const spanX = maxX - minX || 1;
-  const spanY = maxY - minY || 1;
-  const scale = Math.min((canvas.width - ((padding * 2) + dimOffsetPx)) / spanX, (canvas.height - (padding * 2.4)) / spanY);
+  const xs = local.map((point) => point[0]);
+  const ys = local.map((point) => point[1]);
+  const minLocalX = Math.min(...xs);
+  const maxLocalX = Math.max(...xs);
+  const minLocalY = Math.min(...ys);
+  const maxLocalY = Math.max(...ys);
+  const spanX = Math.max(maxLocalX - minLocalX, 1);
+  const spanY = Math.max(maxLocalY - minLocalY, 1);
+  const angle = Math.PI / 6;
+  const projectedWidth = (spanX + spanY) * Math.cos(angle);
+  const projectedDepth = (spanX + spanY) * Math.sin(angle);
+  const scale = computeIsoScale({ width: projectedWidth, depth: projectedDepth }, maxHeightM, canvas, dimOffsetPx);
+  const availableWidth = canvas.width - (padding * 2) - dimOffsetPx;
+  const availableHeight = canvas.height - (padding * 2);
+  const objectWidthPx = projectedWidth * scale;
+  const objectHeightPx = (projectedDepth + maxHeightM) * scale;
+  const leftPad = padding + Math.max(0, (availableWidth - objectWidthPx) / 2);
+  const topPad = padding + Math.max(0, (availableHeight - objectHeightPx) / 2);
+  const origin = {
+    x: leftPad + (spanY * Math.cos(angle) * scale),
+    y: topPad + (maxHeightM * scale),
+  };
+  const frame = {
+    left: origin.x - (spanY * Math.cos(angle) * scale),
+    right: origin.x + (spanX * Math.cos(angle) * scale),
+    top: topPad,
+    bottom: topPad + objectHeightPx,
+  };
 
   return {
+    frame,
     project(lng, lat, hFt = 0) {
       const [lx, ly] = projector([lng, lat]);
-      const raw = projectRaw(lx, ly, hFt);
-      return {
-        x: padding + ((raw.x - minX) * scale),
-        y: padding + ((raw.y - minY) * scale),
-      };
+      return isoProject(lx - minLocalX, ly - minLocalY, feetToMeters(hFt), scale, origin);
     },
   };
 }
 
 function drawIsoBase(ctx, iso, lot) {
-  const pts = lot.map((pt) => iso.project(pt[0], pt[1], 0));
-  drawPolygon(ctx, pts, { fill: "rgba(15,23,42,0.04)", stroke: "#334155", lineWidth: 1.2, dash: [8, 5] });
+  const slabHeightFt = 2;
+  const base = lot.map((pt) => iso.project(pt[0], pt[1], 0));
+  const top = lot.map((pt) => iso.project(pt[0], pt[1], slabHeightFt));
+  for (let i = 0; i < base.length - 1; i += 1) {
+    drawPolygon(ctx, [base[i], base[i + 1], top[i + 1], top[i]], {
+      fill: "rgba(226,232,240,0.9)",
+      stroke: "#9ca3af",
+      lineWidth: 1,
+    });
+  }
+  drawPolygon(ctx, top, {
+    fill: "rgba(255,255,255,0.98)",
+    stroke: "#6b7280",
+    lineWidth: 1.2,
+  });
 }
 
 function drawIsoExtrusion(ctx, iso, mass, style) {
@@ -5221,14 +5297,38 @@ function drawIsoExtrusion(ctx, iso, mass, style) {
 
   for (let i = 0; i < base.length - 1; i += 1) {
     const quad = [base[i], base[i + 1], top[i + 1], top[i]];
-    drawPolygon(ctx, quad, { fill: style.fill, stroke: style.stroke, lineWidth: 1 });
+    drawPolygon(ctx, quad, {
+      fill: style.sideFill || style.fill,
+      stroke: style.stroke,
+      lineWidth: style.edgeWidth || 1,
+      hatch: style.hatch,
+      hatchColor: style.hatchColor,
+    });
   }
-  drawPolygon(ctx, top, { fill: style.fill, stroke: style.stroke, lineWidth: style.lineWidth || 2 });
+  drawPolygon(ctx, top, {
+    fill: style.topFill || style.fill,
+    stroke: style.stroke,
+    lineWidth: style.lineWidth || 2,
+    hatch: style.hatch,
+    hatchColor: style.hatchColor,
+  });
 }
 
-function getRightSideAnchor(lot, _offset) {
-  const ring = _closeRing(lot || []);
-  return ring.reduce((best, p) => (p[0] > best[0] ? p : best), ring[0] || [0, 0]);
+function drawIsoOutline(ctx, iso, mass, color = "#111827", lineWidth = 1.5) {
+  const ring = mass?.footprint || [];
+  const h = Number(mass?.heightFt || 0);
+  if (!ring.length || h <= 0) return;
+  const base = ring.map((pt) => iso.project(pt[0], pt[1], 0));
+  const top = ring.map((pt) => iso.project(pt[0], pt[1], h));
+  drawPolygon(ctx, top, { fill: "transparent", stroke: color, lineWidth });
+  for (let i = 0; i < base.length - 1; i += 1) {
+    drawLine(ctx, base[i], top[i], color, 1);
+  }
+}
+
+function getRightSideAnchor(ring) {
+  const closed = _closeRing(ring || []);
+  return closed.reduce((best, p) => (p[0] > best[0] ? p : best), closed[0] || [0, 0]);
 }
 
 function drawRotatedText(ctx, text, point, angle, color = "#111827") {
@@ -5247,8 +5347,9 @@ function drawVerticalDimension(ctx, iso, dim) {
   const bottom = iso.project(dim.basePoint[0], dim.basePoint[1], 0);
   const top = iso.project(dim.basePoint[0], dim.basePoint[1], dim.heightFt);
 
-  const b = { x: bottom.x + dim.xOffsetPx, y: bottom.y };
-  const t = { x: top.x + dim.xOffsetPx, y: top.y };
+  const lineX = iso.frame.right + dim.xOffsetPx;
+  const b = { x: lineX, y: bottom.y };
+  const t = { x: lineX, y: top.y };
 
   drawLine(ctx, b, t, dim.color, 1.5);
   drawTick(ctx, b, { x: 1, y: 0 });
@@ -5257,32 +5358,32 @@ function drawVerticalDimension(ctx, iso, dim) {
   drawLine(ctx, bottom, b, dim.color, 1);
   drawLine(ctx, top, t, dim.color, 1);
 
-  drawRotatedText(ctx, dim.label, midpoint(b, t), -Math.PI / 2, dim.color);
+  drawRotatedText(ctx, dim.label, { x: lineX + 12, y: midpoint(b, t).y }, -Math.PI / 2, dim.color);
 }
 
 function drawIsoHeightDimensions(ctx, iso, g) {
   drawVerticalDimension(ctx, iso, {
-    basePoint: getRightSideAnchor(g.lot, 20),
+    basePoint: getRightSideAnchor(g.existingMass.footprint || g.lot),
     heightFt: g.analysis.existingHeightFt,
     label: `Existing: ${Math.round(g.analysis.existingHeightFt)} ft`,
     color: "#6b7280",
-    xOffsetPx: 30,
+    xOffsetPx: 26,
   });
 
   drawVerticalDimension(ctx, iso, {
-    basePoint: getRightSideAnchor(g.lot, 40),
+    basePoint: getRightSideAnchor(g.farEnvelope.footprint || g.lot),
     heightFt: g.farHeight,
     label: `FAR massing: ${Math.round(g.farHeight)} ft`,
-    color: g.isCapped ? "#b91c1c" : "#17a35b",
-    xOffsetPx: 60,
+    color: g.isCapped ? "#b91c1c" : "#166534",
+    xOffsetPx: 56,
   });
 
   drawVerticalDimension(ctx, iso, {
-    basePoint: getRightSideAnchor(g.lot, 60),
+    basePoint: getRightSideAnchor(g.maxEnvelope.footprint || g.lot),
     heightFt: g.maxHeight,
     label: `Max envelope: ${Math.round(g.maxHeight)} ft`,
     color: "#1e5aa8",
-    xOffsetPx: 90,
+    xOffsetPx: 88,
   });
 }
 
@@ -5292,34 +5393,41 @@ function drawIso(canvas, g) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const iso = createIsoTransform(g.lot, canvas, {
     padding: 90,
-    zScale: 2.2,
-    angleX: 35,
-    angleZ: 45,
     maxHeightFt: g.maxHeight,
-    dimOffsetPx: 120,
+    dimOffsetPx: 160,
   });
 
   drawIsoBase(ctx, iso, g.lot);
 
   drawIsoExtrusion(ctx, iso, g.maxEnvelope, {
-    fill: `rgba(125,183,255,${g.opacity})`,
+    fill: `rgba(125,183,255,${Math.max(0.08, g.opacity * 0.4)})`,
+    sideFill: `rgba(125,183,255,${Math.max(0.06, g.opacity * 0.28)})`,
+    topFill: `rgba(125,183,255,${Math.max(0.1, g.opacity * 0.45)})`,
     stroke: "#1e5aa8",
-    lineWidth: 2,
+    lineWidth: 1.5,
   });
 
   drawIsoExtrusion(ctx, iso, g.farEnvelope, {
-    fill: g.isCapped ? "rgba(220,38,38,0.35)" : "rgba(80,220,150,0.35)",
-    stroke: g.isCapped ? "#b91c1c" : "#17a35b",
-    lineWidth: 2.5,
+    fill: g.isCapped ? "rgba(220,38,38,0.24)" : "rgba(80,220,150,0.24)",
+    sideFill: g.isCapped ? "rgba(220,38,38,0.18)" : "rgba(80,220,150,0.18)",
+    topFill: g.isCapped ? "rgba(220,38,38,0.3)" : "rgba(80,220,150,0.3)",
+    stroke: g.isCapped ? "#b91c1c" : "#166534",
+    lineWidth: 1.6,
   });
 
   drawIsoExtrusion(ctx, iso, g.existingMass, {
-    fill: "rgba(90,95,105,0.65)",
-    stroke: "#4b5563",
+    fill: "rgba(248,250,252,0.96)",
+    sideFill: "rgba(229,231,235,0.96)",
+    topFill: "rgba(255,255,255,0.98)",
+    stroke: "#374151",
     lineWidth: 1.5,
     hatch: true,
-    hatchColor: "#4b5563",
+    hatchColor: "#9ca3af",
   });
+
+  drawIsoOutline(ctx, iso, g.maxEnvelope, "#1e3a8a", 1.4);
+  drawIsoOutline(ctx, iso, g.farEnvelope, g.isCapped ? "#991b1b" : "#166534", 1.5);
+  drawIsoOutline(ctx, iso, g.existingMass, "#111827", 1.5);
 
   drawIsoHeightDimensions(ctx, iso, g);
 }
