@@ -668,6 +668,41 @@ function _tryBuffer(geometry, distanceMeters) {
 
 function buildZoningEnvelopeFeatures(geojson) {
   const features = [];
+
+function _buildLightweightLotAnalysisFromProps(props) {
+  const zoneTokens = extractZoneTokensModule(
+    props?.zonedist1,
+    props?.ZoneDist1,
+    props?.zonedist2,
+    props?.ZoneDist2,
+    props?.zone,
+    props?.ZoningDist
+  );
+  const primaryZone = pickPrimaryZoneToken(
+    props?.zonedist1,
+    props?.ZoneDist1,
+    props?.zonedist2,
+    props?.ZoneDist2,
+    props?.zone,
+    props?.ZoningDist
+  );
+
+  // Fast-path for neighborhood rendering: avoid map road/neighbor queries per lot.
+  return {
+    zoneTokens,
+    primaryZone,
+    lotType: "Interior",
+    isCornerLot: false,
+    isThroughLot: false,
+    streetType: "narrow",
+    primaryStreet: {
+      name: "Unknown road",
+      widthFt: 50,
+      type: "narrow",
+    },
+    warnings: [],
+  };
+}
   const samples = [];
 
   for (const feature of geojson.features || []) {
@@ -689,24 +724,12 @@ function buildZoningEnvelopeFeatures(geojson) {
       continue;
     }
 
-    const lotAnalysis = analyzeLot({
-      lotFeature: feature,
-      lotRing,
-      map,
-      neighborhoodFeatures: activeNeighborhoodData?.features || [],
-    });
+    const lotAnalysis = _buildLightweightLotAnalysisFromProps(props);
 
     const controlResult = getControlsForLot(
       {
         ...lotAnalysis,
-        zoneTokens: extractZoneTokensModule(
-          props.zonedist1,
-          props.ZoneDist1,
-          props.zonedist2,
-          props.ZoneDist2,
-          props.zone,
-          props.ZoningDist
-        ),
+        zoneTokens: lotAnalysis.zoneTokens,
       },
       zoningRuleIndex
     );
