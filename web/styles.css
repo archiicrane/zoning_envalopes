@@ -671,3 +671,85 @@ hr {
     min-width: 0;
   }
 }
+
+/* ── Diagram Mode button ──────────────────────────────────── */
+.bar-btn--diagram {
+  background: #374151;
+  border: 1px solid #6b7280;
+}
+
+.bar-btn--diagram.active {
+  background: #1e3a5f;
+  border-color: #1E5AA8;
+  color: #93c5fd;
+  box-shadow: 0 0 0 1px #1E5AA8 inset;
+}
+
+/* Diagram mode: desaturate the basemap tiles, keep data layers sharp */
+body.diagram-mode #map {
+  filter: saturate(0.12) contrast(1.1) brightness(1.06);
+}
+
+/* ── Map legend overlay ──────────────────────────────────── */
+.map-legend {
+  position: absolute;
+  bottom: 30px;
+  left: 10px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid #d1cdc4;
+  border-radius: 8px;
+  padding: 8px 10px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.map-legend__title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.map-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.map-legend__item:last-child {
+  margin-bottom: 0;
+}
+
+.map-legend__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1.5px solid transparent;
+}
+
+.map-legend__swatch--building {
+  background: #d8d8d8;
+  border-color: #5f6670;
+}
+
+.map-legend__swatch--envelope {
+  background: rgba(125, 183, 255, 0.35);
+  border-color: #1E5AA8;
+}
+
+.map-legend__swatch--selected {
+  background: rgba(101, 224, 194, 0.4);
+  border-color: #007C70;
+}
+
+/* top-actions grid: 3 columns for 3 buttons */
+.top-actions {
+  grid-template-columns: 1fr 1fr 1fr;
+}

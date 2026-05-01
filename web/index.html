@@ -17,13 +17,29 @@
           <option value="">Loading neighborhoods...</option>
         </select>
         <div class="top-actions">
-          <button id="showBuildingsBtn" type="button" class="bar-btn active">Show Existing Buildings</button>
-          <button id="showEnvelopeBtn" type="button" class="bar-btn active">Show Zoning Envelope</button>
+          <button id="showBuildingsBtn" type="button" class="bar-btn active">Existing Buildings</button>
+          <button id="showEnvelopeBtn" type="button" class="bar-btn active">Zoning Envelope</button>
+          <button id="diagramModeBtn" type="button" class="bar-btn bar-btn--diagram">Diagram Mode</button>
         </div>
       </header>
 
       <main class="map-wrap">
         <div id="map"></div>
+        <div class="map-legend" id="mapLegend">
+          <div class="map-legend__title">Legend</div>
+          <div class="map-legend__item">
+            <span class="map-legend__swatch map-legend__swatch--building"></span>
+            <span>Existing building mass</span>
+          </div>
+          <div class="map-legend__item">
+            <span class="map-legend__swatch map-legend__swatch--envelope"></span>
+            <span>Allowable zoning envelope</span>
+          </div>
+          <div class="map-legend__item">
+            <span class="map-legend__swatch map-legend__swatch--selected"></span>
+            <span>Selected lot / active parcel</span>
+          </div>
+        </div>
       </main>
 
       <section class="bottom-ui">
@@ -35,8 +51,8 @@
 
         <div class="control-row">
           <label for="envelopeOpacitySlider">Envelope Transparency</label>
-          <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="40" />
-          <span id="envelopeOpacityVal" class="value-pill">40%</span>
+          <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="75" />
+          <span id="envelopeOpacityVal" class="value-pill">75%</span>
         </div>
 
         <div class="control-row compact">
@@ -79,6 +95,7 @@
     </div>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script src="/web/vendor/turf.min.js"></script>
     <script>
       if (!window.turf) {
@@ -87,6 +104,6 @@
         document.head.appendChild(s);
       }
     </script>
-    <script type="module" src="/web/app.js?v=20260425o"></script>
+    <script type="module" src="/web/app.js?v=20260501a"></script>
   </body>
 </html>

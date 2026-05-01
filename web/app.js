@@ -54,6 +54,8 @@ let activeNeighborhoodData = EMPTY_FC;
 let availableNeighborhoods = [];
 let ntaData = null; // loaded once from /nta.geojson
 let zoningRuleIndex = new Map();
+let diagramMode = false;
+let _threeEdgeLayer = null; // EnvelopeEdgesThreeLayer instance
 
 const report = document.getElementById("report");
 const coverageInput = document.getElementById("coverage");
@@ -69,6 +71,7 @@ const showBuildingToggle = document.getElementById("showBuildingToggle");
 const showEnvelopeToggle = document.getElementById("showEnvelopeToggle");
 const showBuildingsBtn = document.getElementById("showBuildingsBtn");
 const showEnvelopeBtn = document.getElementById("showEnvelopeBtn");
+const diagramModeBtn = document.getElementById("diagramModeBtn");
 
 coverageInput.addEventListener("input", () => {
   covVal.textContent = `${coverageInput.value}%`;
@@ -100,6 +103,16 @@ function applyEnvelopeOpacityToLayers() {
   if (map.getLayer("zoning-envelope-fill-baseline")) {
     map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-opacity", baselineOpacity);
   }
+  // Also apply (scaled down) to the neighborhood ghost-volume envelope
+  if (map.getLayer("zoning-envelope-layer")) {
+    // Keep the ghost volume subtle: max 0.35 opacity even at full slider
+    const ghostOpacity = Math.min(0.35, scenarioOpacity * 0.35);
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", ghostOpacity);
+  }
+  if (map.getLayer("zoning-envelope-outline")) {
+    const outlineOpacity = Math.max(0.3, scenarioOpacity * 0.85);
+    map.setPaintProperty("zoning-envelope-outline", "line-opacity", outlineOpacity);
+  }
 }
 
 envelopeOpacitySlider.addEventListener("input", () => {
@@ -126,6 +139,41 @@ if (showEnvelopeBtn) {
   showEnvelopeBtn.addEventListener("click", () => {
     showEnvelopeToggle.checked = !showEnvelopeToggle.checked;
     syncLayerVisibility();
+  });
+}
+
+// Diagram mode: desaturates basemap via CSS + lightens buildings for a clean arch diagram look
+function applyDiagramMode() {
+  document.body.classList.toggle("diagram-mode", diagramMode);
+  if (diagramModeBtn) {
+    diagramModeBtn.classList.toggle("active", diagramMode);
+  }
+  if (!map) return;
+  if (map.getLayer("existing-buildings-mapbox")) {
+    map.setPaintProperty(
+      "existing-buildings-mapbox",
+      "fill-extrusion-color",
+      diagramMode ? "#eeeeee" : "#d8d8d8"
+    );
+    map.setPaintProperty(
+      "existing-buildings-mapbox",
+      "fill-extrusion-opacity",
+      diagramMode ? (focusSelectedLotMode ? 0.15 : 0.4) : (focusSelectedLotMode ? 0.2 : 0.65)
+    );
+  }
+  if (map.getLayer("zoning-envelope-layer")) {
+    map.setPaintProperty(
+      "zoning-envelope-layer",
+      "fill-extrusion-opacity",
+      diagramMode ? 0.18 : 0.22
+    );
+  }
+}
+
+if (diagramModeBtn) {
+  diagramModeBtn.addEventListener("click", () => {
+    diagramMode = !diagramMode;
+    applyDiagramMode();
   });
 }
 
@@ -484,35 +532,9 @@ function getAvailableZoningOptions() {
 }
 
 function pickZoneColor(props) {
-  const zone = pickPrimaryZoneToken(
-    props.zonedist1,
-    props.ZoneDist1,
-    props.zonedist2,
-    props.ZoneDist2,
-    props.zone,
-    props.ZoningDist
-  );
-
-  const explicit = {
-    "R7": "#2563eb",
-    "R7-2": "#60a5fa",
-    "R6": "#ec4899",
-  };
-  if (explicit[zone]) {
-    return explicit[zone];
-  }
-
-  if (zone.startsWith("R")) {
-    return "#3b82f6";
-  }
-  if (zone.startsWith("C")) {
-    return "#14b8a6";
-  }
-  if (zone.startsWith("M")) {
-    return "#f59e0b";
-  }
-
-  return "#00c2ff";
+  // Uniform ghost-volume color — the fill-extrusion layer paints all envelopes
+  // the same pale blue. Keep this function for any future per-zone override.
+  return "#7DB7FF";
 }
 
 // Returns the SIDE-yard setback in meters.
@@ -660,6 +682,9 @@ function refreshZoningEnvelopeFromNeighborhood() {
   console.log("[zoning-envelope] lots loaded:", (activeNeighborhoodData?.features || []).length);
   console.log("[zoning-envelope] envelope features created:", built.features.length);
   console.log("[zoning-envelope] sample FAR/height values:", built.samples);
+
+  // Update Three.js wireframe edges to match new envelope geometry
+  updateEnvelopeEdges(built.features, []);
 }
 
 function findNtaPolygon(neighborhoodName) {
@@ -760,6 +785,164 @@ function initMap(token) {
   });
 }
 
+// ── Three.js envelope wireframe edge layer ─────────────────────────────────
+// Draws crisp 3D bottom ring, top ring, and vertical corner lines for each
+// envelope feature, since Mapbox fill-extrusion cannot render true 3D edges.
+class EnvelopeEdgesThreeLayer {
+  constructor() {
+    this.id = "envelope-edges-3d";
+    this.type = "custom";
+    this.renderingMode = "3d";
+    this._features = [];
+    this._refMC = null;
+    this._scale = null;
+  }
+
+  onAdd(map, gl) {
+    this._map = map;
+    const THREE = window.THREE;
+    if (!THREE) { console.warn("[EnvelopeEdges] THREE.js not loaded"); return; }
+
+    this._renderer = new THREE.WebGLRenderer({
+      canvas: map.getCanvas(),
+      context: gl,
+      antialias: true,
+    });
+    this._renderer.autoClear = false;
+
+    this._camera = new THREE.Camera();
+    this._scene = new THREE.Scene();
+
+    this._normalMat = new THREE.LineBasicMaterial({
+      color: 0x1e5aa8,
+      transparent: true,
+      opacity: 0.82,
+      depthTest: false,
+    });
+    this._selectedMat = new THREE.LineBasicMaterial({
+      color: 0x007c70,
+      transparent: true,
+      opacity: 1.0,
+      depthTest: false,
+    });
+
+    this._rebuildGeometry();
+  }
+
+  onRemove() {
+    if (!this._renderer) return;
+    this._scene.clear();
+    this._renderer = null;
+    this._scene = null;
+    this._camera = null;
+  }
+
+  _rebuildGeometry() {
+    const THREE = window.THREE;
+    if (!THREE || !this._scene) return;
+
+    // Dispose old objects
+    const toRemove = [...this._scene.children];
+    for (const obj of toRemove) {
+      if (obj.geometry) obj.geometry.dispose();
+      this._scene.remove(obj);
+    }
+
+    if (!this._features.length) { this._refMC = null; return; }
+
+    const refLngLat = map.getCenter();
+    const refMC = mapboxgl.MercatorCoordinate.fromLngLat(refLngLat, 0);
+    const scale = refMC.meterInMercatorCoordinateUnits();
+    this._refMC = refMC;
+    this._scale = scale;
+
+    const toScene = (lng, lat, altM) => {
+      const mc = mapboxgl.MercatorCoordinate.fromLngLat([lng, lat], 0);
+      const dx = (mc.x - refMC.x) / scale;  // east meters
+      const dz = (mc.y - refMC.y) / scale;  // south meters (mercator Y increases south)
+      return [dx, altM, dz];                 // [east, altitude, south] in Three.js Y-up scene
+    };
+
+    for (const feature of this._features) {
+      const isSelected = !!feature.properties?.isSelected;
+      const mat = isSelected ? this._selectedMat : this._normalMat;
+      const heightM = (feature.properties?.envelopeHeight ?? 30) * 0.3048;
+      const baseM = (feature.properties?.envelopeBase ?? 0) * 0.3048;
+
+      const geom = feature.geometry;
+      const rings = geom.type === "Polygon"
+        ? [geom.coordinates[0]]
+        : geom.coordinates.map((p) => p[0]);
+
+      for (const ring of rings) {
+        if (!ring || ring.length < 3) continue;
+        const positions = [];
+        const n = ring.length; // closing vertex == first, skip it for vertical edges
+
+        for (let i = 0; i < n - 1; i++) {
+          const [lng0, lat0] = ring[i];
+          const [lng1, lat1] = ring[i + 1];
+          const b0 = toScene(lng0, lat0, baseM);
+          const b1 = toScene(lng1, lat1, baseM);
+          const t0 = toScene(lng0, lat0, heightM);
+          const t1 = toScene(lng1, lat1, heightM);
+
+          // Bottom edge
+          positions.push(...b0, ...b1);
+          // Top edge
+          positions.push(...t0, ...t1);
+          // Vertical at each unique vertex
+          positions.push(...b0, ...t0);
+        }
+
+        const buf = new THREE.BufferGeometry();
+        buf.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        const lines = new THREE.LineSegments(buf, mat);
+        this._scene.add(lines);
+      }
+    }
+  }
+
+  setFeatures(features) {
+    this._features = features;
+    if (this._scene) this._rebuildGeometry();
+  }
+
+  setVisible(visible) {
+    if (this._scene) this._scene.visible = visible;
+  }
+
+  render(gl, matrix) {
+    const THREE = window.THREE;
+    if (!THREE || !this._scene || !this._refMC) return;
+
+    const refMC = this._refMC;
+    const s = this._scale;
+    const rotX = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+    const l = new THREE.Matrix4()
+      .makeTranslation(refMC.x, refMC.y, refMC.z)
+      .scale(new THREE.Vector3(s, -s, s))
+      .multiply(rotX);
+
+    this._camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(l);
+    this._renderer.resetState();
+    this._renderer.render(this._scene, this._camera);
+    this._map.triggerRepaint();
+  }
+}
+
+// Call this whenever the neighborhood envelope features change.
+function updateEnvelopeEdges(features, selectedLotFeatures) {
+  if (!_threeEdgeLayer) return;
+
+  // Mark selected lot features so they render with a different material
+  const allFeatures = [
+    ...features.map((f) => ({ ...f, properties: { ...f.properties, isSelected: false } })),
+    ...(selectedLotFeatures || []).map((f) => ({ ...f, properties: { ...f.properties, isSelected: true } })),
+  ];
+  _threeEdgeLayer.setFeatures(allFeatures);
+}
+
 function ensureSourcesAndLayers() {
   disableDefaultMapboxBuildingExtrusions();
 
@@ -803,10 +986,11 @@ function ensureSourcesAndLayers() {
         minzoom: 10,
         filter: ["==", "$type", "Polygon"],
         paint: {
-          "fill-extrusion-color": "#cbd5e1",
+          "fill-extrusion-color": "#d8d8d8",
           "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 10],
           "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
-          "fill-extrusion-opacity": 0.55,
+          "fill-extrusion-opacity": 0.65,
+          "fill-extrusion-vertical-gradient": true,
         },
       },
       labelLayerId
@@ -828,13 +1012,35 @@ function ensureSourcesAndLayers() {
       type: "fill-extrusion",
       source: "zoning-envelope-source",
       paint: {
-        "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#1d4ed8"],
-        "fill-extrusion-opacity": 0.6,
+        // Ghost volume: pale cyan-blue, low opacity — reads like a transparent mass
+        "fill-extrusion-color": "#7DB7FF",
+        "fill-extrusion-opacity": 0.22,
         "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
         "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
+        "fill-extrusion-vertical-gradient": false,
       },
     });
     console.log("[zoning-envelope] envelope layer added successfully");
+  }
+
+  // 2-D floor-plan outline for envelope (base footprint, crisp dark blue lines)
+  if (!map.getLayer("zoning-envelope-outline")) {
+    map.addLayer({
+      id: "zoning-envelope-outline",
+      type: "line",
+      source: "zoning-envelope-source",
+      paint: {
+        "line-color": "#1E5AA8",
+        "line-width": 1.2,
+        "line-opacity": 0.75,
+      },
+    });
+  }
+
+  // Three.js custom layer for true 3D vertical edge wireframe
+  if (!map.getLayer("envelope-edges-3d")) {
+    _threeEdgeLayer = new EnvelopeEdgesThreeLayer();
+    map.addLayer(_threeEdgeLayer);
   }
 
   if (!map.getSource("selected-lot")) {
@@ -1102,7 +1308,7 @@ function applyFocusModeVisuals() {
     map.setPaintProperty("neighborhood-lot-outline", "line-opacity", focusSelectedLotMode ? 0.12 : 0.5);
   }
   if (map.getLayer("existing-buildings-mapbox")) {
-    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", focusSelectedLotMode ? 0.2 : 0.55);
+    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", focusSelectedLotMode ? 0.2 : 0.65);
   }
 }
 
@@ -1121,6 +1327,12 @@ function syncLayerVisibility() {
   const envelopeLayerExists = !!map.getLayer("zoning-envelope-layer");
   if (envelopeLayerExists) {
     map.setLayoutProperty("zoning-envelope-layer", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
+  }
+  if (map.getLayer("zoning-envelope-outline")) {
+    map.setLayoutProperty("zoning-envelope-outline", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
+  }
+  if (_threeEdgeLayer) {
+    _threeEdgeLayer.setVisible(showEnvelopeToggle.checked);
   }
   const studyLayerIds = [
     "zoning-envelope-fill-baseline",
@@ -1156,19 +1368,9 @@ function syncLayerVisibility() {
   applyFocusModeVisuals();
   if (showBuildingsBtn) {
     showBuildingsBtn.classList.toggle("active", showBuildingToggle.checked);
-    if (existingBuildingsLayerExists) {
-      showBuildingsBtn.textContent = showBuildingToggle.checked ? "Hide Existing Buildings" : "Show Existing Buildings";
-    } else {
-      showBuildingsBtn.textContent = "Show Existing Buildings";
-    }
   }
   if (showEnvelopeBtn) {
     showEnvelopeBtn.classList.toggle("active", showEnvelopeToggle.checked);
-    if (envelopeLayerExists) {
-      showEnvelopeBtn.textContent = showEnvelopeToggle.checked ? "Hide Zoning Envelope" : "Show Zoning Envelope";
-    } else {
-      showEnvelopeBtn.textContent = "Show Zoning Envelope";
-    }
   }
 }
 
