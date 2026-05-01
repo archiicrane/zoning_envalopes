@@ -708,10 +708,20 @@ function buildNeighborhoodMaskGeometry(geojson) {
 function refreshExistingBuildingsForNeighborhood() {
   if (!map || !map.getLayer("existing-buildings-mapbox")) return;
 
+  if (!activeNeighborhood || !(activeNeighborhoodData?.features || []).length) {
+    map.setFilter("existing-buildings-mapbox", ["==", "$type", "Point"]);
+    map.setLayoutProperty("existing-buildings-mapbox", "visibility", "none");
+    return;
+  }
+
   const ntaFeature = findNtaPolygon(activeNeighborhood?.name);
   const fallbackGeometry = buildNeighborhoodMaskGeometry(activeNeighborhoodData || EMPTY_FC);
   const clipGeometry = ntaFeature?.geometry || fallbackGeometry;
-  if (!clipGeometry) return;
+  if (!clipGeometry) {
+    map.setFilter("existing-buildings-mapbox", ["==", "$type", "Point"]);
+    map.setLayoutProperty("existing-buildings-mapbox", "visibility", "none");
+    return;
+  }
 
   try {
     map.setFilter("existing-buildings-mapbox", [
@@ -719,7 +729,7 @@ function refreshExistingBuildingsForNeighborhood() {
       ["==", "$type", "Polygon"],
       ["within", clipGeometry],
     ]);
-    map.setLayoutProperty("existing-buildings-mapbox", "visibility", "visible");
+    syncLayerVisibility();
     console.log(
       "[existing-buildings] within filter clip source:",
       ntaFeature?.properties?.ntaname || "neighborhood-lot-mask"
@@ -808,12 +818,15 @@ function ensureSourcesAndLayers() {
         source: "composite",
         "source-layer": "building",
         minzoom: 10,
-        filter: ["==", "$type", "Polygon"],
+        filter: ["==", "$type", "Point"],
         paint: {
           "fill-extrusion-color": "#64748b",
           "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 10],
           "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
           "fill-extrusion-opacity": 0.75,
+        },
+        layout: {
+          visibility: "none",
         },
       },
       labelLayerId
@@ -1118,8 +1131,13 @@ function syncLayerVisibility() {
     return;
   }
   const existingBuildingsLayerExists = !!map.getLayer("existing-buildings-mapbox");
+  const hasNeighborhoodSelection = !!activeNeighborhood && (activeNeighborhoodData?.features || []).length > 0;
   if (existingBuildingsLayerExists) {
-    map.setLayoutProperty("existing-buildings-mapbox", "visibility", showBuildingToggle.checked ? "visible" : "none");
+    map.setLayoutProperty(
+      "existing-buildings-mapbox",
+      "visibility",
+      showBuildingToggle.checked && hasNeighborhoodSelection ? "visible" : "none"
+    );
   }
   const envelopeLayerExists = !!map.getLayer("zoning-envelope-layer");
   if (envelopeLayerExists) {
@@ -3080,6 +3098,11 @@ async function loadNeighborhoodOptions() {
     return;
   }
 
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Select a neighborhood...";
+  neighborhoodSelect.appendChild(placeholder);
+
   for (const item of availableNeighborhoods) {
     const option = document.createElement("option");
     option.value = item.id;
@@ -3087,8 +3110,9 @@ async function loadNeighborhoodOptions() {
     neighborhoodSelect.appendChild(option);
   }
 
-  setDataStatus(`Loaded ${availableNeighborhoods.length} neighborhood files.`);
-  await loadNeighborhoodById(availableNeighborhoods[0].id);
+  neighborhoodSelect.value = "";
+  setDataStatus(`Loaded ${availableNeighborhoods.length} neighborhood files. Select one to render buildings and envelope.`);
+  refreshExistingBuildingsForNeighborhood();
 }
 
 async function loadNtaBoundaries() {
@@ -3328,6 +3352,22 @@ document.getElementById("runBtn").addEventListener("click", async () => {
 
 neighborhoodSelect.addEventListener("change", async () => {
   try {
+    if (!neighborhoodSelect.value) {
+      activeNeighborhood = null;
+      activeNeighborhoodData = EMPTY_FC;
+      clearActiveEnvelope();
+      if (map?.getSource("neighborhood-lots")) {
+        map.getSource("neighborhood-lots").setData(EMPTY_FC);
+      }
+      if (map?.getSource("zoning-envelope-source")) {
+        map.getSource("zoning-envelope-source").setData(EMPTY_FC);
+      }
+      refreshExistingBuildingsForNeighborhood();
+      syncLayerVisibility();
+      setDataStatus("Select a neighborhood to load existing buildings and zoning envelope.");
+      setReport("Pick a neighborhood from the dropdown, then click a lot.");
+      return;
+    }
     await loadNeighborhoodById(neighborhoodSelect.value);
   } catch (err) {
     setReport(String(err));
