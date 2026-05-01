@@ -5,6 +5,7 @@ import {
   getControlsForLot,
   extractZoneTokens as extractZoneTokensModule,
 } from "./zoningRuleEngine.js";
+import { buildFarMassing } from "./src/zoning/farMassing.js";
 
 async function resolveMapboxToken() {
   const local = (window.APP_CONFIG && window.APP_CONFIG.mapboxToken) || "";
@@ -64,6 +65,12 @@ let ntaData = null; // loaded once from /nta.geojson
 let zoningRuleIndex = new Map();
 let diagramMode = false;
 let presentationMode = false;
+// Multi-lot selection state
+let multiSelectedLots = [];       // array of lot GeoJSON features
+let showMaxEnvelope = true;        // toggle: MAX zoning envelope (blue)
+let showFarEnvelope = true;        // toggle: FAR buildable envelope (green)
+let analysisPanelOpen = false;     // whether the analysis panel is open
+let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, warnings }
 
 const report = document.getElementById("report");
 const coverageInput = document.getElementById("coverage");
@@ -81,13 +88,49 @@ const showBuildingsBtn = document.getElementById("showBuildingsBtn");
 const showEnvelopeBtn = document.getElementById("showEnvelopeBtn");
 const diagramModeBtn = document.getElementById("diagramModeBtn");
 const presentationModeBtn = document.getElementById("presentationModeBtn");
+// New action buttons
+const analyzeSelectionBtn = document.getElementById("analyzeSelectionBtn");
+const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+const toggleMaxEnvelopeBtn = document.getElementById("toggleMaxEnvelopeBtn");
+const toggleFarEnvelopeBtn = document.getElementById("toggleFarEnvelopeBtn");
+const uploadProposalBtn = document.getElementById("uploadProposalBtn");
+const analysisPanel = document.getElementById("analysisPanel");
+const closePanelBtn = document.getElementById("closePanelBtn");
 
 coverageInput.addEventListener("input", () => {
   covVal.textContent = `${coverageInput.value}%`;
+  if (activeLotPolygon && activeLotData) {
+    _rebuildFarEnvelope();
+  }
 });
+
+// Bottom-bar floor height slider sync
+const floorHeightBottomSlider = document.getElementById("floorHeightBottomSlider");
+const floorHeightBottomVal = document.getElementById("floorHeightBottomVal");
+if (floorHeightBottomSlider) {
+  floorHeightBottomSlider.addEventListener("input", () => {
+    if (floorHeightBottomVal) floorHeightBottomVal.textContent = `${floorHeightBottomSlider.value} ft`;
+    // Sync to hidden floorHeight input
+    const fh = document.getElementById("floorHeight");
+    if (fh) fh.value = floorHeightBottomSlider.value;
+    // Sync to analysis panel slider
+    const apFh = document.getElementById("apFloorHeight");
+    if (apFh) {
+      apFh.value = floorHeightBottomSlider.value;
+      const disp = document.getElementById("ap-fh-display");
+      if (disp) disp.textContent = `${floorHeightBottomSlider.value} ft`;
+    }
+    if (activeLotPolygon && activeLotData) {
+      _rebuildFarEnvelope();
+    }
+  });
+}
 
 farInput.addEventListener("input", () => {
   farVal.textContent = Number(farInput.value).toFixed(2);
+  if (activeLotPolygon && activeLotData) {
+    _rebuildFarEnvelope();
+  }
 });
 
 function _envelopeOpacityValues() {
@@ -968,15 +1011,15 @@ function ensureSourcesAndLayers() {
       type: "fill-extrusion",
       source: "zoning-envelope-source",
       paint: {
-        // Darker, visible envelope volumes with zone-based colors
+        // Subtle ghost volumes for surrounding neighborhood lots
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#3b82f6"],
-        "fill-extrusion-opacity": 0.40,  // dynamically updated by applyEnvelopeOpacityToLayers
+        "fill-extrusion-opacity": 0.15,  // deliberately subtle — selected lots use dedicated layers
         "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
         "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
         "fill-extrusion-vertical-gradient": false,
       },
     });
-    console.log("[zoning-envelope] envelope layer added successfully");
+    console.log("[zoning-envelope] neighborhood ghost envelope layer added");
   }
 
   // 2D outline layer: only show at high zoom or for selected lot
@@ -1258,6 +1301,92 @@ function ensureSourcesAndLayers() {
       layout: { visibility: "none" },
     });
   }
+
+  // ── MAX ZONING ENVELOPE (blue, selected lot only) ──────────────────
+  if (!map.getSource("selected-max-envelope")) {
+    map.addSource("selected-max-envelope", { type: "geojson", data: EMPTY_FC });
+
+    map.addLayer({
+      id: "selected-max-envelope-fill",
+      type: "fill-extrusion",
+      source: "selected-max-envelope",
+      paint: {
+        "fill-extrusion-color": "#3b82f6",
+        "fill-extrusion-opacity": 0.18,
+        "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
+        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
+        "fill-extrusion-vertical-gradient": false,
+      },
+    });
+
+    map.addLayer({
+      id: "selected-max-envelope-outline",
+      type: "line",
+      source: "selected-max-envelope",
+      minzoom: 14,
+      paint: {
+        "line-color": "#1d4ed8",
+        "line-width": 1.8,
+        "line-opacity": 0.7,
+      },
+    });
+  }
+
+  // ── FAR BUILDABLE ENVELOPE (green, selected lot only) ─────────────
+  if (!map.getSource("selected-far-envelope")) {
+    map.addSource("selected-far-envelope", { type: "geojson", data: EMPTY_FC });
+
+    map.addLayer({
+      id: "selected-far-envelope-fill",
+      type: "fill-extrusion",
+      source: "selected-far-envelope",
+      paint: {
+        "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#22c55e"],
+        "fill-extrusion-opacity": 0.35,
+        "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
+        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
+        "fill-extrusion-vertical-gradient": true,
+      },
+    });
+
+    map.addLayer({
+      id: "selected-far-envelope-outline",
+      type: "line",
+      source: "selected-far-envelope",
+      minzoom: 14,
+      paint: {
+        "line-color": "#15803d",
+        "line-width": 1.5,
+        "line-opacity": 0.7,
+      },
+    });
+  }
+
+  // ── MULTI-SELECTED LOTS HIGHLIGHT ──────────────────────────────────
+  if (!map.getSource("multi-selected-lots")) {
+    map.addSource("multi-selected-lots", { type: "geojson", data: EMPTY_FC });
+
+    map.addLayer({
+      id: "multi-selected-lots-fill",
+      type: "fill",
+      source: "multi-selected-lots",
+      paint: {
+        "fill-color": "#f59e0b",
+        "fill-opacity": 0.2,
+      },
+    });
+
+    map.addLayer({
+      id: "multi-selected-lots-outline",
+      type: "line",
+      source: "multi-selected-lots",
+      paint: {
+        "line-color": "#d97706",
+        "line-width": 2.5,
+        "line-opacity": 0.9,
+      },
+    });
+  }
 }
 
 function applyFocusModeVisuals() {
@@ -1325,6 +1454,24 @@ function syncLayerVisibility() {
   }
   if (map.getLayer("road-centerlines-debug-line")) {
     map.setLayoutProperty("road-centerlines-debug-line", "visibility", showRoadCenterlines ? "visible" : "none");
+  }
+  // MAX envelope (selected lot only — toggled by showMaxEnvelope)
+  for (const id of ["selected-max-envelope-fill", "selected-max-envelope-outline"]) {
+    if (map.getLayer(id)) {
+      map.setLayoutProperty(id, "visibility", showMaxEnvelope && showEnvelopeToggle.checked ? "visible" : "none");
+    }
+  }
+  // FAR envelope (selected lot only — toggled by showFarEnvelope)
+  for (const id of ["selected-far-envelope-fill", "selected-far-envelope-outline"]) {
+    if (map.getLayer(id)) {
+      map.setLayoutProperty(id, "visibility", showFarEnvelope && showEnvelopeToggle.checked ? "visible" : "none");
+    }
+  }
+  // Multi-selected lots always visible
+  for (const id of ["multi-selected-lots-fill", "multi-selected-lots-outline"]) {
+    if (map.getLayer(id)) {
+      map.setLayoutProperty(id, "visibility", "visible");
+    }
   }
   applyFocusModeVisuals();
   if (showBuildingsBtn) {
@@ -3329,10 +3476,17 @@ function clearActiveEnvelope() {
   zoningStudyDefaults = null;
   lastAssumptionChanged = null;
   lastStudyResult = null;
+  lastFarEnvelopeData = null;
   updateSelectionVisual(null, false);
   refreshSelectedLotComparisonModel();
   if (map?.getSource("road-centerlines-debug")) {
     map.getSource("road-centerlines-debug").setData(EMPTY_FC);
+  }
+  if (map?.getSource("selected-max-envelope")) {
+    map.getSource("selected-max-envelope").setData(EMPTY_FC);
+  }
+  if (map?.getSource("selected-far-envelope")) {
+    map.getSource("selected-far-envelope").setData(EMPTY_FC);
   }
   updateLotSummary(null);
 }
@@ -3618,7 +3772,12 @@ async function lookupLot() {
   setReport(JSON.stringify(data, null, 2));
 
   generateBaselineEnvelope()
-    .then(() => updateLotSummary(activeLotData, baselineEnvelopeResults))
+    .then(() => {
+      updateLotSummary(activeLotData, baselineEnvelopeResults);
+      // Build both envelope layers for the selected lot
+      buildMaxEnvelopeForSelectedLot();
+      buildFarEnvelopeForSelectedLot();
+    })
     .catch((err) => setReport(String(err)));
 
   return data;
@@ -3649,7 +3808,11 @@ function selectLotFeature(feature) {
   );
 
   generateBaselineEnvelope()
-    .then(() => updateLotSummary(activeLotData, baselineEnvelopeResults))
+    .then(() => {
+      updateLotSummary(activeLotData, baselineEnvelopeResults);
+      buildMaxEnvelopeForSelectedLot();
+      buildFarEnvelopeForSelectedLot();
+    })
     .catch((err) => setReport(String(err)));
 
   return data;
@@ -3661,11 +3824,625 @@ async function handleMapClick(ev) {
     return;
   }
 
+  const isShiftClick = ev.originalEvent && ev.originalEvent.shiftKey;
+
+  if (isShiftClick) {
+    // Shift+click: add/remove from multi-selection
+    const feature = features[0];
+    const bbl = feature?.properties?.bbl || feature?.properties?.BBL || "";
+    const existingIdx = multiSelectedLots.findIndex(
+      (f) => (f?.properties?.bbl || f?.properties?.BBL || "") === bbl && bbl !== ""
+    );
+    if (existingIdx >= 0) {
+      multiSelectedLots.splice(existingIdx, 1);
+    } else {
+      multiSelectedLots.push(feature);
+    }
+    _updateMultiSelectHighlight();
+    _updateSelectionButtonStates();
+    return;
+  }
+
   try {
     selectLotFeature(features[0]);
   } catch (err) {
     setReport(String(err));
   }
+}
+
+// ── Multi-selection helpers ───────────────────────────────────────────────────
+
+function _updateMultiSelectHighlight() {
+  if (!map?.getSource("multi-selected-lots")) return;
+  map.getSource("multi-selected-lots").setData({
+    type: "FeatureCollection",
+    features: multiSelectedLots,
+  });
+}
+
+function _clearMultiSelection() {
+  multiSelectedLots = [];
+  _updateMultiSelectHighlight();
+  _updateSelectionButtonStates();
+}
+
+function _updateSelectionButtonStates() {
+  const hasMulti = multiSelectedLots.length > 0;
+  if (analyzeSelectionBtn) {
+    analyzeSelectionBtn.classList.toggle("active", hasMulti);
+    analyzeSelectionBtn.disabled = !hasMulti && !activeLotData;
+  }
+  if (clearSelectionBtn) {
+    clearSelectionBtn.disabled = !hasMulti;
+  }
+}
+
+// ── MAX ZONING ENVELOPE (selected lot) ───────────────────────────────────────
+
+function buildMaxEnvelopeForSelectedLot() {
+  if (!activeLotPolygon || !activeLotData) return;
+  if (!map?.getSource("selected-max-envelope")) return;
+
+  try {
+    const lotGeometry = { type: "Polygon", coordinates: [activeLotPolygon] };
+    const lotFeature = { type: "Feature", geometry: lotGeometry, properties: activeLotData };
+
+    const controlsArray = getControlsForLot(lotFeature, zoningRuleIndex);
+    if (!controlsArray?.length) {
+      map.getSource("selected-max-envelope").setData(EMPTY_FC);
+      return;
+    }
+
+    const allFeatures = [];
+    for (const { controls, zoneCode } of controlsArray) {
+      const { envelopeFeatures } = generateEnvelopeFromControls({
+        lotGeometry,
+        controls,
+        envelopeColor: "#3b82f6",
+        zoneCode,
+      });
+      allFeatures.push(...envelopeFeatures);
+    }
+
+    map.getSource("selected-max-envelope").setData({
+      type: "FeatureCollection",
+      features: allFeatures,
+    });
+  } catch (err) {
+    console.warn("[max-envelope] build error:", err);
+  }
+}
+
+// ── FAR BUILDABLE ENVELOPE (selected lot) ────────────────────────────────────
+
+function _rebuildFarEnvelope() {
+  buildFarEnvelopeForSelectedLot();
+}
+
+function buildFarEnvelopeForSelectedLot() {
+  if (!activeLotPolygon || !activeLotData) return;
+  if (!map?.getSource("selected-far-envelope")) return;
+
+  try {
+    const lotGeometry = { type: "Polygon", coordinates: [activeLotPolygon] };
+    const lotFeature = { type: "Feature", geometry: lotGeometry, properties: activeLotData };
+
+    const controlsArray = getControlsForLot(lotFeature, zoningRuleIndex);
+    if (!controlsArray?.length) {
+      map.getSource("selected-far-envelope").setData(EMPTY_FC);
+      return;
+    }
+
+    const controls = controlsArray[0].controls;
+    const zoneCode = controlsArray[0].zoneCode;
+
+    // Get buildable footprint (with yards applied)
+    const { buildableFootprintFeature } = generateEnvelopeFromControls({
+      lotGeometry,
+      controls,
+      envelopeColor: "#22c55e",
+      zoneCode,
+    });
+
+    const lotAreaFt2 = activeLotData?.lotarea ? Number(activeLotData.lotarea) : 0;
+    const far = Number(farInput.value) || controls.far || 1;
+    const allowedFarFloorArea = lotAreaFt2 * far;
+
+    const floorHeightFt = Number(document.getElementById("apFloorHeight")?.value || document.getElementById("floorHeight")?.value || 10);
+    const coveragePct = Number(coverageInput.value || 80);
+    const maxHeightFt = coerceNumber(controls.maxBuildingHeight) ?? 120;
+    const massingOption = document.getElementById("apMassingSelect")?.value || "full-block";
+
+    const { features, warnings, numFloors, buildingHeightFt } = buildFarMassing({
+      buildableFootprintGeometry: buildableFootprintFeature?.geometry || lotGeometry,
+      allowedFarFloorArea,
+      floorHeightFt,
+      coveragePct,
+      maxHeightFt,
+      massingOption,
+      color: "#22c55e",
+    });
+
+    lastFarEnvelopeData = { numFloors, buildingHeightFt, warnings };
+
+    map.getSource("selected-far-envelope").setData({
+      type: "FeatureCollection",
+      features,
+    });
+
+    // Sync analysis panel live stats if open
+    if (analysisPanelOpen) {
+      _updateAnalysisPanelFarStats();
+    }
+  } catch (err) {
+    console.warn("[far-envelope] build error:", err);
+  }
+}
+
+// ── ANALYSIS PANEL ───────────────────────────────────────────────────────────
+
+function openAnalysisPanel(lots) {
+  if (!analysisPanel) return;
+  analysisPanelOpen = true;
+  document.body.classList.add("analysis-panel-open");
+  _renderAnalysisPanelContent(lots || (activeLotData ? [activeLotData] : []));
+  analysisPanel.classList.add("open");
+}
+
+function closeAnalysisPanel() {
+  if (!analysisPanel) return;
+  analysisPanelOpen = false;
+  document.body.classList.remove("analysis-panel-open");
+  analysisPanel.classList.remove("open");
+}
+
+function _renderAnalysisPanelContent(lots) {
+  const container = document.getElementById("analysisPanelContent");
+  if (!container) return;
+
+  const isMulti = lots && lots.length > 1;
+  const primaryLot = activeLotData || (lots && lots[0]?.properties);
+
+  if (!primaryLot) {
+    container.innerHTML = `<p class="ap-empty">Select a lot to begin analysis.</p>`;
+    return;
+  }
+
+  const zoning = primaryLot.zoning_analysis || {};
+  const study = baselineEnvelopeResults?.zoning_buildability_study || {};
+
+  const lotAreaFt2 = Number(primaryLot.lotarea || study.lot_area_ft2 || 0);
+  const zonedist = primaryLot.zonedist1 || zoning.primary_zone || "—";
+  const bbl = primaryLot.bbl || "—";
+  const address = primaryLot.address || "—";
+  const lotType = zoning.lot_type || "—";
+  const streetType = zoning.street_type || "—";
+  const far = zoning.base_far || study.far || "—";
+  const maxFloorAreaFt2 = study.allowable_floor_area_ft2;
+  const frontYard = study.front_yard_requirement_ft;
+  const rearYard = study.rear_yard_requirement_ft;
+  const sideYard = study.side_yard_requirement_ft;
+  const maxHeight = study.envelope_height_ft;
+  const baseHeight = study.base_height_ft;
+
+  const fmt = (v, suffix = "") => (v != null && v !== "" && v !== "—" ? `${Number(v).toLocaleString()}${suffix}` : "—");
+
+  const svgDiagram = _buildLotDiagramSvg(primaryLot);
+
+  const multiLotsInfo = isMulti
+    ? `<div class="ap-multi-info">
+        <strong>${lots.length} lots selected</strong> — assemblage analysis
+        <ul class="ap-multi-bbl-list">
+          ${lots.map((f) => `<li>${f?.properties?.bbl || f?.bbl || "—"} ${f?.properties?.address || ""}</li>`).join("")}
+        </ul>
+      </div>`
+    : "";
+
+  container.innerHTML = `
+    ${multiLotsInfo}
+
+    <div class="ap-tabs" role="tablist">
+      <button class="ap-tab active" data-tab="overview" role="tab">Overview</button>
+      <button class="ap-tab" data-tab="topview" role="tab">Top View</button>
+      <button class="ap-tab" data-tab="rules" role="tab">Rules</button>
+      <button class="ap-tab" data-tab="massing" role="tab">FAR Massing</button>
+      <button class="ap-tab" data-tab="proposal" role="tab">Proposal</button>
+    </div>
+
+    <div class="ap-pane active" id="ap-pane-overview">
+      <div class="summary-section-head">Lot Information</div>
+      <div class="summary-row"><span>Address</span><strong>${address}</strong></div>
+      <div class="summary-row"><span>BBL</span><strong>${bbl}</strong></div>
+      <div class="summary-row"><span>Zoning District</span><strong>${zonedist}</strong></div>
+      <div class="summary-row"><span>Lot Area</span><strong>${fmt(lotAreaFt2, " sf")}</strong></div>
+      <div class="summary-row"><span>Lot Type</span><strong>${lotType}</strong></div>
+      <div class="summary-row"><span>Street Type</span><strong>${streetType}</strong></div>
+      <div class="summary-section-head">Envelope Summary</div>
+      <div class="summary-row"><span>FAR</span><strong>${fmt(far)}</strong></div>
+      <div class="summary-row"><span>Max Permitted Floor Area</span><strong>${fmt(maxFloorAreaFt2, " sf")}</strong></div>
+      <div class="summary-row"><span>Front Yard</span><strong>${fmt(frontYard, " ft")}</strong></div>
+      <div class="summary-row"><span>Rear Yard</span><strong>${fmt(rearYard, " ft")}</strong></div>
+      <div class="summary-row"><span>Side Yard</span><strong>${fmt(sideYard, " ft")}</strong></div>
+      <div class="summary-row"><span>Base Height</span><strong>${fmt(baseHeight, " ft")}</strong></div>
+      <div class="summary-row"><span>Max Height</span><strong>${fmt(maxHeight, " ft")}</strong></div>
+      <div class="summary-section-head">Visual Legend</div>
+      <div class="study-legend">
+        <div><span class="legend-chip" style="background:rgba(59,130,246,0.18);border-color:#1d4ed8;"></span> Max Zoning Envelope</div>
+        <div><span class="legend-chip" style="background:rgba(34,197,94,0.35);border-color:#15803d;"></span> FAR Buildable Envelope</div>
+        <div><span class="legend-chip" style="background:#d8d8d8;border-color:#5f6670;"></span> Existing Building</div>
+        <div><span class="legend-chip" style="background:rgba(20,184,166,0.12);border-color:#14b8a6;"></span> Selected Lot</div>
+      </div>
+    </div>
+
+    <div class="ap-pane" id="ap-pane-topview">
+      <div class="summary-section-head">Top View Diagram</div>
+      <div class="ap-diagram-wrap">${svgDiagram}</div>
+      <div class="study-legend" style="margin-top:8px;">
+        <div><span class="legend-chip legend-chip-front"></span> Front lot line (street)</div>
+        <div><span class="legend-chip legend-chip-rear"></span> Rear lot line</div>
+        <div><span class="legend-chip legend-chip-side"></span> Side lot lines</div>
+        <div><span class="legend-chip" style="background:rgba(20,184,166,0.4);border-color:#0f766e;border-style:dashed;"></span> Buildable footprint</div>
+      </div>
+    </div>
+
+    <div class="ap-pane" id="ap-pane-rules">
+      ${_buildAnalysisPanelRulesHTML(primaryLot)}
+    </div>
+
+    <div class="ap-pane" id="ap-pane-massing">
+      <div class="summary-section-head">FAR Massing Controls</div>
+      <div class="assumption-slider-row">
+        <label>Floor Area Ratio (FAR)
+          <span class="assumption-val" id="ap-far-display">${fmt(far)}</span>
+        </label>
+        <input type="range" class="assumption-slider" id="apFarSlider"
+          min="0.1" max="${Math.max(15, Math.ceil((Number(far) || 3) * 2))}"
+          step="0.1" value="${Number(far) || 3}" />
+      </div>
+      <div class="assumption-slider-row">
+        <label>Floor Height
+          <span class="assumption-val" id="ap-fh-display">10 ft</span>
+        </label>
+        <input type="range" class="assumption-slider" id="apFloorHeight"
+          min="8" max="20" step="0.5" value="10" />
+      </div>
+      <div class="assumption-slider-row">
+        <label>Footprint Coverage
+          <span class="assumption-val" id="ap-cov-display">80%</span>
+        </label>
+        <input type="range" class="assumption-slider" id="apCoverageSlider"
+          min="20" max="100" step="5" value="80" />
+      </div>
+      <div class="assumption-slider-row">
+        <label>Massing Option</label>
+        <select id="apMassingSelect" style="width:100%;margin-top:4px;padding:6px;border-radius:6px;border:1px solid #d1cdc4;">
+          <option value="full-block">Full Block</option>
+          <option value="courtyard">Courtyard</option>
+          <option value="tower">Tower + Podium</option>
+          <option value="slab">Slab</option>
+          <option value="stepped">Stepped</option>
+        </select>
+      </div>
+      <div class="ap-far-stats" id="apFarStats">
+        <div class="summary-section-head">Current Massing</div>
+        <div class="summary-row"><span>Floors</span><strong id="ap-stat-floors">—</strong></div>
+        <div class="summary-row"><span>Building Height</span><strong id="ap-stat-height">—</strong></div>
+        <div class="summary-row"><span>Total Floor Area</span><strong id="ap-stat-area">—</strong></div>
+      </div>
+    </div>
+
+    <div class="ap-pane" id="ap-pane-proposal">
+      <div class="summary-section-head">Upload Proposed Building</div>
+      <p class="ap-hint">Assign a 3D model (.glb/.gltf) to the selected lot(s) and enter proposal metadata for comparison.</p>
+      <div class="proposal-form">
+        <div class="proposal-form__section">
+          <label>BBLs (auto-filled from selection)</label>
+          <input type="text" id="pf-bbls" value="${bbl !== "—" ? bbl : ""}" placeholder="e.g. 3009810001" />
+        </div>
+        <div class="proposal-form__section">
+          <label>3D Model File (.glb or .gltf)</label>
+          <input type="file" id="pf-model-file" accept=".glb,.gltf" />
+          <span class="proposal-form__hint">Model should be centered at origin (0,0,0). Scale in meters.</span>
+        </div>
+        <div class="proposal-form__section">
+          <label>Project Name *</label>
+          <input type="text" id="pf-name" placeholder="e.g. 123 Main Street Residential" />
+        </div>
+        <div class="proposal-form__section">
+          <label>Applicant / Designer</label>
+          <input type="text" id="pf-applicant" placeholder="Architect or developer name" />
+        </div>
+        <div class="proposal-form__section proposal-form__grid-2">
+          <div>
+            <label>Proposed Use</label>
+            <select id="pf-use">
+              <option value="residential">Residential</option>
+              <option value="commercial">Commercial</option>
+              <option value="mixed">Mixed Use</option>
+              <option value="community">Community Facility</option>
+              <option value="industrial">Industrial</option>
+            </select>
+          </div>
+          <div>
+            <label>Proposed FAR</label>
+            <input type="number" id="pf-far" min="0.1" max="25" step="0.1" placeholder="e.g. 3.5" />
+          </div>
+        </div>
+        <div class="proposal-form__section proposal-form__grid-2">
+          <div>
+            <label>Proposed Height (ft)</label>
+            <input type="number" id="pf-height" min="10" step="1" placeholder="e.g. 65" />
+          </div>
+          <div>
+            <label>Number of Units</label>
+            <input type="number" id="pf-units" min="0" step="1" placeholder="Residential units" />
+          </div>
+        </div>
+        <div class="proposal-form__section">
+          <label>Description</label>
+          <textarea id="pf-description" rows="2" placeholder="Brief description..."></textarea>
+        </div>
+        <div class="proposal-form__section">
+          <label>Public Notes</label>
+          <textarea id="pf-notes" rows="2" placeholder="Notes for public review..."></textarea>
+        </div>
+        <div class="proposal-form__errors" id="pf-errors" style="display:none;"></div>
+        <div class="proposal-form__actions">
+          <button type="button" id="pf-submit" class="bar-btn">Save Proposal</button>
+        </div>
+        <div id="pf-analysis-result" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  `;
+
+  // Wire up tab switching
+  container.querySelectorAll(".ap-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      container.querySelectorAll(".ap-tab").forEach((b) => b.classList.remove("active"));
+      container.querySelectorAll(".ap-pane").forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      const pane = container.querySelector(`#ap-pane-${btn.dataset.tab}`);
+      if (pane) pane.classList.add("active");
+    });
+  });
+
+  // Wire up massing sliders
+  const apFarSlider = document.getElementById("apFarSlider");
+  const apFloorHeight = document.getElementById("apFloorHeight");
+  const apCoverageSlider = document.getElementById("apCoverageSlider");
+  const apMassingSelect = document.getElementById("apMassingSelect");
+
+  function _syncApSliders() {
+    if (apFarSlider) {
+      farInput.value = apFarSlider.value;
+      farVal.textContent = Number(apFarSlider.value).toFixed(2);
+      document.getElementById("ap-far-display").textContent = Number(apFarSlider.value).toFixed(2);
+    }
+    if (apFloorHeight) {
+      document.getElementById("ap-fh-display").textContent = `${apFloorHeight.value} ft`;
+    }
+    if (apCoverageSlider) {
+      coverageInput.value = apCoverageSlider.value;
+      covVal.textContent = `${apCoverageSlider.value}%`;
+      document.getElementById("ap-cov-display").textContent = `${apCoverageSlider.value}%`;
+    }
+    _rebuildFarEnvelope();
+  }
+
+  if (apFarSlider) apFarSlider.addEventListener("input", _syncApSliders);
+  if (apFloorHeight) apFloorHeight.addEventListener("input", _syncApSliders);
+  if (apCoverageSlider) apCoverageSlider.addEventListener("input", _syncApSliders);
+  if (apMassingSelect) apMassingSelect.addEventListener("change", _syncApSliders);
+
+  // Proposal submit handler
+  const pfSubmit = document.getElementById("pf-submit");
+  if (pfSubmit) {
+    pfSubmit.addEventListener("click", () => {
+      const errDiv = document.getElementById("pf-errors");
+      const resultDiv = document.getElementById("pf-analysis-result");
+      errDiv.style.display = "none";
+      errDiv.textContent = "";
+
+      const projectName = document.getElementById("pf-name")?.value?.trim();
+      const bblInput = document.getElementById("pf-bbls")?.value?.trim();
+      const modelFile = document.getElementById("pf-model-file")?.files?.[0];
+
+      const errors = [];
+      if (!projectName) errors.push("Project name is required.");
+      if (!bblInput) errors.push("BBL is required.");
+
+      if (errors.length) {
+        errDiv.textContent = errors.join(" ");
+        errDiv.style.display = "block";
+        return;
+      }
+
+      const proposal = {
+        id: `p_${Date.now()}`,
+        projectName,
+        applicant: document.getElementById("pf-applicant")?.value?.trim() || "",
+        description: document.getElementById("pf-description")?.value?.trim() || "",
+        proposedUse: document.getElementById("pf-use")?.value || "residential",
+        proposedFar: parseFloat(document.getElementById("pf-far")?.value) || null,
+        proposedHeightFt: parseFloat(document.getElementById("pf-height")?.value) || null,
+        numUnits: parseInt(document.getElementById("pf-units")?.value, 10) || null,
+        publicNotes: document.getElementById("pf-notes")?.value?.trim() || "",
+        bbls: bblInput.split(",").map((b) => b.trim()).filter(Boolean),
+        modelFileName: modelFile?.name || null,
+        savedAt: new Date().toISOString(),
+      };
+
+      // Save to localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem("zoning_proposals") || "[]");
+        existing.push(proposal);
+        localStorage.setItem("zoning_proposals", JSON.stringify(existing));
+      } catch (_err) { /* ignore storage errors */ }
+
+      // Show inline analysis
+      const study = baselineEnvelopeResults?.zoning_buildability_study || {};
+      const maxFar = activeLotData?.zoning_analysis?.base_far || null;
+      const maxHeight = study.envelope_height_ft || null;
+      const proposedFar = proposal.proposedFar;
+      const proposedHeight = proposal.proposedHeightFt;
+
+      let statusHtml = "";
+      if (proposedHeight != null && maxHeight != null) {
+        const exceeds = proposedHeight > maxHeight;
+        statusHtml += `<div class="summary-row">
+          <span>Height vs Max (${maxHeight} ft)</span>
+          <strong style="color:${exceeds ? "#dc2626" : "#16a34a"}">
+            ${proposedHeight} ft — ${exceeds ? "⚠ Exceeds Envelope" : "✓ Within Envelope"}
+          </strong></div>`;
+      }
+      if (proposedFar != null && maxFar != null) {
+        const exceeds = proposedFar > maxFar;
+        statusHtml += `<div class="summary-row">
+          <span>FAR vs Max (${Number(maxFar).toFixed(2)})</span>
+          <strong style="color:${exceeds ? "#f97316" : "#16a34a"}">
+            ${proposedFar} — ${exceeds ? "⚠ Exceeds FAR" : "✓ Within FAR"}
+          </strong></div>`;
+      }
+
+      resultDiv.innerHTML = `
+        <div class="summary-section-head">Proposal Saved</div>
+        <div class="summary-row"><span>Project</span><strong>${proposal.projectName}</strong></div>
+        <div class="summary-row"><span>BBLs</span><strong>${proposal.bbls.join(", ")}</strong></div>
+        ${statusHtml}
+        ${modelFile ? `<div class="summary-row"><span>Model</span><strong>${modelFile.name}</strong></div>` : ""}
+        <div class="assumption-note">Saved to local storage. Public comparison available via proposal ID: ${proposal.id}</div>
+      `;
+    });
+  }
+
+  // Build FAR envelope immediately
+  _rebuildFarEnvelope();
+  _updateAnalysisPanelFarStats();
+}
+
+function _buildAnalysisPanelRulesHTML(lotData) {
+  if (!lotData) return "<p>No lot data available.</p>";
+  const zoning = lotData.zoning_analysis || {};
+  const study = baselineEnvelopeResults?.zoning_buildability_study || {};
+
+  const primaryZone = zoning.primary_zone || lotData.zonedist1 || "—";
+  const rule = resolveZoneRule(primaryZone);
+  const regime = zoning.bulk_regime || rule?.bulkRegime || "—";
+
+  const rows = [];
+  rows.push(`<div class="summary-section-head">Zoning Rule Summary</div>`);
+  rows.push(`<div class="summary-row"><span>Zoning District</span><strong>${primaryZone}</strong></div>`);
+  rows.push(`<div class="summary-row"><span>Bulk Regime</span><strong>${regime}</strong></div>`);
+
+  if (rule) {
+    if (rule.districtType) rows.push(`<div class="summary-row"><span>District Type</span><strong>${rule.districtType}</strong></div>`);
+    if (rule.standardFar != null) rows.push(`<div class="summary-row"><span>Standard FAR</span><strong>${Number(rule.standardFar).toFixed(2)}</strong></div>`);
+    if (rule.qualifyingFar != null && rule.qualifyingFar !== rule.standardFar) rows.push(`<div class="summary-row"><span>Qualifying FAR</span><strong>${Number(rule.qualifyingFar).toFixed(2)}</strong></div>`);
+    if (rule.maximumBaseHeightFt != null) rows.push(`<div class="summary-row"><span>Max Base Height</span><strong>${rule.maximumBaseHeightFt} ft</strong></div>`);
+    if (rule.maximumBuildingHeightFt != null) rows.push(`<div class="summary-row"><span>Max Building Height</span><strong>${rule.maximumBuildingHeightFt} ft</strong></div>`);
+    if (rule.frontYardFt != null) rows.push(`<div class="summary-row"><span>Front Yard</span><strong>${rule.frontYardFt} ft</strong></div>`);
+    if (rule.sideYardEachFt != null) rows.push(`<div class="summary-row"><span>Side Yard (each)</span><strong>${rule.sideYardEachFt} ft</strong></div>`);
+    if (rule.rearYardFt != null) rows.push(`<div class="summary-row"><span>Rear Yard</span><strong>${rule.rearYardFt} ft</strong></div>`);
+
+    const sources = Array.isArray(rule.sourceSections) ? rule.sourceSections : [];
+    if (sources.length) {
+      const links = sources.map((s) => `<a href="https://zr.planning.nyc.gov/" target="_blank" rel="noopener">${s}</a>`).join(", ");
+      rows.push(`<div class="summary-row summary-row--source"><span>ZR Sections</span><span>${links}</span></div>`);
+    }
+  }
+
+  const warnings = Array.isArray(zoning.warnings) ? zoning.warnings : [];
+  for (const w of warnings) {
+    rows.push(`<div class="summary-row summary-row--warning"><span>Warning</span><strong>${w}</strong></div>`);
+  }
+
+  return rows.join("");
+}
+
+function _buildLotDiagramSvg(lotData) {
+  if (!activeLotPolygon || !activeLotPolygon.length) {
+    return `<svg width="260" height="200" xmlns="http://www.w3.org/2000/svg">
+      <text x="130" y="100" text-anchor="middle" fill="#94a3b8" font-size="13">No lot geometry available</text>
+    </svg>`;
+  }
+
+  const ring = activeLotPolygon;
+  const W = 260, H = 200;
+  const pad = 20;
+
+  // Find bounding box
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const [lng, lat] of ring) {
+    if (lng < minX) minX = lng;
+    if (lng > maxX) maxX = lng;
+    if (lat < minY) minY = lat;
+    if (lat > maxY) maxY = lat;
+  }
+
+  const dX = maxX - minX || 0.001;
+  const dY = maxY - minY || 0.001;
+  const scale = Math.min((W - 2 * pad) / dX, (H - 2 * pad) / dY);
+
+  function proj([lng, lat]) {
+    return [
+      pad + (lng - minX) * scale,
+      H - pad - (lat - minY) * scale,
+    ];
+  }
+
+  const pts = ring.map(proj);
+
+  // Detect front/rear/side edges from zoning_analysis
+  const zoning = lotData?.zoning_analysis || {};
+  const frontIndices = zoning.front_edge_indices || [];
+  const rearIndex = zoning.rear_edge_index;
+  const sideIndices = zoning.side_edge_indices || [];
+
+  // Build SVG polygon + colored edges
+  const polyPts = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+
+  const edgeLines = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[i + 1];
+    let color = "#94a3b8"; // default gray
+    if (frontIndices.includes(i)) color = "#2563eb";       // blue = front
+    else if (i === rearIndex) color = "#dc2626";            // red = rear
+    else if (sideIndices.includes(i)) color = "#f97316";   // orange = side
+    edgeLines.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="2.5"/>`);
+  }
+
+  // Lot center label
+  const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+  const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+
+  return `
+    <svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;max-width:100%;">
+      <rect width="${W}" height="${H}" fill="#f8fafc" rx="6"/>
+      <polygon points="${polyPts}" fill="rgba(20,184,166,0.1)" stroke="none"/>
+      ${edgeLines.join("")}
+      <text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" text-anchor="middle" fill="#374151" font-size="9" font-family="sans-serif">
+        ${lotData?.bbl || ""}
+      </text>
+      <text x="10" y="${H - 6}" fill="#64748b" font-size="8" font-family="sans-serif">Front=blue  Rear=red  Side=orange</text>
+    </svg>
+  `;
+}
+
+function _updateAnalysisPanelFarStats() {
+  if (!lastFarEnvelopeData) return;
+  const { numFloors, buildingHeightFt } = lastFarEnvelopeData;
+  const lotAreaFt2 = Number(activeLotData?.lotarea || 0);
+  const far = Number(document.getElementById("apFarSlider")?.value || farInput.value || 0);
+  const totalAreaFt2 = lotAreaFt2 * far;
+
+  const el = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  el("ap-stat-floors", numFloors != null ? `${numFloors} floors` : "—");
+  el("ap-stat-height", buildingHeightFt != null ? `${Math.round(buildingHeightFt)} ft` : "—");
+  el("ap-stat-area", totalAreaFt2 > 0 ? `${Math.round(totalAreaFt2).toLocaleString()} sf` : "—");
 }
 
 async function generateEnvelopes() {
@@ -3780,6 +4557,52 @@ lotSummary.addEventListener("click", (event) => {
     _redrawEnvelopeFromAssumptions(result);
   }
 });
+
+// ── New action button handlers ────────────────────────────────────────────────
+
+if (analyzeSelectionBtn) {
+  analyzeSelectionBtn.addEventListener("click", () => {
+    const lots = multiSelectedLots.length ? multiSelectedLots : (activeLotData ? [{ properties: activeLotData }] : []);
+    openAnalysisPanel(lots);
+  });
+}
+
+if (clearSelectionBtn) {
+  clearSelectionBtn.addEventListener("click", () => {
+    _clearMultiSelection();
+  });
+}
+
+if (toggleMaxEnvelopeBtn) {
+  toggleMaxEnvelopeBtn.addEventListener("click", () => {
+    showMaxEnvelope = !showMaxEnvelope;
+    toggleMaxEnvelopeBtn.classList.toggle("active", showMaxEnvelope);
+    syncLayerVisibility();
+  });
+}
+
+if (toggleFarEnvelopeBtn) {
+  toggleFarEnvelopeBtn.addEventListener("click", () => {
+    showFarEnvelope = !showFarEnvelope;
+    toggleFarEnvelopeBtn.classList.toggle("active", showFarEnvelope);
+    syncLayerVisibility();
+  });
+}
+
+if (uploadProposalBtn) {
+  uploadProposalBtn.addEventListener("click", () => {
+    openAnalysisPanel(multiSelectedLots.length ? multiSelectedLots : (activeLotData ? [{ properties: activeLotData }] : []));
+    // Switch to proposal tab
+    setTimeout(() => {
+      const tab = document.querySelector(".ap-tab[data-tab='proposal']");
+      if (tab) tab.click();
+    }, 120);
+  });
+}
+
+if (closePanelBtn) {
+  closePanelBtn.addEventListener("click", closeAnalysisPanel);
+}
 
 (async function bootstrap() {
   try {
