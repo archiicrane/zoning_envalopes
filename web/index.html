@@ -60,14 +60,24 @@
           <div class="map-legend__hint">Shift+click to multi-select lots</div>
         </div>
 
-        <!-- Analysis Panel (slides in from right) -->
-        <div class="analysis-panel" id="analysisPanel" aria-hidden="true">
-          <div class="analysis-panel__header">
-            <span class="analysis-panel__title">Lot Analysis</span>
-            <button id="closePanelBtn" class="analysis-panel__close" title="Close panel" aria-label="Close analysis panel">✕</button>
-          </div>
-          <div class="analysis-panel__body" id="analysisPanelContent">
-            <p class="ap-empty">Select a lot or shift+click multiple lots, then click Analyze Selection.</p>
+        <!-- Analysis Modal (centered architectural sheet) -->
+        <div class="analysis-modal-overlay" id="analysisModalOverlay" aria-hidden="true">
+          <div class="analysis-modal" id="analysisModal" role="dialog" aria-modal="true" aria-label="Lot Analysis Drawing Sheet">
+            <div class="analysis-modal__header">
+              <div class="analysis-modal__title-wrap">
+                <span class="analysis-modal__title">Zoning Study Sheet</span>
+                <span class="analysis-modal__subtitle">Plan Diagram + Isometric Massing</span>
+              </div>
+              <div class="analysis-modal__actions">
+                <button id="exportDiagramBtn" type="button" class="bar-btn bar-btn--secondary">Export Diagram PNG</button>
+                <button id="exportReportBtn" type="button" class="bar-btn bar-btn--secondary">Export Report</button>
+                <button id="openFullAnalysisBtn" type="button" class="bar-btn bar-btn--secondary">Open Full Analysis Page</button>
+                <button id="closePanelBtn" class="analysis-modal__close" title="Close modal" aria-label="Close analysis modal">Close</button>
+              </div>
+            </div>
+            <div class="analysis-modal__body" id="analysisModalContent">
+              <p class="ap-empty">Select a lot or shift+click multiple lots, then click Analyze Selection.</p>
+            </div>
           </div>
         </div>
       </main>
