@@ -714,7 +714,11 @@ function refreshExistingBuildingsForNeighborhood() {
   if (!clipGeometry) return;
 
   try {
-    map.setFilter("existing-buildings-mapbox", ["within", clipGeometry]);
+    map.setFilter("existing-buildings-mapbox", [
+      "all",
+      ["==", "$type", "Polygon"],
+      ["within", clipGeometry],
+    ]);
     map.setLayoutProperty("existing-buildings-mapbox", "visibility", "visible");
     console.log(
       "[existing-buildings] within filter clip source:",
@@ -803,7 +807,7 @@ function ensureSourcesAndLayers() {
         type: "fill-extrusion",
         source: "composite",
         "source-layer": "building",
-        minzoom: 12,
+        minzoom: 10,
         filter: ["==", "$type", "Polygon"],
         paint: {
           "fill-extrusion-color": "#64748b",
