@@ -55,7 +55,7 @@ let availableNeighborhoods = [];
 let ntaData = null; // loaded once from /nta.geojson
 let zoningRuleIndex = new Map();
 let diagramMode = false;
-let _threeEdgeLayer = null; // EnvelopeEdgesThreeLayer instance
+let presentationMode = false;
 
 const report = document.getElementById("report");
 const coverageInput = document.getElementById("coverage");
@@ -72,6 +72,7 @@ const showEnvelopeToggle = document.getElementById("showEnvelopeToggle");
 const showBuildingsBtn = document.getElementById("showBuildingsBtn");
 const showEnvelopeBtn = document.getElementById("showEnvelopeBtn");
 const diagramModeBtn = document.getElementById("diagramModeBtn");
+const presentationModeBtn = document.getElementById("presentationModeBtn");
 
 coverageInput.addEventListener("input", () => {
   covVal.textContent = `${coverageInput.value}%`;
@@ -105,12 +106,15 @@ function applyEnvelopeOpacityToLayers() {
   }
   // Also apply (scaled down) to the neighborhood ghost-volume envelope
   if (map.getLayer("zoning-envelope-layer")) {
-    // Envelope opacity: scale from 0.25 to 0.45 across the slider range
-    const ghostOpacity = 0.25 + scenarioOpacity * 0.2;
-    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", ghostOpacity);
+    // Envelope opacity: lower base for ghost effect, higher when selected
+    const baseOpacity = presentationMode ? 0.08 : 0.20;
+    const selectedOpacity = 0.32;
+    // Envelope opacity scales slightly with slider but stays in subtle range
+    const minOpacity = baseOpacity + scenarioOpacity * 0.05;
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", minOpacity);
   }
   if (map.getLayer("zoning-envelope-outline")) {
-    const outlineOpacity = 0.6 + scenarioOpacity * 0.3;
+    const outlineOpacity = presentationMode ? 0.0 : (0.5 + scenarioOpacity * 0.15);
     map.setPaintProperty("zoning-envelope-outline", "line-opacity", outlineOpacity);
   }
 }
@@ -148,25 +152,52 @@ function applyDiagramMode() {
   if (diagramModeBtn) {
     diagramModeBtn.classList.toggle("active", diagramMode);
   }
+  if (presentationModeBtn) {
+    presentationModeBtn.classList.toggle("active", presentationMode);
+  }
   if (!map) return;
   if (map.getLayer("existing-buildings-mapbox")) {
     map.setPaintProperty(
       "existing-buildings-mapbox",
       "fill-extrusion-color",
-      diagramMode ? "#eeeeee" : "#d8d8d8"
+      presentationMode ? "#f5f5f5" : diagramMode ? "#eeeeee" : "#d8d8d8"
     );
     map.setPaintProperty(
       "existing-buildings-mapbox",
       "fill-extrusion-opacity",
-      diagramMode ? (focusSelectedLotMode ? 0.15 : 0.4) : (focusSelectedLotMode ? 0.2 : 0.65)
+      presentationMode ? 0.55 : diagramMode ? (focusSelectedLotMode ? 0.15 : 0.4) : (focusSelectedLotMode ? 0.2 : 0.68)
     );
   }
   if (map.getLayer("zoning-envelope-layer")) {
+    const fillOpacity = presentationMode ? 0.08 : diagramMode ? 0.24 : 0.20;
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", fillOpacity);
+  }
+}
+
+function applyPresentationMode() {
+  document.body.classList.toggle("presentation-mode", presentationMode);
+  if (presentationModeBtn) {
+    presentationModeBtn.classList.toggle("active", presentationMode);
+  }
+  if (!map) return;
+  // Update opacity layers to reflect presentation mode
+  applyEnvelopeOpacityToLayers();
+  // Fade buildings in presentation mode
+  if (map.getLayer("existing-buildings-mapbox")) {
     map.setPaintProperty(
-      "zoning-envelope-layer",
-      "fill-extrusion-opacity",
-      diagramMode ? 0.28 : 0.35
+      "existing-buildings-mapbox",
+      "fill-extrusion-color",
+      presentationMode ? "#f5f5f5" : "#d8d8d8"
     );
+    map.setPaintProperty(
+      "existing-buildings-mapbox",
+      "fill-extrusion-opacity",
+      presentationMode ? 0.55 : 0.68
+    );
+  }
+  if (map.getLayer("zoning-envelope-layer")) {
+    const fillOpacity = presentationMode ? 0.08 : 0.20;
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", fillOpacity);
   }
 }
 
@@ -174,6 +205,13 @@ if (diagramModeBtn) {
   diagramModeBtn.addEventListener("click", () => {
     diagramMode = !diagramMode;
     applyDiagramMode();
+  });
+}
+
+if (presentationModeBtn) {
+  presentationModeBtn.addEventListener("click", () => {
+    presentationMode = !presentationMode;
+    applyPresentationMode();
   });
 }
 
@@ -785,164 +823,9 @@ function initMap(token) {
   });
 }
 
-// ── Three.js envelope wireframe edge layer ─────────────────────────────────
-// Draws crisp 3D bottom ring, top ring, and vertical corner lines for each
-// envelope feature, since Mapbox fill-extrusion cannot render true 3D edges.
-class EnvelopeEdgesThreeLayer {
-  constructor() {
-    this.id = "envelope-edges-3d";
-    this.type = "custom";
-    this.renderingMode = "3d";
-    this._features = [];
-    this._refMC = null;
-    this._scale = null;
-  }
-
-  onAdd(map, gl) {
-    this._map = map;
-    const THREE = window.THREE;
-    if (!THREE) { console.warn("[EnvelopeEdges] THREE.js not loaded"); return; }
-
-    this._renderer = new THREE.WebGLRenderer({
-      canvas: map.getCanvas(),
-      context: gl,
-      antialias: true,
-    });
-    this._renderer.autoClear = false;
-
-    this._camera = new THREE.Camera();
-    this._scene = new THREE.Scene();
-
-    this._normalMat = new THREE.LineBasicMaterial({
-      color: 0x1e5aa8,
-      transparent: true,
-      opacity: 0.95,
-      linewidth: 2,
-      depthTest: false,
-    });
-    this._selectedMat = new THREE.LineBasicMaterial({
-      color: 0x007c70,
-      transparent: true,
-      opacity: 1.0,
-      linewidth: 2.5,
-      depthTest: false,
-    });
-
-    this._rebuildGeometry();
-  }
-
-  onRemove() {
-    if (!this._renderer) return;
-    this._scene.clear();
-    this._renderer = null;
-    this._scene = null;
-    this._camera = null;
-  }
-
-  _rebuildGeometry() {
-    const THREE = window.THREE;
-    if (!THREE || !this._scene) return;
-
-    // Dispose old objects
-    const toRemove = [...this._scene.children];
-    for (const obj of toRemove) {
-      if (obj.geometry) obj.geometry.dispose();
-      this._scene.remove(obj);
-    }
-
-    if (!this._features.length) { this._refMC = null; return; }
-
-    const refLngLat = map.getCenter();
-    const refMC = mapboxgl.MercatorCoordinate.fromLngLat(refLngLat, 0);
-    const scale = refMC.meterInMercatorCoordinateUnits();
-    this._refMC = refMC;
-    this._scale = scale;
-
-    const toScene = (lng, lat, altM) => {
-      const mc = mapboxgl.MercatorCoordinate.fromLngLat([lng, lat], 0);
-      const dx = (mc.x - refMC.x) / scale;  // east meters
-      const dz = (mc.y - refMC.y) / scale;  // south meters (mercator Y increases south)
-      return [dx, altM, dz];                 // [east, altitude, south] in Three.js Y-up scene
-    };
-
-    for (const feature of this._features) {
-      const isSelected = !!feature.properties?.isSelected;
-      const mat = isSelected ? this._selectedMat : this._normalMat;
-      const heightM = (feature.properties?.envelopeHeight ?? 30) * 0.3048;
-      const baseM = (feature.properties?.envelopeBase ?? 0) * 0.3048;
-
-      const geom = feature.geometry;
-      const rings = geom.type === "Polygon"
-        ? [geom.coordinates[0]]
-        : geom.coordinates.map((p) => p[0]);
-
-      for (const ring of rings) {
-        if (!ring || ring.length < 3) continue;
-        const positions = [];
-        const n = ring.length; // closing vertex == first, skip it for vertical edges
-
-        for (let i = 0; i < n - 1; i++) {
-          const [lng0, lat0] = ring[i];
-          const [lng1, lat1] = ring[i + 1];
-          const b0 = toScene(lng0, lat0, baseM);
-          const b1 = toScene(lng1, lat1, baseM);
-          const t0 = toScene(lng0, lat0, heightM);
-          const t1 = toScene(lng1, lat1, heightM);
-
-          // Bottom edge
-          positions.push(...b0, ...b1);
-          // Top edge
-          positions.push(...t0, ...t1);
-          // Vertical at each unique vertex
-          positions.push(...b0, ...t0);
-        }
-
-        const buf = new THREE.BufferGeometry();
-        buf.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        const lines = new THREE.LineSegments(buf, mat);
-        this._scene.add(lines);
-      }
-    }
-  }
-
-  setFeatures(features) {
-    this._features = features;
-    if (this._scene) this._rebuildGeometry();
-  }
-
-  setVisible(visible) {
-    if (this._scene) this._scene.visible = visible;
-  }
-
-  render(gl, matrix) {
-    const THREE = window.THREE;
-    if (!THREE || !this._scene || !this._refMC) return;
-
-    const refMC = this._refMC;
-    const s = this._scale;
-    const rotX = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
-    const l = new THREE.Matrix4()
-      .makeTranslation(refMC.x, refMC.y, refMC.z)
-      .scale(new THREE.Vector3(s, -s, s))
-      .multiply(rotX);
-
-    this._camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(l);
-    this._renderer.resetState();
-    this._renderer.render(this._scene, this._camera);
-    this._map.triggerRepaint();
-  }
-}
-
 // Call this whenever the neighborhood envelope features change.
 function updateEnvelopeEdges(features, selectedLotFeatures) {
-  if (!_threeEdgeLayer) return;
-
-  // Mark selected lot features so they render with a different material
-  const allFeatures = [
-    ...features.map((f) => ({ ...f, properties: { ...f.properties, isSelected: false } })),
-    ...(selectedLotFeatures || []).map((f) => ({ ...f, properties: { ...f.properties, isSelected: true } })),
-  ];
-  _threeEdgeLayer.setFeatures(allFeatures);
+  // No-op: wireframe layer disabled, using fill-extrusion + outline only
 }
 
 function ensureSourcesAndLayers() {
@@ -1014,9 +897,9 @@ function ensureSourcesAndLayers() {
       type: "fill-extrusion",
       source: "zoning-envelope-source",
       paint: {
-        // Ghost volume: pale cyan-blue, higher opacity so envelope reads clearly over buildings
+        // Clean ghost volume: pale blue, low opacity for transparent effect
         "fill-extrusion-color": "#7DB7FF",
-        "fill-extrusion-opacity": 0.35,
+        "fill-extrusion-opacity": 0.20,  // dynamically updated by applyEnvelopeOpacityToLayers
         "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
         "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
         "fill-extrusion-vertical-gradient": false,
@@ -1025,24 +908,29 @@ function ensureSourcesAndLayers() {
     console.log("[zoning-envelope] envelope layer added successfully");
   }
 
-  // 2-D floor-plan outline for envelope (base footprint, crisp dark blue lines)
+  // 2D outline layer: only show at high zoom or for selected lot
   if (!map.getLayer("zoning-envelope-outline")) {
     map.addLayer({
       id: "zoning-envelope-outline",
       type: "line",
       source: "zoning-envelope-source",
+      minzoom: 15,  // only visible when zoomed in
       paint: {
-        "line-color": "#1E5AA8",
-        "line-width": 1.8,
-        "line-opacity": 0.9,
+        "line-color": [
+          "case",
+          ["boolean", ["feature-state", "isSelected"], false],
+          "#007C70",  // selected lot: dark teal
+          "#1E5AA8"   // non-selected: dark blue
+        ],
+        "line-width": [
+          "case",
+          ["boolean", ["feature-state", "isSelected"], false],
+          2.5,
+          1.2
+        ],
+        "line-opacity": 0.5,  // dynamically updated by applyEnvelopeOpacityToLayers
       },
     });
-  }
-
-  // Three.js custom layer for true 3D vertical edge wireframe
-  if (!map.getLayer("envelope-edges-3d")) {
-    _threeEdgeLayer = new EnvelopeEdgesThreeLayer();
-    map.addLayer(_threeEdgeLayer);
   }
 
   if (!map.getSource("selected-lot")) {
@@ -1330,11 +1218,11 @@ function syncLayerVisibility() {
   if (envelopeLayerExists) {
     map.setLayoutProperty("zoning-envelope-layer", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
   }
+  if (map.getLayer("zoning-envelope-layer")) {
+    map.setLayoutProperty("zoning-envelope-layer", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
+  }
   if (map.getLayer("zoning-envelope-outline")) {
     map.setLayoutProperty("zoning-envelope-outline", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
-  }
-  if (_threeEdgeLayer) {
-    _threeEdgeLayer.setVisible(showEnvelopeToggle.checked);
   }
   const studyLayerIds = [
     "zoning-envelope-fill-baseline",

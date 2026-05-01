@@ -690,6 +690,24 @@ body.diagram-mode #map {
   filter: saturate(0.12) contrast(1.1) brightness(1.06);
 }
 
+/* Presentation mode: very clean, just data visualization */
+body.presentation-mode #map {
+  filter: saturate(0.08) contrast(1.15) brightness(1.08);
+}
+
+/* ── Presentation Mode button ──────────────────────────────────── */
+.bar-btn--presentation {
+  background: #3d3d3d;
+  border: 1px solid #555555;
+}
+
+.bar-btn--presentation.active {
+  background: #1a472a;
+  border-color: #65E0C2;
+  color: #c2f0e9;
+  box-shadow: 0 0 0 1px #65E0C2 inset;
+}
+
 /* ── Map legend overlay ──────────────────────────────────── */
 .map-legend {
   position: absolute;
@@ -749,7 +767,7 @@ body.diagram-mode #map {
   border-color: #007C70;
 }
 
-/* top-actions grid: 3 columns for 3 buttons */
+/* top-actions grid: 2x2 for 4 buttons */
 .top-actions {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
 }
