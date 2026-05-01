@@ -105,12 +105,12 @@ function applyEnvelopeOpacityToLayers() {
   }
   // Also apply (scaled down) to the neighborhood ghost-volume envelope
   if (map.getLayer("zoning-envelope-layer")) {
-    // Keep the ghost volume subtle: max 0.35 opacity even at full slider
-    const ghostOpacity = Math.min(0.35, scenarioOpacity * 0.35);
+    // Envelope opacity: scale from 0.25 to 0.45 across the slider range
+    const ghostOpacity = 0.25 + scenarioOpacity * 0.2;
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", ghostOpacity);
   }
   if (map.getLayer("zoning-envelope-outline")) {
-    const outlineOpacity = Math.max(0.3, scenarioOpacity * 0.85);
+    const outlineOpacity = 0.6 + scenarioOpacity * 0.3;
     map.setPaintProperty("zoning-envelope-outline", "line-opacity", outlineOpacity);
   }
 }
@@ -165,7 +165,7 @@ function applyDiagramMode() {
     map.setPaintProperty(
       "zoning-envelope-layer",
       "fill-extrusion-opacity",
-      diagramMode ? 0.18 : 0.22
+      diagramMode ? 0.28 : 0.35
     );
   }
 }
@@ -816,13 +816,15 @@ class EnvelopeEdgesThreeLayer {
     this._normalMat = new THREE.LineBasicMaterial({
       color: 0x1e5aa8,
       transparent: true,
-      opacity: 0.82,
+      opacity: 0.95,
+      linewidth: 2,
       depthTest: false,
     });
     this._selectedMat = new THREE.LineBasicMaterial({
       color: 0x007c70,
       transparent: true,
       opacity: 1.0,
+      linewidth: 2.5,
       depthTest: false,
     });
 
@@ -1012,9 +1014,9 @@ function ensureSourcesAndLayers() {
       type: "fill-extrusion",
       source: "zoning-envelope-source",
       paint: {
-        // Ghost volume: pale cyan-blue, low opacity — reads like a transparent mass
+        // Ghost volume: pale cyan-blue, higher opacity so envelope reads clearly over buildings
         "fill-extrusion-color": "#7DB7FF",
-        "fill-extrusion-opacity": 0.22,
+        "fill-extrusion-opacity": 0.35,
         "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
         "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
         "fill-extrusion-vertical-gradient": false,
@@ -1031,8 +1033,8 @@ function ensureSourcesAndLayers() {
       source: "zoning-envelope-source",
       paint: {
         "line-color": "#1E5AA8",
-        "line-width": 1.2,
-        "line-opacity": 0.75,
+        "line-width": 1.8,
+        "line-opacity": 0.9,
       },
     });
   }
