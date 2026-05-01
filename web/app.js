@@ -3807,6 +3807,8 @@ function selectLotFeature(feature) {
     `Selected ${data.address || "lot"}\nNeighborhood: ${data.neighborhood_name || activeNeighborhood?.name || "n/a"}\nBBL: ${data.bbl || "n/a"}\nBorough/Block/Lot: ${data.borough || "?"}/${data.block || "?"}/${data.lot || "?"}${zoneText}`
   );
 
+  _updateSelectionButtonStates();
+
   generateBaselineEnvelope()
     .then(() => {
       updateLotSummary(activeLotData, baselineEnvelopeResults);
