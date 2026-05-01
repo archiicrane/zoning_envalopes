@@ -707,53 +707,9 @@ function buildNeighborhoodMaskGeometry(geojson) {
 
 function refreshExistingBuildingsForNeighborhood() {
   if (!map || !map.getLayer("existing-buildings-mapbox")) return;
-
-  if (!activeNeighborhood || !(activeNeighborhoodData?.features || []).length) {
-    map.setFilter("existing-buildings-mapbox", ["==", "$type", "Point"]);
-    map.setLayoutProperty("existing-buildings-mapbox", "visibility", "none");
-    return;
-  }
-
-  const ntaFeature = findNtaPolygon(activeNeighborhood?.name);
-  let fallbackGeometry = null;
-  const bounds = computeNeighborhoodBounds(activeNeighborhoodData || EMPTY_FC);
-  if (bounds && !bounds.isEmpty()) {
-    const west = bounds.getWest();
-    const south = bounds.getSouth();
-    const east = bounds.getEast();
-    const north = bounds.getNorth();
-    fallbackGeometry = {
-      type: "Polygon",
-      coordinates: [[
-        [west, south],
-        [east, south],
-        [east, north],
-        [west, north],
-        [west, south],
-      ]],
-    };
-  }
-  const clipGeometry = ntaFeature?.geometry || fallbackGeometry;
-  if (!clipGeometry) {
-    map.setFilter("existing-buildings-mapbox", ["==", "$type", "Point"]);
-    map.setLayoutProperty("existing-buildings-mapbox", "visibility", "none");
-    return;
-  }
-
-  try {
-    map.setFilter("existing-buildings-mapbox", [
-      "all",
-      ["==", "$type", "Polygon"],
-      ["within", clipGeometry],
-    ]);
-    syncLayerVisibility();
-    console.log(
-      "[existing-buildings] within filter clip source:",
-      ntaFeature?.properties?.ntaname || "neighborhood-lot-mask"
-    );
-  } catch (err) {
-    console.error("[existing-buildings] setFilter error:", err);
-  }
+  map.setFilter("existing-buildings-mapbox", ["==", "$type", "Polygon"]);
+  syncLayerVisibility();
+  console.log("[existing-buildings] global mode: rendering all buildings");
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
@@ -835,15 +791,12 @@ function ensureSourcesAndLayers() {
         source: "composite",
         "source-layer": "building",
         minzoom: 10,
-        filter: ["==", "$type", "Point"],
+        filter: ["==", "$type", "Polygon"],
         paint: {
           "fill-extrusion-color": "#cbd5e1",
           "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 10],
           "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
           "fill-extrusion-opacity": 0.55,
-        },
-        layout: {
-          visibility: "none",
         },
       },
       labelLayerId
@@ -1148,12 +1101,11 @@ function syncLayerVisibility() {
     return;
   }
   const existingBuildingsLayerExists = !!map.getLayer("existing-buildings-mapbox");
-  const hasNeighborhoodSelection = !!activeNeighborhood && (activeNeighborhoodData?.features || []).length > 0;
   if (existingBuildingsLayerExists) {
     map.setLayoutProperty(
       "existing-buildings-mapbox",
       "visibility",
-      showBuildingToggle.checked && hasNeighborhoodSelection ? "visible" : "none"
+      showBuildingToggle.checked ? "visible" : "none"
     );
   }
   const envelopeLayerExists = !!map.getLayer("zoning-envelope-layer");
