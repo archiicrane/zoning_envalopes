@@ -4978,12 +4978,7 @@ function fitGeometryToCanvas(lot, canvas, padding = 80) {
 
 function drawPolygon(ctx, points, style = {}) {
   if (!points || points.length < 3) return;
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i += 1) {
-    ctx.lineTo(points[i].x, points[i].y);
-  }
-  ctx.closePath();
+  drawPolygonPath(ctx, points);
   if (style.fill && style.fill !== "transparent") {
     ctx.fillStyle = style.fill;
     ctx.fill();
@@ -5021,6 +5016,61 @@ function drawPolygon(ctx, points, style = {}) {
   if (style.dash) ctx.setLineDash(style.dash);
   ctx.stroke();
   ctx.setLineDash([]);
+}
+
+function drawPolygonPath(ctx, points) {
+  if (!points || points.length < 3) return;
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i += 1) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+  ctx.closePath();
+}
+
+function drawHatchedPolygon(ctx, points, options = {}) {
+  const {
+    fill = "rgba(120,120,120,0.15)",
+    stroke = "#6b7280",
+    hatch = "#8a8f98",
+    spacing = 8,
+    angle = -45,
+    lineWidth = 1.25,
+    dash = null,
+  } = options;
+
+  if (!points || points.length < 3) return;
+
+  ctx.save();
+  drawPolygonPath(ctx, points);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.clip();
+
+  ctx.strokeStyle = hatch;
+  ctx.lineWidth = 0.75;
+
+  const bounds = getBounds(points);
+  const rad = (angle * Math.PI) / 180;
+  const run = bounds.width + bounds.height;
+  for (let i = -bounds.height; i < bounds.width + bounds.height; i += spacing) {
+    const x1 = bounds.minX + i;
+    const y1 = bounds.minY;
+    const x2 = x1 + (Math.cos(rad) * run);
+    const y2 = y1 + (Math.sin(rad) * run);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  drawPolygon(ctx, points, {
+    fill: "transparent",
+    stroke,
+    lineWidth,
+    dash,
+  });
 }
 
 function drawLine(ctx, a, b, color = "#111827", width = 1) {
@@ -5176,31 +5226,35 @@ function drawPlan(canvas, g) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  drawPolygon(ctx, transform(g.buildable), {
-    fill: "rgba(180, 220, 190, 0.2)",
-    stroke: "#245c42",
-    lineWidth: 1.2,
-    hatch: true,
-    hatchColor: "#78a88a",
-    dash: [7, 5],
-  });
-
-  drawPolygon(ctx, transform(g.farFootprint), {
-    fill: g.isCapped ? "rgba(220,38,38,0.28)" : "rgba(80,220,150,0.28)",
-    stroke: g.isCapped ? "#b91c1c" : "#17a35b",
-    lineWidth: 2,
-  });
-
-  drawPolygon(ctx, transform(g.existing), {
-    fill: "rgba(156,163,175,0.45)",
-    stroke: "#4b5563",
-    lineWidth: 1.2,
-  });
-
   drawPolygon(ctx, transform(g.lot), {
     fill: "transparent",
     stroke: "#111827",
     lineWidth: 1.8,
+  });
+
+  drawHatchedPolygon(ctx, transform(g.buildable), {
+    fill: "rgba(180, 220, 190, 0.2)",
+    stroke: "#245c42",
+    hatch: "#78a88a",
+    spacing: 8,
+    angle: -45,
+    lineWidth: 1.2,
+    dash: [7, 5],
+  });
+
+  drawHatchedPolygon(ctx, transform(g.existing), {
+    fill: "rgba(120,120,120,0.15)",
+    stroke: "#6b7280",
+    hatch: "#8a8f98",
+    spacing: 8,
+    angle: -45,
+    lineWidth: 1.25,
+  });
+
+  drawPolygon(ctx, transform(g.farFootprint), {
+    fill: g.isCapped ? "rgba(220,38,38,0.26)" : "rgba(80, 200, 130, 0.35)",
+    stroke: g.isCapped ? "#b91c1c" : "#1f7a4d",
+    lineWidth: 1.75,
   });
 
   // Keep plan legible by avoiding extra edge-type labels.
@@ -5321,21 +5375,43 @@ function drawIsoExtrusion(ctx, iso, mass, style) {
 
   for (let i = 0; i < base.length - 1; i += 1) {
     const quad = [base[i], base[i + 1], top[i + 1], top[i]];
-    drawPolygon(ctx, quad, {
-      fill: style.sideFill || style.fill,
+    if (style.hatched) {
+      drawHatchedPolygon(ctx, quad, {
+        fill: style.sideFill || style.fill,
+        stroke: style.stroke,
+        hatch: style.hatchColor || "#8a8f98",
+        spacing: style.hatchSpacing || 8,
+        angle: style.hatchAngle || -45,
+        lineWidth: style.edgeWidth || 1,
+      });
+    } else {
+      drawPolygon(ctx, quad, {
+        fill: style.sideFill || style.fill,
+        stroke: style.stroke,
+        lineWidth: style.edgeWidth || 1,
+        hatch: style.hatch,
+        hatchColor: style.hatchColor,
+      });
+    }
+  }
+  if (style.hatched) {
+    drawHatchedPolygon(ctx, top, {
+      fill: style.topFill || style.fill,
       stroke: style.stroke,
-      lineWidth: style.edgeWidth || 1,
+      hatch: style.hatchColor || "#8a8f98",
+      spacing: style.hatchSpacing || 8,
+      angle: style.hatchAngle || -45,
+      lineWidth: style.lineWidth || 1.25,
+    });
+  } else {
+    drawPolygon(ctx, top, {
+      fill: style.topFill || style.fill,
+      stroke: style.stroke,
+      lineWidth: style.lineWidth || 2,
       hatch: style.hatch,
       hatchColor: style.hatchColor,
     });
   }
-  drawPolygon(ctx, top, {
-    fill: style.topFill || style.fill,
-    stroke: style.stroke,
-    lineWidth: style.lineWidth || 2,
-    hatch: style.hatch,
-    hatchColor: style.hatchColor,
-  });
 }
 
 function drawIsoOutline(ctx, iso, mass, color = "#111827", lineWidth = 1.5) {
@@ -5367,48 +5443,87 @@ function drawRotatedText(ctx, text, point, angle, color = "#111827") {
   ctx.restore();
 }
 
-function drawVerticalDimension(ctx, iso, dim) {
+function drawRotatedLabelWithBackground(ctx, text, point, angle, color) {
+  ctx.save();
+  ctx.translate(point.x, point.y);
+  ctx.rotate(angle);
+
+  ctx.font = "11px Arial";
+  const metrics = ctx.measureText(text);
+  const w = metrics.width + 6;
+  const h = 14;
+
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.fillRect((-w / 2), (-h / 2), w, h);
+
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, 0, 0);
+
+  ctx.restore();
+}
+
+function computeIsoVerticalDimensionLine(iso, dim) {
   const bottom = iso.project(dim.basePoint[0], dim.basePoint[1], 0);
   const top = iso.project(dim.basePoint[0], dim.basePoint[1], dim.heightFt);
+  const lineX = iso.frame.right + dim.xOffset;
+  return {
+    bottom,
+    top,
+    lineBottom: { x: lineX, y: bottom.y },
+    lineTop: { x: lineX, y: top.y },
+  };
+}
 
-  const lineX = iso.frame.right + dim.xOffsetPx;
-  const b = { x: lineX, y: bottom.y };
-  const t = { x: lineX, y: top.y };
+function drawWitnessLines(ctx, line, color) {
+  drawLine(ctx, line.bottom, line.lineBottom, color, 0.9);
+  drawLine(ctx, line.top, line.lineTop, color, 0.9);
+}
 
-  drawLine(ctx, b, t, dim.color, 1);
-  drawTick(ctx, b, { x: 1, y: 0 }, dim.color, 1);
-  drawTick(ctx, t, { x: 1, y: 0 }, dim.color, 1);
+function drawIsoHeightDimension(ctx, iso, dim) {
+  const line = computeIsoVerticalDimensionLine(iso, dim);
+  drawLine(ctx, line.lineBottom, line.lineTop, dim.color, 1);
+  drawWitnessLines(ctx, line, dim.color);
+  drawTick(ctx, line.lineBottom, { x: 1, y: 0 }, dim.color, 1);
+  drawTick(ctx, line.lineTop, { x: 1, y: 0 }, dim.color, 1);
 
-  drawLine(ctx, bottom, b, dim.color, 0.9);
-  drawLine(ctx, top, t, dim.color, 0.9);
-
-  drawRotatedText(ctx, dim.label, { x: lineX + 12, y: midpoint(b, t).y }, -Math.PI / 2, dim.color);
+  const labelPoint = midpoint(line.lineBottom, line.lineTop);
+  labelPoint.x += dim.labelOffset;
+  drawRotatedLabelWithBackground(ctx, dim.label, labelPoint, -Math.PI / 2, dim.color);
 }
 
 function drawIsoHeightDimensions(ctx, iso, g) {
-  drawVerticalDimension(ctx, iso, {
-    basePoint: getRightSideAnchor(g.existingMass.footprint || g.lot),
-    heightFt: g.analysis.existingHeightFt,
-    label: `Existing: ${Math.round(g.analysis.existingHeightFt)} ft`,
-    color: "#6b7280",
-    xOffsetPx: 24,
-  });
+  const isoHeightDims = [
+    {
+      label: `Existing: ${Math.round(g.analysis.existingHeightFt)} ft`,
+      heightFt: g.analysis.existingHeightFt,
+      color: "#6b7280",
+      xOffset: 25,
+      labelOffset: -14,
+      basePoint: getRightSideAnchor(g.existingMass.footprint || g.lot),
+    },
+    {
+      label: `FAR massing: ${Math.round(g.farHeight)} ft`,
+      heightFt: g.farHeight,
+      color: "#1f7a4d",
+      xOffset: 55,
+      labelOffset: 14,
+      basePoint: getRightSideAnchor(g.farEnvelope.footprint || g.lot),
+    },
+    {
+      label: `Max envelope: ${Math.round(g.maxHeight)} ft`,
+      heightFt: g.maxHeight,
+      color: "#1e5aa8",
+      xOffset: 90,
+      labelOffset: 18,
+      basePoint: getRightSideAnchor(g.maxEnvelope.footprint || g.lot),
+    },
+  ];
 
-  drawVerticalDimension(ctx, iso, {
-    basePoint: getRightSideAnchor(g.farEnvelope.footprint || g.lot),
-    heightFt: g.farHeight,
-    label: `FAR massing: ${Math.round(g.farHeight)} ft`,
-    color: g.isCapped ? "#b91c1c" : "#2f7d4f",
-    xOffsetPx: 52,
-  });
-
-  drawVerticalDimension(ctx, iso, {
-    basePoint: getRightSideAnchor(g.maxEnvelope.footprint || g.lot),
-    heightFt: g.maxHeight,
-    label: `Max envelope: ${Math.round(g.maxHeight)} ft`,
-    color: "#245c42",
-    xOffsetPx: 82,
-  });
+  for (const dim of isoHeightDims) {
+    drawIsoHeightDimension(ctx, iso, dim);
+  }
 }
 
 function drawIso(canvas, g) {
@@ -5430,25 +5545,29 @@ function drawIso(canvas, g) {
     lineWidth: 1.25,
   });
 
-  drawIsoExtrusion(ctx, iso, g.farEnvelope, {
-    fill: g.isCapped ? "rgba(220,38,38,0.22)" : "rgba(120, 200, 150, 0.28)",
-    sideFill: g.isCapped ? "rgba(220,38,38,0.18)" : "rgba(120, 200, 150, 0.22)",
-    topFill: g.isCapped ? "rgba(220,38,38,0.26)" : "rgba(120, 200, 150, 0.3)",
-    stroke: g.isCapped ? "#b91c1c" : "#2f7d4f",
+  drawIsoExtrusion(ctx, iso, g.existingMass, {
+    fill: "rgba(120,120,120,0.15)",
+    sideFill: "rgba(120,120,120,0.15)",
+    topFill: "rgba(120,120,120,0.15)",
+    stroke: "#6b7280",
     lineWidth: 1.25,
+    hatched: true,
+    hatchColor: "#8a8f98",
+    hatchSpacing: 8,
+    hatchAngle: -45,
   });
 
-  drawIsoExtrusion(ctx, iso, g.existingMass, {
-    fill: "rgba(245, 245, 240, 0.95)",
-    sideFill: "rgba(236, 237, 233, 0.96)",
-    topFill: "rgba(250, 250, 246, 0.98)",
-    stroke: "#111827",
-    lineWidth: 1.5,
+  drawIsoExtrusion(ctx, iso, g.farEnvelope, {
+    fill: g.isCapped ? "rgba(220,38,38,0.25)" : "rgba(80, 200, 130, 0.35)",
+    sideFill: g.isCapped ? "rgba(220,38,38,0.2)" : "rgba(80, 200, 130, 0.3)",
+    topFill: g.isCapped ? "rgba(220,38,38,0.3)" : "rgba(80, 200, 130, 0.38)",
+    stroke: g.isCapped ? "#b91c1c" : "#1f7a4d",
+    lineWidth: 1.75,
   });
 
   drawIsoOutline(ctx, iso, g.maxEnvelope, "#245c42", 1.2);
+  drawIsoOutline(ctx, iso, g.existingMass, "#6b7280", 1.25);
   drawIsoOutline(ctx, iso, g.farEnvelope, g.isCapped ? "#991b1b" : "#2f7d4f", 1.2);
-  drawIsoOutline(ctx, iso, g.existingMass, "#111827", 1.5);
 
   drawIsoHeightDimensions(ctx, iso, g);
 }
