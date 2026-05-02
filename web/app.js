@@ -5226,35 +5226,36 @@ function drawPlan(canvas, g) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  drawPolygon(ctx, transform(g.lot), {
+  // QUATERNARY: max zoning envelope — subtle dashed guide
+  drawPolygon(ctx, transform(g.buildable), {
     fill: "transparent",
-    stroke: "#111827",
-    lineWidth: 1.8,
+    stroke: "rgba(36,92,66,0.4)",
+    lineWidth: 1,
+    dash: [6, 5],
   });
 
-  drawHatchedPolygon(ctx, transform(g.buildable), {
-    fill: "rgba(180, 220, 190, 0.2)",
-    stroke: "#245c42",
-    hatch: "#78a88a",
-    spacing: 8,
-    angle: -45,
-    lineWidth: 1.2,
-    dash: [7, 5],
-  });
-
+  // SECONDARY: existing building footprint — gray hatch
   drawHatchedPolygon(ctx, transform(g.existing), {
-    fill: "rgba(120,120,120,0.15)",
+    fill: "rgba(200,200,200,0.18)",
     stroke: "#6b7280",
-    hatch: "#8a8f98",
+    hatch: "#9ca3af",
     spacing: 8,
     angle: -45,
     lineWidth: 1.25,
   });
 
+  // PRIMARY: FAR / proposed massing — green fill, reads first
   drawPolygon(ctx, transform(g.farFootprint), {
-    fill: g.isCapped ? "rgba(220,38,38,0.26)" : "rgba(80, 200, 130, 0.35)",
+    fill: g.isCapped ? "rgba(220,38,38,0.30)" : "rgba(80,180,120,0.42)",
     stroke: g.isCapped ? "#b91c1c" : "#1f7a4d",
     lineWidth: 1.75,
+  });
+
+  // Lot boundary drawn last so it reads cleanly over all fills
+  drawPolygon(ctx, transform(g.lot), {
+    fill: "transparent",
+    stroke: "#111827",
+    lineWidth: 1.8,
   });
 
   // Keep plan legible by avoiding extra edge-type labels.
@@ -5507,15 +5508,15 @@ function drawIsoHeightDimensions(ctx, iso, g) {
       label: `FAR massing: ${Math.round(g.farHeight)} ft`,
       heightFt: g.farHeight,
       color: "#1f7a4d",
-      xOffset: 55,
+      xOffset: 50,
       labelOffset: 14,
       basePoint: getRightSideAnchor(g.farEnvelope.footprint || g.lot),
     },
     {
       label: `Max envelope: ${Math.round(g.maxHeight)} ft`,
       heightFt: g.maxHeight,
-      color: "#1e5aa8",
-      xOffset: 90,
+      color: "rgba(36,92,66,0.65)",
+      xOffset: 75,
       labelOffset: 18,
       basePoint: getRightSideAnchor(g.maxEnvelope.footprint || g.lot),
     },
@@ -5537,37 +5538,37 @@ function drawIso(canvas, g) {
 
   drawIsoBase(ctx, iso, g.lot);
 
+  // TERTIARY: max zoning envelope — very light ghost cage
   drawIsoExtrusion(ctx, iso, g.maxEnvelope, {
-    fill: "rgba(180, 220, 190, 0.22)",
-    sideFill: "rgba(180, 220, 190, 0.16)",
-    topFill: "rgba(180, 220, 190, 0.24)",
-    stroke: "#245c42",
-    lineWidth: 1.25,
+    fill: "rgba(140,190,160,0.12)",
+    sideFill: "rgba(140,190,160,0.08)",
+    topFill: "rgba(140,190,160,0.15)",
+    stroke: "rgba(36,92,66,0.45)",
+    lineWidth: 1,
   });
 
+  // PRIMARY: existing building — solid white/gray, visually pops forward
   drawIsoExtrusion(ctx, iso, g.existingMass, {
-    fill: "rgba(120,120,120,0.15)",
-    sideFill: "rgba(120,120,120,0.15)",
-    topFill: "rgba(120,120,120,0.15)",
-    stroke: "#6b7280",
-    lineWidth: 1.25,
-    hatched: true,
-    hatchColor: "#8a8f98",
-    hatchSpacing: 8,
-    hatchAngle: -45,
+    fill: "#f3f4f6",
+    sideFill: "#e5e7eb",
+    topFill: "#f3f4f6",
+    stroke: "#111827",
+    lineWidth: 1.6,
   });
 
+  // PRIMARY: FAR / proposed massing — clear green, primary object
   drawIsoExtrusion(ctx, iso, g.farEnvelope, {
-    fill: g.isCapped ? "rgba(220,38,38,0.25)" : "rgba(80, 200, 130, 0.35)",
-    sideFill: g.isCapped ? "rgba(220,38,38,0.2)" : "rgba(80, 200, 130, 0.3)",
-    topFill: g.isCapped ? "rgba(220,38,38,0.3)" : "rgba(80, 200, 130, 0.38)",
+    fill: g.isCapped ? "rgba(220,38,38,0.30)" : "rgba(80,180,120,0.38)",
+    sideFill: g.isCapped ? "rgba(220,38,38,0.24)" : "rgba(80,180,120,0.30)",
+    topFill: g.isCapped ? "rgba(220,38,38,0.36)" : "rgba(80,180,120,0.45)",
     stroke: g.isCapped ? "#b91c1c" : "#1f7a4d",
-    lineWidth: 1.75,
+    lineWidth: 1.6,
   });
 
-  drawIsoOutline(ctx, iso, g.maxEnvelope, "#245c42", 1.2);
-  drawIsoOutline(ctx, iso, g.existingMass, "#6b7280", 1.25);
-  drawIsoOutline(ctx, iso, g.farEnvelope, g.isCapped ? "#991b1b" : "#2f7d4f", 1.2);
+  // Crisp outlines drawn last — envelope subtle, masses sharp
+  drawIsoOutline(ctx, iso, g.maxEnvelope, "rgba(36,92,66,0.40)", 0.8);
+  drawIsoOutline(ctx, iso, g.existingMass, "#111827", 1.6);
+  drawIsoOutline(ctx, iso, g.farEnvelope, g.isCapped ? "#991b1b" : "#1f7a4d", 1.6);
 
   drawIsoHeightDimensions(ctx, iso, g);
 }
