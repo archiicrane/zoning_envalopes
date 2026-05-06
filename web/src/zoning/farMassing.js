@@ -93,6 +93,42 @@ function _rectGeometry(minX, minY, maxX, maxY) {
   };
 }
 
+function _bboxFallbackRect(geometry, insetRatio = 0.08) {
+  if (!geometry) return null;
+  try {
+    const [minX, minY, maxX, maxY] = turf.bbox(_asFeature(geometry));
+    const w = maxX - minX;
+    const h = maxY - minY;
+    if (!(w > 0) || !(h > 0)) return null;
+    const ix = w * Math.max(0, Math.min(0.35, insetRatio));
+    const iy = h * Math.max(0, Math.min(0.35, insetRatio));
+    return _rectGeometry(minX + ix, minY + iy, maxX - ix, maxY - iy);
+  } catch (_err) {
+    return null;
+  }
+}
+
+function _normalizeBuildableGeometry(geometry) {
+  if (!geometry) return null;
+  if (geometry.type === "Polygon") return geometry;
+
+  if (geometry.type === "MultiPolygon" && Array.isArray(geometry.coordinates) && geometry.coordinates.length) {
+    let best = null;
+    let bestArea = 0;
+    for (const coords of geometry.coordinates) {
+      const polygon = { type: "Polygon", coordinates: coords };
+      const area = _areaFt2(polygon);
+      if (area > bestArea) {
+        best = polygon;
+        bestArea = area;
+      }
+    }
+    if (best && bestArea > 0) return best;
+  }
+
+  return _bboxFallbackRect(geometry, 0.04);
+}
+
 function _centroidCoord(geometry) {
   try {
     return turf.centroid(_asFeature(geometry))?.geometry?.coordinates || null;
@@ -260,7 +296,7 @@ function _guaranteedInBoundsFootprint(buildableGeom, orientationDeg = null) {
   if (fallbackRect && _areaFt2(fallbackRect) > 20) return fallbackRect;
 
   // Absolute fallback: tiny square centered on an interior point.
-  return _fallbackSquareInsideBuildable(buildableGeom);
+  return _fallbackSquareInsideBuildable(buildableGeom) || _bboxFallbackRect(buildableGeom, 0.18);
 }
 
 function _intersection(aGeom, bGeom) {
@@ -581,8 +617,18 @@ export function buildFarMassing({
     };
   }
 
-  const simplifiedBuildable = _simplifyGeometry(buildableFootprintGeometry);
-  const buildableAreaFt2 = _areaFt2(simplifiedBuildable);
+  const normalizedBuildable = _normalizeBuildableGeometry(buildableFootprintGeometry);
+  const simplifiedBuildable = _simplifyGeometry(normalizedBuildable || buildableFootprintGeometry);
+  let buildableAreaFt2 = _areaFt2(simplifiedBuildable);
+  if (!(buildableAreaFt2 > 0)) {
+    const bboxRect = _bboxFallbackRect(simplifiedBuildable || buildableFootprintGeometry, 0.08);
+    if (bboxRect) {
+      buildableAreaFt2 = _areaFt2(bboxRect);
+      if (buildableAreaFt2 > 0) {
+        warnings.push("FAR fallback: buildable geometry area invalid; using bbox rectangle proxy.");
+      }
+    }
+  }
   if (buildableAreaFt2 <= 0) {
     return {
       features,
@@ -617,10 +663,21 @@ export function buildFarMassing({
 
   if (!primaryFootprint || _areaFt2(primaryFootprint) <= 0) {
     fallbackReason = "front-axis rectangular fitting failed; using rectangular in-bounds fallback.";
-    primaryFootprint = _guaranteedInBoundsFootprint(simplifiedBuildable, orientationDeg);
+    primaryFootprint = _guaranteedInBoundsFootprint(simplifiedBuildable, orientationDeg)
+      || _bboxFallbackRect(simplifiedBuildable, 0.18);
   }
 
   let footprintAreaFt2 = _areaFt2(primaryFootprint);
+  if (!(footprintAreaFt2 > 0)) {
+    fallbackReason = fallbackReason || "rectangular fallback could not be resolved.";
+    const bboxFootprint = _bboxFallbackRect(simplifiedBuildable, 0.2);
+    if (bboxFootprint && _areaFt2(bboxFootprint) > 0) {
+      primaryFootprint = bboxFootprint;
+      footprintAreaFt2 = _areaFt2(primaryFootprint);
+      fallbackReason = "rectangular fitting failed; using bbox rectangle fallback.";
+    }
+  }
+
   if (!(footprintAreaFt2 > 0)) {
     fallbackReason = fallbackReason || "rectangular fallback could not be resolved.";
     return {

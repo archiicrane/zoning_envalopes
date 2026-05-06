@@ -5456,7 +5456,7 @@ function buildFarEnvelopeForSelectedLot() {
 
     // DEBUG: Log FAR feature generation
     const volumeFeatures = features.filter(f => f.properties?.kind === "far_volume");
-    const maxEnvHeight = Math.max(...volumeFeatures.map(f => f.properties?.envelopeHeight || 0));
+    const maxEnvHeight = Math.max(...volumeFeatures.map(f => f.properties?.envelopeHeight || 0), 0);
     console.log(
       `[FAR-DEBUG] buildFarMassing returned ${features.length} features (${volumeFeatures.length} volume). Max envelopeHeight: ${maxEnvHeight} ft. BuildingHeightFt: ${buildingHeightFt}`
     );
