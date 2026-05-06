@@ -157,6 +157,21 @@ function _fitRectInsideBuildable(rectGeom, buildableGeom) {
   return _isWithin(candidate, buildableGeom) ? candidate : null;
 }
 
+function _fallbackRectInsideBuildable(buildableGeom, orientationDeg = null) {
+  const candidates = [
+    [0.88, 0.52],
+    [0.78, 0.48],
+    [0.68, 0.42],
+    [0.58, 0.36],
+    [0.46, 0.32],
+  ];
+  for (const [w, d] of candidates) {
+    const rect = _rectInsideBuildable(buildableGeom, w, d, "center", orientationDeg);
+    if (rect && _areaFt2(rect) > 40) return rect;
+  }
+  return null;
+}
+
 function _intersection(aGeom, bGeom) {
   if (!aGeom || !bGeom) return null;
   try {
@@ -342,8 +357,12 @@ function _floorplateFromTypology(buildableGeom, typology, coverageTarget, orient
   if (typology === "tower") {
     const towerCov = Math.max(0.14, Math.min(0.34, coverage * 0.55));
     const podiumCov = Math.max(towerCov + 0.18, Math.min(0.8, coverage * 1.25));
-    const podium = _rectInsideBuildable(buildableGeom, 0.96, Math.min(0.95, podiumCov / 0.96), "center", orientationDeg) || buildableGeom;
-    const tower = _rectInsideBuildable(podium, 0.55, 0.55, "center", orientationDeg) || _safeBufferInward(podium, 12);
+    const podium = _rectInsideBuildable(buildableGeom, 0.96, Math.min(0.95, podiumCov / 0.96), "center", orientationDeg)
+      || _fallbackRectInsideBuildable(buildableGeom, orientationDeg);
+    if (!podium) return null;
+    const tower = _rectInsideBuildable(podium, 0.55, 0.55, "center", orientationDeg)
+      || _fallbackRectInsideBuildable(podium, orientationDeg);
+    if (!tower) return podium;
     return { podium, tower };
   }
 
@@ -353,12 +372,17 @@ function _floorplateFromTypology(buildableGeom, typology, coverageTarget, orient
   }
 
   if (typology === "tower-podium") {
-    const podium = _rectInsideBuildable(buildableGeom, 0.96, 0.86, "center", orientationDeg) || buildableGeom;
-    const tower = _rectInsideBuildable(podium, 0.52, 0.52, "center", orientationDeg) || _safeBufferInward(podium, 14);
+    const podium = _rectInsideBuildable(buildableGeom, 0.96, 0.86, "center", orientationDeg)
+      || _fallbackRectInsideBuildable(buildableGeom, orientationDeg);
+    if (!podium) return null;
+    const tower = _rectInsideBuildable(podium, 0.52, 0.52, "center", orientationDeg)
+      || _fallbackRectInsideBuildable(podium, orientationDeg);
+    if (!tower) return podium;
     return { podium, tower };
   }
 
-  return _rectInsideBuildable(buildableGeom, 0.96, Math.max(0.35, coverage * 0.75), "center", orientationDeg) || buildableGeom;
+  return _rectInsideBuildable(buildableGeom, 0.96, Math.max(0.35, coverage * 0.75), "center", orientationDeg)
+    || _fallbackRectInsideBuildable(buildableGeom, orientationDeg);
 }
 
 function _autoTypology({ requested, shape, farIntensity, coverageTarget, districtType }) {
@@ -515,7 +539,10 @@ export function buildFarMassing({
       0.52,
       "center",
       Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
-    ) || simplifiedBuildable;
+    ) || _fallbackRectInsideBuildable(
+      simplifiedBuildable,
+      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
+    );
     podiumGeom = null;
     towerGeom = null;
     courtyardGeom = null;
