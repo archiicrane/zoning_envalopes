@@ -80,8 +80,16 @@ export function buildFarMassing({
     return { features, warnings: ["Buildable footprint area is zero."], numFloors: 0, buildingHeightFt: 0 };
   }
 
-  const safeCoverage = Math.max(0.2, Math.min(1.0, (coveragePct || 80) / 100));
+  const safeCoverage = Math.max(0, Math.min(1.0, (coveragePct || 80) / 100));
   const usableFootprintFt2 = footprintAreaFt2 * safeCoverage;
+  if (usableFootprintFt2 <= 0) {
+    return {
+      features,
+      warnings: ["Buildable footprint is fully constrained by zoning controls (coverage = 0%)."],
+      numFloors: 0,
+      buildingHeightFt: 0,
+    };
+  }
   const safeFloorHeight = Math.max(8, floorHeightFt || 10);
 
   let numFloors = Math.max(1, Math.ceil(allowedFarFloorArea / usableFootprintFt2));

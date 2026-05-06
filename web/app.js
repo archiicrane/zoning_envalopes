@@ -4673,12 +4673,33 @@ function buildFarEnvelopeForSelectedLot() {
     const maxHeightFt = coerceNumber(controls.maxBuildingHeight);
     const rawMassingOption = document.getElementById("massingTypeSelect")?.value || document.getElementById("apMassingSelect")?.value || "fullBlock";
     const massingOption = rawMassingOption === "fullBlock" ? "full-block" : rawMassingOption;
-    const effectiveCoveragePct = massingOption === "full-block" ? 100 : coveragePct;
+    const baseCoveragePct = massingOption === "full-block" ? 100 : coveragePct;
 
     const controlsFootprintGeometry = buildableFootprintFeature?.geometry || lotGeometry;
     const controlsFootprintAreaFt2 = _areaFt2FromGeometry(controlsFootprintGeometry);
     if (!buildableFootprintFeature?.geometry || controlsFootprintAreaFt2 <= 0) {
       console.warn("[far-envelope] controls footprint unavailable; falling back to lot geometry.");
+    }
+
+    let effectiveCoveragePct = baseCoveragePct;
+    const osr = coerceNumber(controls.openSpaceRatio);
+    if (
+      Number.isFinite(osr)
+      && osr > 0
+      && lotAreaFt2 > 0
+      && far > 0
+      && controlsFootprintAreaFt2 > 0
+    ) {
+      const requiredOpenSpaceFt2 = lotAreaFt2 * far * (osr / 100);
+      const maxCoverageFt2 = Math.max(0, lotAreaFt2 - requiredOpenSpaceFt2);
+      const osrCoverageCapPct = Math.max(0, Math.min(100, (maxCoverageFt2 / controlsFootprintAreaFt2) * 100));
+      effectiveCoveragePct = Math.min(baseCoveragePct, osrCoverageCapPct);
+      if (effectiveCoveragePct < baseCoveragePct) {
+        console.info(
+          `[far-envelope] OSR cap applied: coverage ${baseCoveragePct.toFixed(1)}% -> ${effectiveCoveragePct.toFixed(1)}% `
+          + `(OSR ${osr}%, FAR ${far.toFixed(2)}).`
+        );
+      }
     }
 
     const { features, warnings, numFloors, buildingHeightFt } = buildFarMassing({
