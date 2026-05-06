@@ -7,202 +7,147 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260506d" />
+    <link rel="stylesheet" href="/styles.css?v=20260506f" />
   </head>
   <body>
-    <div class="app-shell">
-      <header class="top-ui">
-        <div class="title-wrap">
-          <div class="title-row">NYC Zoning Envelope Explorer</div>
-          <div class="title-subtitle">Select a NYC lot to see how zoning rules become a 3D buildable envelope.</div>
-        </div>
-        <select id="neighborhoodSelect">
-          <option value="">Loading neighborhoods...</option>
-        </select>
-        <div class="top-actions">
-          <div class="top-actions-primary">
-            <div class="toolbar-layers">
-              <button id="layersMenuBtn" type="button" class="bar-btn bar-btn--secondary toolbar-layers__trigger" aria-haspopup="true" aria-expanded="false">Layers</button>
-              <div id="layersMenu" class="toolbar-layers__menu" hidden>
-                <button id="showBuildingsBtn" type="button" class="bar-btn active">Existing Building</button>
-                <button id="showEnvelopeBtn" type="button" class="bar-btn active">Neighborhood Envelope</button>
-                <button id="toggleMaxEnvelopeBtn" type="button" class="bar-btn active bar-btn--max-env" title="Toggle max buildable envelope (blue)">Maximum Buildable Shape</button>
-                <button id="toggleFarEnvelopeBtn" type="button" class="bar-btn active bar-btn--far-env" title="Toggle FAR-based buildable envelope (green)">Allowed Floor Area Shape</button>
-              </div>
-            </div>
-            <button id="chooseLotBtn" type="button" class="bar-btn bar-btn--analyze">Choose a Lot</button>
-            <button id="analyzeSelectionBtn" type="button" class="bar-btn bar-btn--secondary" disabled title="Click a lot or shift+click multiple lots, then analyze">Analyze Selection</button>
-            <button id="focusModeBtn" type="button" class="bar-btn bar-btn--secondary" title="Focus on map and selected envelope">Focus Mode</button>
-          </div>
-          <div class="toolbar-more">
-            <button id="toolbarMoreBtn" type="button" class="bar-btn bar-btn--secondary toolbar-more__trigger" aria-haspopup="true" aria-expanded="false">More</button>
-            <div id="toolbarMoreMenu" class="toolbar-more__menu" hidden>
-              <button id="openStudySheetBtn" type="button" class="bar-btn">Study Sheet</button>
-              <button id="quickExportDiagramBtn" type="button" class="bar-btn">Export Diagram PNG</button>
-              <button id="quickExportReportBtn" type="button" class="bar-btn">Export Report</button>
-              <button id="clearSelectionBtn" type="button" class="bar-btn bar-btn--secondary" disabled title="Clear multi-lot selection">Clear Selection</button>
-              <button id="diagramModeBtn" type="button" class="bar-btn bar-btn--diagram">Diagram Mode</button>
-              <button id="presentationModeBtn" type="button" class="bar-btn bar-btn--presentation">Presentation</button>
-              <button id="uploadProposalBtn" type="button" class="bar-btn bar-btn--upload" title="Upload a proposed building model">Upload Proposal</button>
-            </div>
-          </div>
-        </div>
-      </header>
 
-      <main class="map-wrap">
-        <div id="map"></div>
-        <div id="mapGuideCard" class="map-guide-card">
-          <div class="map-guide-card__title">Start here</div>
-          <div class="map-guide-card__text">Start by selecting a lot on the map. The tool will translate zoning text into a visual 3D envelope.</div>
-          <div class="map-guide-card__steps">
-            <div>Step 1: Select a lot</div>
-            <div>Step 2: Review zoning information</div>
-            <div>Step 3: Adjust assumptions</div>
-            <div>Step 4: Compare existing building vs maximum buildable shape</div>
-          </div>
+    <!-- Full-bleed map canvas -->
+    <div id="map"></div>
+
+    <!-- Minimal top bar -->
+    <header class="topbar">
+      <span class="topbar__brand">NYC Zoning</span>
+      <select id="neighborhoodSelect" class="topbar__select">
+        <option value="">Select neighborhood…</option>
+      </select>
+      <div class="topbar__more">
+        <button id="toolbarMoreBtn" class="topbar__more-btn" type="button" aria-haspopup="true" aria-expanded="false" title="More options">···</button>
+        <div id="toolbarMoreMenu" class="topbar__more-menu" hidden>
+          <button id="openStudySheetBtn" class="menu-item" type="button">Study Sheet</button>
+          <button id="quickExportDiagramBtn" class="menu-item" type="button">Export Diagram</button>
+          <button id="quickExportReportBtn" class="menu-item" type="button">Export Report</button>
+          <div class="menu-divider"></div>
+          <button id="diagramModeBtn" class="menu-item" type="button">Diagram Mode</button>
+          <button id="presentationModeBtn" class="menu-item" type="button">Presentation</button>
+          <button id="uploadProposalBtn" class="menu-item" type="button">Upload Proposal</button>
+          <div class="menu-divider"></div>
+          <button id="clearSelectionBtn" class="menu-item" type="button" disabled>Clear Multi-selection</button>
         </div>
+      </div>
+    </header>
 
-        <!-- Analysis Modal (centered architectural sheet) -->
-        <div class="analysis-modal-overlay" id="analysisModalOverlay" aria-hidden="true">
-          <div class="analysis-modal study-sheet-modal" id="analysisModal" role="dialog" aria-modal="true" aria-label="Lot Analysis Drawing Sheet">
-            <div class="analysis-modal__header study-sheet-header">
-              <div class="analysis-modal__title-wrap study-sheet-title">
-                <span class="analysis-modal__title">Zoning Study Sheet</span>
-                <span class="analysis-modal__subtitle">Plan Diagram + Isometric Massing</span>
-              </div>
-              <div class="analysis-modal__actions study-sheet-actions">
-                <button id="exportDiagramBtn" type="button" class="study-sheet-btn study-sheet-btn--primary">Export Diagram PNG</button>
-                <button id="exportReportBtn" type="button" class="study-sheet-btn study-sheet-btn--secondary">Export Report</button>
-                <button id="openFullAnalysisBtn" type="button" class="study-sheet-btn study-sheet-btn--secondary">Full Analysis</button>
-                <button id="closePanelBtn" class="analysis-modal__close study-sheet-btn study-sheet-btn--ghost" title="Close modal" aria-label="Close analysis modal">Close</button>
-              </div>
-            </div>
-            <div class="analysis-modal__body" id="analysisModalContent">
-              <p class="ap-empty">Select a lot or shift+click multiple lots, then click Analyze Selection.</p>
-            </div>
-          </div>
+    <!-- Layer toggle pills (floating, top-right) -->
+    <div class="layer-pills" id="layerPills">
+      <button id="showBuildingsBtn" class="pill pill--on" type="button" title="Toggle existing buildings">Building</button>
+      <button id="toggleMaxEnvelopeBtn" class="pill pill--on pill--blue" type="button" title="Toggle max zoning envelope">Max</button>
+      <button id="toggleFarEnvelopeBtn" class="pill pill--on pill--green" type="button" title="Toggle FAR envelope">FAR</button>
+      <button id="showEnvelopeBtn" class="pill pill--on" type="button" title="Toggle neighborhood context">Area</button>
+    </div>
+
+    <!-- Floating map action buttons (bottom-right) -->
+    <div class="map-fabs">
+      <button id="focusModeBtn" class="map-fab" type="button" title="Focus on selected lot">⊙</button>
+      <button id="analyzeSelectionBtn" class="map-fab map-fab--primary" type="button" disabled title="Analyze selected lot(s)">Analyze</button>
+    </div>
+
+    <!-- Bottom sheet: peek visible always, body revealed on expand -->
+    <div id="lotSheet" class="lot-sheet">
+      <div class="lot-sheet__handle" id="lotSheetHandle"></div>
+      <div class="lot-sheet__peek">
+        <div class="lot-sheet__identity">
+          <span class="lot-zone-badge" id="lotZoneBadge"></span>
+          <span class="lot-address" id="lotSheetAddress">Click any lot to explore</span>
         </div>
-      </main>
+        <div class="lot-sheet__chips" id="lotSheetChips"></div>
+        <button id="lotSheetToggleBtn" class="lot-sheet__toggle" type="button" aria-label="Expand details">↑</button>
+      </div>
+      <div class="lot-sheet__body" id="lotSheetBody">
+        <div id="lotSummary" class="lot-summary"></div>
 
-      <button id="controlsPanelTabBtn" class="panel-tab panel-tab--left" type="button" aria-expanded="false">Controls</button>
-      <button id="infoPanelTabBtn" class="panel-tab panel-tab--right" type="button" aria-expanded="false">Choose Lot</button>
-
-      <section class="bottom-ui">
-        <section class="panel-section">
-          <div class="panel-section__title">Envelope Controls</div>
-          <div class="panel-help">These settings change your test scenario. FAR is allowed floor area relative to lot area.</div>
-          <div class="control-row">
-            <label for="farSlider">Allowed floor area (FAR)</label>
+        <div class="sheet-sliders">
+          <div class="sheet-slider-row">
+            <span class="sheet-slider-label">FAR</span>
             <input id="farSlider" type="range" min="0.1" max="15" step="0.01" value="3" />
-            <span id="farVal" class="value-pill">3.00</span>
+            <span id="farVal" class="sheet-slider-val">3.00</span>
           </div>
-
-          <div class="control-row">
-            <label for="envelopeOpacitySlider">Maximum buildable shape transparency</label>
+          <div class="sheet-slider-row">
+            <span class="sheet-slider-label">Opacity</span>
             <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="75" />
-            <span id="envelopeOpacityVal" class="value-pill">75%</span>
+            <span id="envelopeOpacityVal" class="sheet-slider-val">75%</span>
           </div>
-
-          <div class="control-row compact">
-            <label for="useType">Housing Type</label>
-            <select id="useType">
+          <div class="sheet-slider-row">
+            <span class="sheet-slider-label">Floor Ht</span>
+            <input id="floorHeightBottomSlider" type="range" min="8" max="20" step="0.5" value="10" />
+            <span id="floorHeightBottomVal" class="sheet-slider-val">10 ft</span>
+          </div>
+          <div class="sheet-slider-row">
+            <span class="sheet-slider-label">Use</span>
+            <select id="useType" class="sheet-select">
               <option value="market_rate">Market Rate</option>
               <option value="affordable">Affordable</option>
             </select>
           </div>
+        </div>
 
-          <div class="control-row">
-            <label for="floorHeightBottomSlider">Typical floor height</label>
-            <input id="floorHeightBottomSlider" type="range" min="8" max="20" step="0.5" value="10" title="Floor height in feet" />
-            <span id="floorHeightBottomVal" class="value-pill">10 ft</span>
+        <details class="sheet-section">
+          <summary>Search by BBL</summary>
+          <div class="lookup-grid">
+            <select id="borough">
+              <option value="1">Manhattan</option>
+              <option value="2">Bronx</option>
+              <option value="3" selected>Brooklyn</option>
+              <option value="4">Queens</option>
+              <option value="5">Staten Island</option>
+            </select>
+            <input id="block" type="number" value="981" min="1" placeholder="Block" />
+            <input id="lot" type="number" value="1" min="1" placeholder="Lot" />
+            <button id="lookupBtn" type="button" class="sheet-btn">Find Lot</button>
           </div>
+          <div id="dataStatus" class="sheet-status"></div>
+        </details>
 
-          <details class="panel-accordion">
-            <summary>What do these terms mean?</summary>
-            <div class="panel-help-list">
-              <div><strong>FAR:</strong> Allowed floor area compared to lot size.</div>
-              <div><strong>Setbacks:</strong> Required distance from lot edges before building can start.</div>
-              <div><strong>Height:</strong> Maximum allowed building height.</div>
-              <div><strong>Lot coverage:</strong> How much of the lot footprint can be occupied.</div>
-            </div>
-          </details>
-        </section>
-
-        <section class="panel-section panel-section--legend">
-          <div class="panel-section__title">Legend</div>
-          <details class="panel-accordion" id="legendAccordion">
-            <summary>Show Legend</summary>
-            <div class="map-legend" id="mapLegend">
-              <div class="map-legend__item">
-                <span class="map-legend__swatch map-legend__swatch--building"></span>
-                <span>Gray hatch = existing building</span>
-              </div>
-              <div class="map-legend__item">
-                <span class="map-legend__swatch" style="background:rgba(59,130,246,0.18);border:1.5px solid #1d4ed8;"></span>
-                <span>Outlined volume = maximum buildable shape</span>
-              </div>
-              <div class="map-legend__item">
-                <span class="map-legend__swatch" style="background:rgba(34,197,94,0.35);border:1.5px solid #15803d;"></span>
-                <span>Green volume = FAR-based buildable shape</span>
-              </div>
-              <div class="map-legend__item">
-                <span class="map-legend__swatch" style="background:rgba(59,130,246,0.18);border:1.5px solid #1E5AA8;"></span>
-                <span>Blue ghost = neighborhood context</span>
-              </div>
-              <div class="map-legend__item">
-                <span class="map-legend__swatch map-legend__swatch--selected"></span>
-                <span>Selected lot</span>
-              </div>
-              <div class="map-legend__item">
-                <span class="map-legend__swatch" style="background:rgba(245,158,11,0.2);border:1.5px solid #d97706;"></span>
-                <span>Multi-selected lots</span>
-              </div>
-              <div class="map-legend__hint">Shift+click to multi-select lots</div>
-              <div class="map-legend__hint">Dimension lines = zoning limits; road-facing edge marks lot frontage.</div>
-            </div>
-          </details>
-        </section>
-      </section>
-
-      <aside class="info-card">
-        <section class="panel-section">
-          <div class="panel-section__title">Choose a Lot</div>
-          <details class="panel-accordion" id="findLotAccordion">
-            <summary>Search by Borough, Block, Lot (BBL)</summary>
-            <div class="lookup-grid">
-              <select id="borough">
-                <option value="1">Manhattan</option>
-                <option value="2">Bronx</option>
-                <option value="3" selected>Brooklyn</option>
-                <option value="4">Queens</option>
-                <option value="5">Staten Island</option>
-              </select>
-              <input id="block" type="number" value="981" min="1" placeholder="Block" />
-              <input id="lot" type="number" value="1" min="1" placeholder="Lot" />
-              <button id="lookupBtn" type="button" class="small-btn">Find Lot</button>
-            </div>
-            <div id="dataStatus" class="small"></div>
-          </details>
-        </section>
-        <section class="panel-section">
-          <div class="panel-section__title">Lot Summary</div>
-          <div class="panel-help">Review key values first. Open details only when needed.</div>
-          <button id="compactFullAnalysisBtn" type="button" class="small-btn small-btn--analysis">Full Analysis</button>
-          <div id="lotSummary" class="lot-summary empty">Choose a neighborhood and click a lot.</div>
-          <pre id="report"></pre>
-        </section>
-      </aside>
-
-      <div class="hidden-controls" aria-hidden="true">
-        <input id="coverage" type="range" min="20" max="100" step="1" value="80" />
-        <span id="covVal">80%</span>
-        <input id="floorHeight" type="number" min="8" max="20" step="0.5" value="10" />
-        <input id="farMode" type="checkbox" checked />
-        <input id="upzoneToggle" type="checkbox" />
-        <input id="showBuildingToggle" type="checkbox" checked />
-        <input id="showEnvelopeToggle" type="checkbox" checked />
-        <button id="runBtn" type="button">Generate Selected Lot Envelope</button>
+        <button id="compactFullAnalysisBtn" type="button" class="sheet-btn sheet-btn--primary">Full Analysis</button>
       </div>
+    </div>
+
+    <!-- Analysis modal (unchanged logic) -->
+    <div class="analysis-modal-overlay" id="analysisModalOverlay" aria-hidden="true">
+      <div class="analysis-modal study-sheet-modal" id="analysisModal" role="dialog" aria-modal="true" aria-label="Lot Analysis Drawing Sheet">
+        <div class="analysis-modal__header study-sheet-header">
+          <div class="analysis-modal__title-wrap study-sheet-title">
+            <span class="analysis-modal__title">Zoning Study Sheet</span>
+            <span class="analysis-modal__subtitle">Plan Diagram + Isometric Massing</span>
+          </div>
+          <div class="analysis-modal__actions study-sheet-actions">
+            <button id="exportDiagramBtn" type="button" class="study-sheet-btn study-sheet-btn--primary">Export Diagram PNG</button>
+            <button id="exportReportBtn" type="button" class="study-sheet-btn study-sheet-btn--secondary">Export Report</button>
+            <button id="openFullAnalysisBtn" type="button" class="study-sheet-btn study-sheet-btn--secondary">Full Analysis</button>
+            <button id="closePanelBtn" class="analysis-modal__close study-sheet-btn study-sheet-btn--ghost" title="Close" aria-label="Close analysis modal">Close</button>
+          </div>
+        </div>
+        <div class="analysis-modal__body" id="analysisModalContent">
+          <p class="ap-empty">Select a lot or shift+click multiple lots, then click Analyze.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden functional inputs preserved for JS compatibility -->
+    <div class="hidden-controls" aria-hidden="true">
+      <input id="coverage" type="range" min="20" max="100" step="1" value="80" />
+      <span id="covVal">80%</span>
+      <input id="floorHeight" type="number" min="8" max="20" step="0.5" value="10" />
+      <input id="farMode" type="checkbox" checked />
+      <input id="upzoneToggle" type="checkbox" />
+      <input id="showBuildingToggle" type="checkbox" checked />
+      <input id="showEnvelopeToggle" type="checkbox" checked />
+      <button id="runBtn" type="button">Generate Selected Lot Envelope</button>
+      <!-- Legacy IDs for JS compat -->
+      <button id="chooseLotBtn" type="button">Choose Lot</button>
+      <button id="layersMenuBtn" type="button">Layers</button>
+      <div id="layersMenu"></div>
+      <button id="controlsPanelTabBtn" type="button">Controls</button>
+      <button id="infoPanelTabBtn" type="button">Info</button>
+      <pre id="report"></pre>
     </div>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
@@ -214,6 +159,6 @@
         document.head.appendChild(s);
       }
     </script>
-    <script type="module" src="/app.js?v=20260506d"></script>
+    <script type="module" src="/app.js?v=20260506f"></script>
   </body>
 </html>

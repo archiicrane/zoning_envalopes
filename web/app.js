@@ -134,15 +134,52 @@ const exportDiagramBtn = document.getElementById("exportDiagramBtn");
 const exportReportBtn = document.getElementById("exportReportBtn");
 const openFullAnalysisBtn = document.getElementById("openFullAnalysisBtn");
 
-function syncToolbarHeightVar() {
-  const topUi = document.querySelector(".top-ui");
-  const fallback = 72;
-  const measured = topUi ? Math.max(topUi.offsetHeight, fallback) : fallback;
-  document.documentElement.style.setProperty("--toolbar-current-h", `${measured}px`);
+// ---- Bottom sheet ----
+const lotSheet = document.getElementById("lotSheet");
+const lotSheetToggleBtn = document.getElementById("lotSheetToggleBtn");
+const lotSheetPeek = lotSheet ? lotSheet.querySelector(".lot-sheet__peek") : null;
+const lotZoneBadge = document.getElementById("lotZoneBadge");
+const lotSheetAddress = document.getElementById("lotSheetAddress");
+const lotSheetChips = document.getElementById("lotSheetChips");
+
+function _setSheetOpen(open) {
+  if (!lotSheet) return;
+  lotSheet.classList.toggle("is-open", !!open);
 }
 
-window.addEventListener("resize", syncToolbarHeightVar);
-window.addEventListener("load", syncToolbarHeightVar);
+function _toggleSheet() {
+  _setSheetOpen(!lotSheet.classList.contains("is-open"));
+}
+
+if (lotSheetToggleBtn) {
+  lotSheetToggleBtn.addEventListener("click", (e) => { e.stopPropagation(); _toggleSheet(); });
+}
+
+if (lotSheetPeek) {
+  lotSheetPeek.addEventListener("click", () => {
+    if (!lotSheet.classList.contains("is-open")) _setSheetOpen(true);
+  });
+}
+
+function _updateSheetPeek(data, zoning) {
+  if (!data) {
+    if (lotZoneBadge) lotZoneBadge.textContent = "";
+    if (lotSheetAddress) lotSheetAddress.textContent = "Click any lot to explore";
+    if (lotSheetChips) lotSheetChips.innerHTML = "";
+    return;
+  }
+  const zone = activeOriginalZone || zoning?.primary_zone || data.zone || data.zonedist1 || "";
+  const height = zoning?.max_height_ft;
+  const far = zoning?.scenario_far || zoning?.base_far || farInput?.value;
+  if (lotZoneBadge) lotZoneBadge.textContent = zone;
+  if (lotSheetAddress) lotSheetAddress.textContent = data.address || data.bbl || "Selected lot";
+  if (lotSheetChips) {
+    lotSheetChips.innerHTML = [
+      height ? `<div class="stat-chip"><span class="stat-chip__val">${Math.round(height)}<small>ft</small></span><span class="stat-chip__label">Max Ht</span></div>` : "",
+      far ? `<div class="stat-chip"><span class="stat-chip__val">${Number(far).toFixed(1)}</span><span class="stat-chip__label">FAR</span></div>` : "",
+    ].join("");
+  }
+}
 
 coverageInput.addEventListener("input", () => {
   covVal.textContent = `${coverageInput.value}%`;
@@ -235,44 +272,22 @@ showEnvelopeToggle.addEventListener("change", syncLayerVisibility);
 if (showBuildingsBtn) {
   showBuildingsBtn.addEventListener("click", () => {
     showBuildingToggle.checked = !showBuildingToggle.checked;
+    showBuildingsBtn.classList.toggle("pill--on", showBuildingToggle.checked);
     syncLayerVisibility();
   });
 }
 if (showEnvelopeBtn) {
   showEnvelopeBtn.addEventListener("click", () => {
     showEnvelopeToggle.checked = !showEnvelopeToggle.checked;
+    showEnvelopeBtn.classList.toggle("pill--on", showEnvelopeToggle.checked);
     syncLayerVisibility();
   });
 }
 
-function _setControlsPanelOpen(open) {
-  document.body.classList.toggle("controls-open", !!open);
-  if (controlsPanelTabBtn) controlsPanelTabBtn.setAttribute("aria-expanded", open ? "true" : "false");
-}
-
+// Legacy compat — no-ops in new layout (sheet is always present)
+function _setControlsPanelOpen() {}
 function _setInfoPanelOpen(open) {
-  document.body.classList.toggle("info-open", !!open);
-  if (infoPanelTabBtn) infoPanelTabBtn.setAttribute("aria-expanded", open ? "true" : "false");
-}
-
-if (chooseLotBtn) {
-  chooseLotBtn.addEventListener("click", () => {
-    _setInfoPanelOpen(true);
-    const findLotAccordion = document.getElementById("findLotAccordion");
-    if (findLotAccordion) findLotAccordion.open = true;
-  });
-}
-
-if (controlsPanelTabBtn) {
-  controlsPanelTabBtn.addEventListener("click", () => {
-    _setControlsPanelOpen(!document.body.classList.contains("controls-open"));
-  });
-}
-
-if (infoPanelTabBtn) {
-  infoPanelTabBtn.addEventListener("click", () => {
-    _setInfoPanelOpen(!document.body.classList.contains("info-open"));
-  });
+  if (open) _setSheetOpen(true);
 }
 
 if (focusModeBtn) {
@@ -280,19 +295,7 @@ if (focusModeBtn) {
     const next = !document.body.classList.contains("focus-mode");
     document.body.classList.toggle("focus-mode", next);
     focusModeBtn.classList.toggle("active", next);
-    if (next) {
-      _setControlsPanelOpen(false);
-      _setInfoPanelOpen(false);
-    }
-  });
-}
-
-if (layersMenuBtn && layersMenu) {
-  layersMenuBtn.addEventListener("click", (event) => {
-    event.stopPropagation();
-    const expanded = layersMenuBtn.getAttribute("aria-expanded") === "true";
-    layersMenuBtn.setAttribute("aria-expanded", expanded ? "false" : "true");
-    layersMenu.hidden = expanded;
+    if (next) _setSheetOpen(false);
   });
 }
 
@@ -305,10 +308,6 @@ if (toolbarMoreBtn && toolbarMoreMenu) {
   });
 
   document.addEventListener("click", (event) => {
-    if (layersMenuBtn && layersMenu && !layersMenu.hidden && !layersMenu.contains(event.target) && event.target !== layersMenuBtn) {
-      layersMenu.hidden = true;
-      layersMenuBtn.setAttribute("aria-expanded", "false");
-    }
     if (!toolbarMoreMenu.hidden && !toolbarMoreMenu.contains(event.target) && event.target !== toolbarMoreBtn) {
       toolbarMoreMenu.hidden = true;
       toolbarMoreBtn.setAttribute("aria-expanded", "false");
@@ -378,10 +377,8 @@ if (compactFullAnalysisBtn) {
   });
 }
 
-_setControlsPanelOpen(false);
-_setInfoPanelOpen(false);
 document.body.classList.remove("has-lot");
-syncToolbarHeightVar();
+_setSheetOpen(false);
 
 // Diagram mode: desaturates basemap via CSS + lightens buildings for a clean arch diagram look
 function applyDiagramMode() {
@@ -2129,9 +2126,9 @@ function _buildRuleEngineRows(snapshot) {
 
 function updateLotSummary(data, envelopeResults) {
   if (!data) {
-    lotSummary.className = "lot-summary empty";
-    lotSummary.textContent = "Choose a neighborhood and click a lot.";
-    _setInfoPanelOpen(false);
+    lotSummary.className = "lot-summary";
+    lotSummary.innerHTML = "";
+    _updateSheetPeek(null, null);
     return;
   }
 
@@ -2173,8 +2170,8 @@ function updateLotSummary(data, envelopeResults) {
     </details>
   `;
 
-  _setInfoPanelOpen(true);
-  if (infoPanelTabBtn) infoPanelTabBtn.hidden = false;
+  _updateSheetPeek(data, zoning);
+  _setSheetOpen(true);
 
   if (envelopeResults?.zoning_buildability_study && activeLotPolygon) {
     const result = _recalcStudy();
@@ -4075,11 +4072,9 @@ function _updateSelectionButtonStates() {
     clearSelectionBtn.disabled = !hasMulti;
   }
   document.body.classList.toggle("has-lot", hasLot);
-  if (chooseLotBtn) {
-    chooseLotBtn.textContent = hasLot ? "Change Lot" : "Choose a Lot";
-  }
-  if (infoPanelTabBtn) {
-    infoPanelTabBtn.textContent = hasLot ? "Lot Info" : "Choose Lot";
+  // Open sheet on first selection
+  if (hasLot && lotSheet && !lotSheet.classList.contains("is-open")) {
+    _setSheetOpen(true);
   }
 }
 
@@ -6328,7 +6323,7 @@ if (clearSelectionBtn) {
 if (toggleMaxEnvelopeBtn) {
   toggleMaxEnvelopeBtn.addEventListener("click", () => {
     showMaxEnvelope = !showMaxEnvelope;
-    toggleMaxEnvelopeBtn.classList.toggle("active", showMaxEnvelope);
+    toggleMaxEnvelopeBtn.classList.toggle("pill--on", showMaxEnvelope);
     syncLayerVisibility();
   });
 }
@@ -6336,7 +6331,7 @@ if (toggleMaxEnvelopeBtn) {
 if (toggleFarEnvelopeBtn) {
   toggleFarEnvelopeBtn.addEventListener("click", () => {
     showFarEnvelope = !showFarEnvelope;
-    toggleFarEnvelopeBtn.classList.toggle("active", showFarEnvelope);
+    toggleFarEnvelopeBtn.classList.toggle("pill--on", showFarEnvelope);
     syncLayerVisibility();
   });
 }

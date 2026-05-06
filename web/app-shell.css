@@ -1,14 +1,24 @@
+/* =============================================
+   App Shell — full-bleed map-dominant layout
+   ============================================= */
+
 :root {
+  /* Color tokens */
   --bg: #f2eee5;
   --surface: #fdfbf6;
   --surface-2: #f7f4ec;
   --card: #ffffff;
   --text: #1f2937;
-  --muted: #6b7280;
+  --text-muted: #6b7280;
   --line: #d7d5cf;
-  --shadow-soft: 0 8px 28px rgba(15, 23, 42, 0.12);
+  --green: #1f7a4d;
+  --blue: #1d4ed8;
+
+  /* Shadows */
+  --shadow-soft: 0 4px 18px rgba(15, 23, 42, 0.10);
   --shadow-strong: 0 18px 54px rgba(15, 23, 42, 0.24);
 
+  /* Spacing */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -16,68 +26,40 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  --toolbar-h: 72px;
-  --left-sidebar-w: 320px;
-  --right-panel-w: 360px;
-  --left-docked: 0px;
-  --right-docked: 0px;
+  /* Layout */
+  --topbar-h: 48px;
+  --sheet-peek-h: 56px;
 
+  /* Z-index stack */
   --z-map: 1;
-  --z-sidebar: 10;
-  --z-toolbar: 20;
-  --z-map-overlay: 20;
+  --z-pills: 10;
+  --z-sheet: 20;
+  --z-topbar: 30;
+  --z-dropdown: 40;
   --z-modal: 100;
-  --z-dropdown: 200;
+
+  /* Legacy compat aliases */
+  --toolbar-h: var(--topbar-h);
+  --z-toolbar: var(--z-topbar);
+  --z-sidebar: var(--z-sheet);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
   height: 100%;
   color: var(--text);
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top left, #fff8df, var(--bg));
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   overflow: hidden;
 }
 
-.app-shell {
-  position: relative;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-}
-
-.map-wrap {
-  position: fixed;
-  top: var(--toolbar-current-h, var(--toolbar-h));
-  left: var(--left-docked);
-  right: var(--right-docked);
-  bottom: 0;
-  overflow: hidden;
-}
-
+/* Map fills everything — it is the hero */
 #map {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: var(--z-map);
-}
-
-body.controls-open {
-  --left-docked: var(--left-sidebar-w);
-}
-
-body.info-open {
-  --right-docked: var(--right-panel-w);
-}
-
-body.focus-mode {
-  --left-docked: 0px;
-  --right-docked: 0px;
 }
 
 .hidden-controls {
@@ -86,34 +68,24 @@ body.focus-mode {
   width: 1px;
   height: 1px;
   overflow: hidden;
+  pointer-events: none;
 }
 
-@media (max-width: 1100px) {
-  :root {
-    --left-sidebar-w: 280px;
-    --right-panel-w: 320px;
-  }
+body.diagram-mode #map { filter: saturate(0.12) contrast(1.1) brightness(1.06); }
+body.presentation-mode #map { filter: saturate(0.08) contrast(1.15) brightness(1.08); }
+
+/* Focus mode: hide sheet + pills */
+body.focus-mode .lot-sheet,
+body.focus-mode .layer-pills,
+body.focus-mode .map-fabs {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
 }
 
-@media (max-width: 900px) {
-  html,
-  body {
-    overflow: hidden;
-  }
-
-  :root {
-    --toolbar-h: 72px;
-  }
-
-  .map-wrap {
-    left: 0;
-    right: 0;
-  }
-
-  body.controls-open,
-  body.info-open,
-  body.focus-mode {
-    --left-docked: 0px;
-    --right-docked: 0px;
-  }
+body:not(.focus-mode) .lot-sheet,
+body:not(.focus-mode) .layer-pills,
+body:not(.focus-mode) .map-fabs {
+  opacity: 1;
+  transition: opacity 200ms ease;
 }
