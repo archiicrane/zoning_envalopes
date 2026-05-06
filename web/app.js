@@ -104,6 +104,7 @@ let studyState = {
   controls: null,
   maxEnvelope: null,
 };
+let lastEnvelopeDebug = null;
 
 const report = document.getElementById("report");
 const coverageInput = document.getElementById("coverage");
@@ -176,6 +177,15 @@ function _selectedFootnoteVariant() {
   const value = String(ruleVariantSelect?.value || "").trim();
   if (!value || value.toLowerCase() === "auto") return null;
   return value;
+}
+
+function _escapeHtml(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function _syncRuleSelectionFromUi() {
@@ -1096,6 +1106,7 @@ function _buildLightweightLotAnalysisFromProps(props) {
         controls,
         envelopeColor,
         zoneCode: entry.zone,
+        lotAnalysis,
       });
       for (const piece of generated.envelopeFeatures || []) {
         features.push(piece);
@@ -1475,9 +1486,10 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "buildable_footprint"],
       paint: {
-        "line-color": "#0f766e",
+        "line-color": "#15803d",
         "line-width": 2,
         "line-opacity": 0.95,
+        "line-dasharray": [2, 2],
       },
     });
 
@@ -1660,8 +1672,9 @@ function ensureSourcesAndLayers() {
       minzoom: 14,
       paint: {
         "line-color": "#15803d",
-        "line-width": 1.5,
+        "line-width": 1.8,
         "line-opacity": 0.7,
+        "line-dasharray": [2, 2],
       },
     });
   }
@@ -2296,6 +2309,9 @@ function updateLotSummary(data, envelopeResults) {
     : `<strong>${effectiveZone || "n/a"}</strong>`;
 
   lotSummary.className = "lot-summary";
+  const debugJson = lastEnvelopeDebug
+    ? _escapeHtml(JSON.stringify(lastEnvelopeDebug, null, 2))
+    : "No envelope debug data yet.";
   lotSummary.innerHTML = `
     <div class="summary-metrics">
       <div class="metric-tag"><span class="metric-tag__key">Zoning</span><strong>${activeOriginalZone || "n/a"}</strong></div>
@@ -2322,6 +2338,10 @@ function updateLotSummary(data, envelopeResults) {
       ${_buildRuleEngineRows(ruleEngineSnapshot)}
       ${_buildZoningReqRows(zoning)}
       ${_buildBuildabilityStudyRows(zoning, envelopeResults)}
+    </details>
+    <details>
+      <summary>Envelope Debug</summary>
+      <pre class="summary-debug-json">${debugJson}</pre>
     </details>
   `;
 
@@ -4312,13 +4332,26 @@ function buildMaxEnvelopeForSelectedLot() {
   try {
     const lotGeometry = { type: "Polygon", coordinates: [activeLotPolygon] };
     const lotFeature = { type: "Feature", geometry: lotGeometry, properties: activeLotData };
+    const lotAnalysis = analyzeLot({
+      lotFeature,
+      lotRing: activeLotPolygon,
+      map,
+      neighborhoodFeatures: activeNeighborhoodData?.features || [],
+    });
 
     const selection = _syncRuleSelectionFromUi();
     const controlsResult = getControlsForLot(
       {
-        type: "Feature",
-        geometry: lotGeometry,
-        properties: activeLotData,
+        ...lotAnalysis,
+        primaryZone: lotAnalysis?.primaryZone,
+        zoneTokens: lotAnalysis?.zoneTokens || extractZoneTokensModule(
+          activeLotData?.zonedist1,
+          activeLotData?.ZoneDist1,
+          activeLotData?.zonedist2,
+          activeLotData?.ZoneDist2,
+          activeLotData?.zone,
+          activeLotData?.ZoningDist
+        ),
         buildingUseType: selection.buildingUseType,
         housingType: selection.housingType,
         footnoteVariant: selection.footnoteVariant,
@@ -4328,18 +4361,41 @@ function buildMaxEnvelopeForSelectedLot() {
     const controlsArray = controlsResult?.controlsByZone || [];
     if (!controlsArray.length) {
       map.getSource("selected-max-envelope").setData(EMPTY_FC);
+      lastEnvelopeDebug = {
+        bbl: activeLotData?.bbl || activeLotData?.BBL || null,
+        zoneCode: lotAnalysis?.primaryZone || null,
+        resolvedRule: null,
+        bulkRegime: null,
+        lotType: lotAnalysis?.lotType || null,
+        streetEdges: lotAnalysis?.frontEdgeIndices || [],
+        frontYardFt: null,
+        sideYardEachFt: null,
+        rearYardFt: null,
+        maximumBuildingHeightFt: null,
+        generatedEnvelope: false,
+        warnings: controlsResult?.warnings?.length
+          ? controlsResult.warnings
+          : ["No controls were resolved for this lot."],
+      };
+      updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
+      console.warn("[envelope-debug]", lastEnvelopeDebug);
       return;
     }
 
     const allFeatures = [];
+    const allWarnings = [...(controlsResult?.warnings || [])];
+    const resolvedRuleRows = [];
     for (const { controls, zoneCode } of controlsArray) {
-      const { envelopeFeatures } = generateEnvelopeFromControls({
+      const { envelopeFeatures, warnings, debug } = generateEnvelopeFromControls({
         lotGeometry,
         controls,
         envelopeColor: "#3b82f6",
         zoneCode,
+        lotAnalysis,
       });
       allFeatures.push(...envelopeFeatures);
+      allWarnings.push(...(warnings || []));
+      resolvedRuleRows.push({ zoneCode, controls, debug });
     }
 
     map.getSource("selected-max-envelope").setData({
@@ -4350,6 +4406,32 @@ function buildMaxEnvelopeForSelectedLot() {
       type: "FeatureCollection",
       features: allFeatures,
     };
+    const primaryResolved = resolvedRuleRows[0] || {};
+    lastEnvelopeDebug = {
+      bbl: activeLotData?.bbl || activeLotData?.BBL || null,
+      zoneCode: primaryResolved.zoneCode || lotAnalysis?.primaryZone || null,
+      resolvedRule: {
+        far: primaryResolved.controls?.far ?? null,
+        frontYardFt: primaryResolved.controls?.frontYard ?? null,
+        sideYardEachFt: primaryResolved.controls?.sideYard ?? null,
+        rearYardFt: primaryResolved.controls?.rearYard ?? null,
+        maxBaseHeightFt: primaryResolved.controls?.maxBaseHeight ?? null,
+        maximumBuildingHeightFt: primaryResolved.controls?.maxBuildingHeight ?? null,
+        maximumFrontWallHeightFt: primaryResolved.controls?.frontWallHeight ?? null,
+        streetSetbackFt: primaryResolved.controls?.streetSetback ?? null,
+      },
+      bulkRegime: primaryResolved.controls?.bulkRegime || null,
+      lotType: lotAnalysis?.lotType || null,
+      streetEdges: lotAnalysis?.frontEdgeIndices || [],
+      frontYardFt: primaryResolved.controls?.frontYard ?? null,
+      sideYardEachFt: primaryResolved.controls?.sideYard ?? null,
+      rearYardFt: primaryResolved.controls?.rearYard ?? null,
+      maximumBuildingHeightFt: primaryResolved.controls?.maxBuildingHeight ?? null,
+      generatedEnvelope: allFeatures.length > 0,
+      warnings: Array.from(new Set(allWarnings)),
+    };
+    updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
+    console.log("[envelope-debug]", lastEnvelopeDebug);
   } catch (err) {
     console.warn("[max-envelope] build error:", err);
   }
@@ -4368,13 +4450,26 @@ function buildFarEnvelopeForSelectedLot() {
   try {
     const lotGeometry = { type: "Polygon", coordinates: [activeLotPolygon] };
     const lotFeature = { type: "Feature", geometry: lotGeometry, properties: activeLotData };
+    const lotAnalysis = analyzeLot({
+      lotFeature,
+      lotRing: activeLotPolygon,
+      map,
+      neighborhoodFeatures: activeNeighborhoodData?.features || [],
+    });
 
     const selection = _syncRuleSelectionFromUi();
     const controlsResult = getControlsForLot(
       {
-        type: "Feature",
-        geometry: lotGeometry,
-        properties: activeLotData,
+        ...lotAnalysis,
+        primaryZone: lotAnalysis?.primaryZone,
+        zoneTokens: lotAnalysis?.zoneTokens || extractZoneTokensModule(
+          activeLotData?.zonedist1,
+          activeLotData?.ZoneDist1,
+          activeLotData?.zonedist2,
+          activeLotData?.ZoneDist2,
+          activeLotData?.zone,
+          activeLotData?.ZoningDist
+        ),
         buildingUseType: selection.buildingUseType,
         housingType: selection.housingType,
         footnoteVariant: selection.footnoteVariant,
@@ -4392,11 +4487,12 @@ function buildFarEnvelopeForSelectedLot() {
     const zoneCode = controlsArray[0].zoneCode || controlsArray[0].zone;
 
     // Get buildable footprint (with yards applied)
-    const { buildableFootprintFeature } = generateEnvelopeFromControls({
+    const { buildableFootprintFeature, warnings: buildWarnings } = generateEnvelopeFromControls({
       lotGeometry,
       controls,
       envelopeColor: "#22c55e",
       zoneCode,
+      lotAnalysis,
     });
 
     const lotAreaFt2 = activeLotData?.lotarea ? Number(activeLotData.lotarea) : 0;
@@ -4425,6 +4521,9 @@ function buildFarEnvelopeForSelectedLot() {
     });
 
     lastFarEnvelopeData = { numFloors, buildingHeightFt, warnings };
+    if (Array.isArray(buildWarnings) && buildWarnings.length) {
+      console.warn("[far-envelope][warnings]", buildWarnings);
+    }
 
     map.getSource("selected-far-envelope").setData({
       type: "FeatureCollection",
@@ -5048,6 +5147,7 @@ function analyzeSelectedLots(selectedLots) {
     controls: primaryControls,
     envelopeColor: "#3b82f6",
     zoneCode,
+    lotAnalysis,
   });
   const buildablePolygon = _shapeRingFromGeometry(generated?.buildableFootprintFeature?.geometry || lotGeometry);
 
