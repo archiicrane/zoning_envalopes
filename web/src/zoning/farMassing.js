@@ -338,6 +338,12 @@ function _floorplateFromTypology(buildableGeom, typology, coverageTarget, orient
   const depthMinor = Math.min(shape.widthFt, shape.depthFt);
   const coverage = Math.max(0.22, Math.min(0.97, coverageTarget));
 
+  if (typology === "box") {
+    const frac = Math.max(0.28, Math.min(0.92, Math.sqrt(coverage) * 0.98));
+    return _rectInsideBuildable(buildableGeom, frac, frac, "center", orientationDeg)
+      || _fallbackRectInsideBuildable(buildableGeom, orientationDeg);
+  }
+
   if (typology === "bar") {
     const depthFrac = Math.max(0.28, Math.min(0.55, (coverage * 0.9)));
     return _rectInsideBuildable(buildableGeom, 0.94, depthFrac, "center", orientationDeg);
@@ -504,13 +510,7 @@ export function buildFarMassing({
 
   const shape = _bboxMetrics(simplifiedBuildable);
   const farIntensity = allowedFarFloorArea / Math.max(1, buildableAreaFt2);
-  const typology = _autoTypology({
-    requested: massingOption,
-    shape,
-    farIntensity,
-    coverageTarget: safeCoverage,
-    districtType,
-  });
+  const typology = "box";
 
   let primaryFootprint = null;
   let podiumGeom = null;
@@ -538,8 +538,8 @@ export function buildFarMassing({
     warnings.push("FAR morphology fallback used due to constrained lot geometry.");
     primaryFootprint = _rectInsideBuildable(
       simplifiedBuildable,
-      0.92,
-      0.52,
+      0.7,
+      0.7,
       "center",
       Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
     ) || _fallbackRectInsideBuildable(
@@ -553,13 +553,18 @@ export function buildFarMassing({
 
   let primaryAreaFt2 = _areaFt2(primaryFootprint);
   if (primaryAreaFt2 <= 0) {
-    warnings.push("No valid FAR footprint could be generated from typology; using buildable geometry as fallback footprint.");
-    primaryFootprint = _safeBufferInward(simplifiedBuildable, 1);
+    warnings.push("No valid FAR footprint could be generated from typology; using compact box fallback footprint.");
+    primaryFootprint = _rectInsideBuildable(
+      simplifiedBuildable,
+      0.58,
+      0.58,
+      "center",
+      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
+    ) || _fallbackRectInsideBuildable(
+      simplifiedBuildable,
+      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
+    );
     primaryAreaFt2 = _areaFt2(primaryFootprint);
-    if (primaryAreaFt2 <= 0) {
-      primaryFootprint = simplifiedBuildable;
-      primaryAreaFt2 = _areaFt2(primaryFootprint);
-    }
     podiumGeom = null;
     towerGeom = null;
     courtyardGeom = null;
@@ -658,11 +663,21 @@ export function buildFarMassing({
 
   // Last-resort guard: never return zero FAR features when buildable geometry exists.
   if (!rawFeatures.length && _areaFt2(simplifiedBuildable) > 1) {
-    const fallbackHeightFt = Math.max(safeFloorHeight, Number(buildingHeightFt) || safeFloorHeight);
-    const fallbackMass = _makeMassFeature(simplifiedBuildable, 0, fallbackHeightFt, color, typology || "fallback", Math.max(1, numFloors || 1), "fallback");
-    const fallbackFootprint = _makePlanFeature(simplifiedBuildable, "far_footprint", "#1a7f54", typology || "fallback", "fallback-footprint", _areaFt2(simplifiedBuildable));
+    const strictFallbackFootprint = _rectInsideBuildable(
+      simplifiedBuildable,
+      0.5,
+      0.5,
+      "center",
+      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
+    ) || _fallbackRectInsideBuildable(
+      simplifiedBuildable,
+      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
+    );
+    const strictFallbackHeightFt = Math.max(safeFloorHeight, Number(buildingHeightFt) || safeFloorHeight);
+    const fallbackMass = _makeMassFeature(strictFallbackFootprint, 0, strictFallbackHeightFt, color, typology || "fallback", Math.max(1, numFloors || 1), "fallback");
+    const fallbackFootprint = _makePlanFeature(strictFallbackFootprint, "far_footprint", "#1a7f54", typology || "fallback", "fallback-footprint", _areaFt2(strictFallbackFootprint));
     rawFeatures = [fallbackMass, fallbackFootprint].filter(Boolean);
-    warnings.push("FAR last-resort fallback applied: generated volume/footprint from buildable geometry.");
+    warnings.push("FAR last-resort fallback applied: generated compact box volume/footprint.");
   }
 
   const clippedFeatures = rawFeatures
@@ -670,11 +685,25 @@ export function buildFarMassing({
     .map((feature) => _clipToBuildable(feature, simplifiedBuildable))
     .filter(Boolean);
 
-  // Some irregular multi-frontage geometries can make turf.intersect drop all features
-  // even when raw FAR features are valid. Keep raw output as a fallback so extrusion can render.
-  const finalFeatures = clippedFeatures.length ? clippedFeatures : rawFeatures;
-  if (!clippedFeatures.length && rawFeatures.length) {
-    warnings.push("FAR clipping fallback applied: using un-clipped massing features due to geometry intersection failure.");
+  // Keep output strictly in-bounds. If clipping fails, synthesize a compact in-bounds box.
+  let finalFeatures = clippedFeatures;
+  if (!finalFeatures.length && _areaFt2(simplifiedBuildable) > 1) {
+    const inBoundsFootprint = _rectInsideBuildable(
+      simplifiedBuildable,
+      0.45,
+      0.45,
+      "center",
+      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
+    ) || _fallbackRectInsideBuildable(
+      simplifiedBuildable,
+      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
+    );
+    const inBoundsHeightFt = Math.max(safeFloorHeight, Number(buildingHeightFt) || safeFloorHeight);
+    finalFeatures = [
+      _makeMassFeature(inBoundsFootprint, 0, inBoundsHeightFt, color, typology || "fallback", Math.max(1, numFloors || 1), "in-bounds-fallback"),
+      _makePlanFeature(inBoundsFootprint, "far_footprint", "#1a7f54", typology || "fallback", "in-bounds-fallback-footprint", _areaFt2(inBoundsFootprint)),
+    ].filter(Boolean);
+    warnings.push("FAR clipping fallback applied: synthesized compact in-bounds box massing.");
   }
 
   return {
