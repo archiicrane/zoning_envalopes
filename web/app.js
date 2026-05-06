@@ -2231,61 +2231,60 @@ function _buildRuleEngineSnapshot(data) {
   };
 }
 
+function _buildYardClassificationTable(lot, primary) {
+  if (!lot) return "";
+  const frontCount = lot.frontEdgeIndices?.length ?? 0;
+  const sideCount = lot.sideEdgeIndices?.length ?? 0;
+  const hasRear = lot.rearEdgeIndex != null;
+
+  const frontYardLabel = primary?.frontYard == null ? "Missing rule" : `${formatNumber(primary.frontYard, 0)} ft`;
+  const sideYardLabel = primary?.sideYard == null ? "Missing rule" : `${formatNumber(primary.sideYard, 0)} ft`;
+  const rearYardLabel = primary?.rearYard == null ? "Missing rule" : `${formatNumber(primary.rearYard, 0)} ft`;
+
+  const rows = [
+    { label: "FRONT", count: frontCount, color: "#2563eb", offset: frontYardLabel },
+    { label: "SIDE", count: sideCount, color: "#f97316", offset: sideYardLabel },
+    { label: "REAR", count: hasRear ? 1 : 0, color: "#7c3aed", offset: hasRear ? rearYardLabel : "n/a" },
+  ];
+
+  const tableRows = rows
+    .map((r) => `<tr>
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${r.color};margin-right:5px"></span>${r.label}</td>
+      <td>${r.count}</td>
+      <td>${r.offset}</td>
+    </tr>`)
+    .join("");
+
+  return `
+    <div class="summary-section-head">Yard Classification</div>
+    <div class="summary-row"><span>Lot Type</span><strong>${lot.lotType || "n/a"}${lot.isIslandLot ? " (all sides street-facing)" : ""}</strong></div>
+    <table class="summary-debug-table" style="width:100%;font-size:0.75rem;border-collapse:collapse;margin:4px 0">
+      <thead><tr><th style="text-align:left">Edge Type</th><th>Count</th><th>Offset</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>`;
+}
+
+function _buildOpenSpaceCheckRows(lot, primary) {
+  const osr = coerceNumber(primary?.openSpaceRatio);
+  if (osr == null || osr <= 0) return "";
+  const far = coerceNumber(primary?.far);
+  const lotAreaFt2 = coerceNumber(lot?.lotAreaFt2);
+  if (far == null || lotAreaFt2 == null) return "";
+
+  const floorAreaFt2 = lotAreaFt2 * far;
+  const requiredOpenFt2 = Math.round(floorAreaFt2 * osr / 100);
+  const maxCoverageFt2 = Math.max(0, Math.round(lotAreaFt2 - requiredOpenFt2));
+  const lotCoveragePct = Math.min(100, Math.round((maxCoverageFt2 / lotAreaFt2) * 100));
+
+  return `
+    <div class="summary-section-head">Open Space Ratio</div>
+    <div class="summary-row"><span>Open Space Ratio</span><strong>${formatNumber(osr, 2)}</strong></div>
+    <div class="summary-row"><span>Floor Area (FAR × Lot)</span><strong>${formatNumber(floorAreaFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Required Open Space</span><strong>${formatNumber(requiredOpenFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Max Lot Coverage</span><strong>${formatNumber(maxCoverageFt2, 0)} sf (≤ ${lotCoveragePct}%)</strong></div>`;
+}
+
 function _buildRuleEngineRows(snapshot) {
-  function _buildYardClassificationTable(lot, primary) {
-    if (!lot) return "";
-    const frontCount = lot.frontEdgeIndices?.length ?? 0;
-    const sideCount = lot.sideEdgeIndices?.length ?? 0;
-    const hasRear = lot.rearEdgeIndex != null;
-
-    const frontYardLabel = primary?.frontYard == null ? "Missing rule" : `${formatNumber(primary.frontYard, 0)} ft`;
-    const sideYardLabel = primary?.sideYard == null ? "Missing rule" : `${formatNumber(primary.sideYard, 0)} ft`;
-    const rearYardLabel = primary?.rearYard == null ? "Missing rule" : `${formatNumber(primary.rearYard, 0)} ft`;
-
-    const rows = [
-      { label: "FRONT", count: frontCount, color: "#2563eb", offset: frontYardLabel },
-      { label: "SIDE", count: sideCount, color: "#f97316", offset: sideYardLabel },
-      { label: "REAR", count: hasRear ? 1 : 0, color: "#7c3aed", offset: hasRear ? rearYardLabel : "n/a" },
-    ];
-
-    const tableRows = rows
-      .map((r) => `<tr>
-        <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${r.color};margin-right:5px"></span>${r.label}</td>
-        <td>${r.count}</td>
-        <td>${r.offset}</td>
-      </tr>`)
-      .join("");
-
-    return `
-      <div class="summary-section-head">Yard Classification</div>
-      <div class="summary-row"><span>Lot Type</span><strong>${lot.lotType || "n/a"}${lot.isIslandLot ? " (all sides street-facing)" : ""}</strong></div>
-      <table class="summary-debug-table" style="width:100%;font-size:0.75rem;border-collapse:collapse;margin:4px 0">
-        <thead><tr><th style="text-align:left">Edge Type</th><th>Count</th><th>Offset</th></tr></thead>
-        <tbody>${tableRows}</tbody>
-      </table>`;
-  }
-
-  function _buildOpenSpaceCheckRows(lot, primary) {
-    const osr = coerceNumber(primary?.openSpaceRatio);
-    if (osr == null || osr <= 0) return "";
-    const far = coerceNumber(primary?.far);
-    const lotAreaFt2 = coerceNumber(lot?.lotAreaFt2);
-    if (far == null || lotAreaFt2 == null) return "";
-
-    const floorAreaFt2 = lotAreaFt2 * far;
-    const requiredOpenFt2 = Math.round(floorAreaFt2 * osr / 100);
-    const maxCoverageFt2 = Math.max(0, Math.round(lotAreaFt2 - requiredOpenFt2));
-    const lotCoveragePct = Math.min(100, Math.round((maxCoverageFt2 / lotAreaFt2) * 100));
-
-    return `
-      <div class="summary-section-head">Open Space Ratio</div>
-      <div class="summary-row"><span>Open Space Ratio</span><strong>${formatNumber(osr, 2)}</strong></div>
-      <div class="summary-row"><span>Floor Area (FAR × Lot)</span><strong>${formatNumber(floorAreaFt2, 0)} sf</strong></div>
-      <div class="summary-row"><span>Required Open Space</span><strong>${formatNumber(requiredOpenFt2, 0)} sf</strong></div>
-      <div class="summary-row"><span>Max Lot Coverage</span><strong>${formatNumber(maxCoverageFt2, 0)} sf (≤ ${lotCoveragePct}%)</strong></div>`;
-  }
-
-  function _buildRuleEngineRows(snapshot) {
   if (!snapshot?.lotAnalysis || !snapshot?.controlsResult) return "";
   const lot = snapshot.lotAnalysis;
   const controls = snapshot.controlsResult.controlsByZone || [];
