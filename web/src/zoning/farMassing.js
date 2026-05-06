@@ -182,6 +182,48 @@ function _fallbackRectInsideBuildable(buildableGeom, orientationDeg = null) {
   return null;
 }
 
+function _rectForTargetAreaInsideBuildable(buildableGeom, targetAreaFt2, orientationDeg = null) {
+  const buildableAreaFt2 = _areaFt2(buildableGeom);
+  if (!(buildableAreaFt2 > 1) || !(targetAreaFt2 > 0)) return null;
+
+  const targetRatio = Math.max(0.03, Math.min(0.98, targetAreaFt2 / buildableAreaFt2));
+  const candidates = [];
+
+  // Prefer elongated bars parallel to front axis before squarer options.
+  const widthFracs = [0.94, 0.88, 0.82, 0.76, 0.7, 0.64, 0.58];
+  for (const widthFrac of widthFracs) {
+    const depthFrac = Math.max(0.08, Math.min(0.98, targetRatio / widthFrac));
+    const rect = _rectInsideBuildable(buildableGeom, widthFrac, depthFrac, "center", orientationDeg);
+    if (!rect) continue;
+    const area = _areaFt2(rect);
+    if (!(area > 0)) continue;
+    candidates.push({
+      rect,
+      area,
+      delta: Math.abs(area - targetAreaFt2),
+      shapePenalty: Math.abs(widthFrac - depthFrac) * 0.03,
+    });
+  }
+
+  const squareFrac = Math.max(0.08, Math.min(0.98, Math.sqrt(targetRatio)));
+  const squareRect = _rectInsideBuildable(buildableGeom, squareFrac, squareFrac, "center", orientationDeg);
+  if (squareRect) {
+    const area = _areaFt2(squareRect);
+    if (area > 0) {
+      candidates.push({
+        rect: squareRect,
+        area,
+        delta: Math.abs(area - targetAreaFt2),
+        shapePenalty: 0,
+      });
+    }
+  }
+
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => (a.delta + (a.area * a.shapePenalty)) - (b.delta + (b.area * b.shapePenalty)));
+  return candidates[0].rect;
+}
+
 function _squareAtCenter(center, sideM) {
   if (!Array.isArray(center) || center.length < 2 || !(sideM > 0)) return null;
   const half = sideM / 2;
@@ -554,142 +596,74 @@ export function buildFarMassing({
   }
 
   const safeFloorHeight = Math.max(8, Number(floorHeightFt) || 10);
-  const safeCoverage = Math.max(0.18, Math.min(0.98, (Number(coveragePct) || 80) / 100));
-  const targetCoverageArea = buildableAreaFt2 * safeCoverage;
-
-  const shape = _bboxMetrics(simplifiedBuildable);
-  const farIntensity = allowedFarFloorArea / Math.max(1, buildableAreaFt2);
-  const typology = "box";
-
-  let primaryFootprint = null;
-  let podiumGeom = null;
-  let towerGeom = null;
-  let courtyardGeom = null;
-
-  const scheme = _floorplateFromTypology(
-    simplifiedBuildable,
-    typology,
-    safeCoverage,
-    Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
+  const safeMaxHeight = Number.isFinite(maxHeightFt) && maxHeightFt > 0
+    ? Math.max(safeFloorHeight, maxHeightFt)
+    : safeFloorHeight;
+  const orientationDeg = Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null;
+  const targetFloorArea = Math.max(1, Number(allowedFarFloorArea) || 0);
+  const floorCount = Math.max(1, Math.floor(safeMaxHeight / safeFloorHeight));
+  const unclampedTargetFootprintArea = targetFloorArea / floorCount;
+  const targetFootprintArea = Math.max(
+    40,
+    Math.min(buildableAreaFt2, unclampedTargetFootprintArea)
   );
-  if (scheme?.type) {
-    primaryFootprint = scheme;
-  } else if (scheme?.podium || scheme?.tower) {
-    podiumGeom = scheme.podium || null;
-    towerGeom = scheme.tower || null;
-    primaryFootprint = _union([podiumGeom, towerGeom]);
-  } else if (scheme?.ring || scheme?.courtyard) {
-    primaryFootprint = scheme.ring || null;
-    courtyardGeom = scheme.courtyard || null;
+
+  let fallbackReason = null;
+  let primaryFootprint = _rectForTargetAreaInsideBuildable(
+    simplifiedBuildable,
+    targetFootprintArea,
+    orientationDeg
+  );
+
+  if (!primaryFootprint || _areaFt2(primaryFootprint) <= 0) {
+    fallbackReason = "front-axis rectangular fitting failed; using rectangular in-bounds fallback.";
+    primaryFootprint = _guaranteedInBoundsFootprint(simplifiedBuildable, orientationDeg);
   }
 
-  if (!primaryFootprint || _areaFt2(primaryFootprint) < 80) {
-    warnings.push("FAR morphology fallback used due to constrained lot geometry.");
-    primaryFootprint = _guaranteedInBoundsFootprint(
-      simplifiedBuildable,
-      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
-    );
-    podiumGeom = null;
-    towerGeom = null;
-    courtyardGeom = null;
-  }
-
-  let primaryAreaFt2 = _areaFt2(primaryFootprint);
-  if (primaryAreaFt2 <= 0) {
-    warnings.push("No valid FAR footprint could be generated from typology; using compact box fallback footprint.");
-    primaryFootprint = _guaranteedInBoundsFootprint(
-      simplifiedBuildable,
-      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
-    );
-    primaryAreaFt2 = _areaFt2(primaryFootprint);
-    podiumGeom = null;
-    towerGeom = null;
-    courtyardGeom = null;
-  }
-
-  if (primaryAreaFt2 <= 0) {
+  let footprintAreaFt2 = _areaFt2(primaryFootprint);
+  if (!(footprintAreaFt2 > 0)) {
+    fallbackReason = fallbackReason || "rectangular fallback could not be resolved.";
     return {
       features,
       warnings: [...warnings, "No valid FAR footprint could be generated."],
       numFloors: 0,
       buildingHeightFt: 0,
       footprintAreaFt2: 0,
-      selectedTypology: typology,
+      selectedTypology: "box",
       scoreBreakdown: null,
     };
   }
 
-  // Score and optional adjustment toward compact, usable floorplates.
-  const score = _scorePlan({
-    buildingGeom: primaryFootprint,
-    buildableGeom: simplifiedBuildable,
-    targetOpenSpaceFt2: Math.max(0, Number(openSpaceTargetFt2) || 0),
-    frontageFt: shape.frontageFt,
-    lotDepthFt: shape.lotDepthFt,
-    warnings,
+  if (fallbackReason) {
+    warnings.push(`FAR fallback: ${fallbackReason}`);
+    console.warn(`[far-massing] reason for fallback: ${fallbackReason}`);
+  }
+
+  const estimatedFloors = targetFloorArea / Math.max(1, footprintAreaFt2);
+  const unclampedHeightFt = Math.max(safeFloorHeight, estimatedFloors * safeFloorHeight);
+  let buildingHeightFt = Math.min(safeMaxHeight, unclampedHeightFt);
+  if (enforceMaxHeight) {
+    buildingHeightFt = Math.min(buildingHeightFt, safeMaxHeight);
+  }
+  const numFloors = Math.max(1, Math.floor(buildingHeightFt / safeFloorHeight));
+
+  console.log(`[far-massing] buildableArea: ${buildableAreaFt2}`);
+  console.log(`[far-massing] targetFloorArea: ${targetFloorArea}`);
+  console.log(`[far-massing] targetFootprintArea: ${targetFootprintArea}`);
+  console.log(`[far-massing] selectedFarFootprint:`, {
+    areaFt2: footprintAreaFt2,
+    orientationDeg,
+    geometryType: primaryFootprint?.type || null,
   });
-  if (score.total < -0.1) {
-    const tightened = _safeBufferInward(primaryFootprint, 4);
-    if (_areaFt2(tightened) > 120) {
-      primaryFootprint = tightened;
-      warnings.push("Footprint tightened to remove awkward perimeter slivers.");
-    }
-  }
+  console.log(`[far-massing] farHeight: ${buildingHeightFt}`);
 
-  let footprintAreaFt2 = Math.min(_areaFt2(primaryFootprint), targetCoverageArea > 0 ? targetCoverageArea : _areaFt2(primaryFootprint));
-  if (footprintAreaFt2 < 120) {
-    footprintAreaFt2 = Math.max(120, _areaFt2(primaryFootprint));
-  }
-
-  let numFloors = Math.max(1, Math.ceil(allowedFarFloorArea / Math.max(1, footprintAreaFt2)));
-  let buildingHeightFt = numFloors * safeFloorHeight;
-
-  const safeMaxHeight = Number.isFinite(maxHeightFt) && maxHeightFt > 0
-    ? Math.max(safeFloorHeight, maxHeightFt)
-    : null;
-  if (safeMaxHeight != null && buildingHeightFt > safeMaxHeight) {
-    warnings.push(`FAR massing exceeds max-height control (${safeMaxHeight} ft): computed ${buildingHeightFt.toFixed(2)} ft from FAR and floorplate.`);
-    if (enforceMaxHeight) {
-      buildingHeightFt = safeMaxHeight;
-      numFloors = Math.max(1, Math.floor(buildingHeightFt / safeFloorHeight));
-      warnings.push(`FAR massing height clamped to max allowed ${safeMaxHeight} ft.`);
-    }
-  }
-
-  // Generate volume pieces by morphology strategy.
-  if ((typology === "tower" || typology === "tower-podium") && towerGeom && _areaFt2(towerGeom) > 60) {
-    const podium = podiumGeom || primaryFootprint;
-    const podiumArea = Math.max(1, _areaFt2(podium));
-    const towerArea = Math.max(1, _areaFt2(towerGeom));
-    const podiumFloors = Math.max(2, Math.min(6, Math.round(numFloors * 0.28)));
-    const podiumAreaServed = podiumArea * podiumFloors;
-    const remainingArea = Math.max(0, allowedFarFloorArea - podiumAreaServed);
-    const towerFloors = Math.max(1, Math.ceil(remainingArea / towerArea));
-    const podiumTop = Math.min(buildingHeightFt, podiumFloors * safeFloorHeight);
-    const towerTop = Math.min(
-      buildingHeightFt,
-      podiumTop + (towerFloors * safeFloorHeight)
-    );
-
-    const podiumMass = _makeMassFeature(podium, 0, podiumTop, color, typology, podiumFloors, "podium");
-    const towerMass = _makeMassFeature(towerGeom, podiumTop, Math.max(podiumTop + safeFloorHeight, towerTop), color, typology, towerFloors, "tower");
-    if (podiumMass) features.push(podiumMass);
-    if (towerMass) features.push(towerMass);
-
-    features.push(_makePlanFeature(podium, "far_footprint", "#1a7f54", typology, "footprint", _areaFt2(podium)));
-  } else {
-    features.push(_makeMassFeature(primaryFootprint, 0, buildingHeightFt, color, typology, numFloors, typology));
-    features.push(_makePlanFeature(primaryFootprint, "far_footprint", "#1a7f54", typology, "footprint", _areaFt2(primaryFootprint)));
-  }
-
-  if (courtyardGeom && _areaFt2(courtyardGeom) > 40) {
-    features.push(_makePlanFeature(courtyardGeom, "far_open_space", "#98d8bb", typology, "courtyard", _areaFt2(courtyardGeom)));
-  }
+  features.push(_makeMassFeature(primaryFootprint, 0, buildingHeightFt, color, "box", numFloors, "box"));
+  features.push(_makePlanFeature(primaryFootprint, "far_footprint", "#1a7f54", "box", "footprint", _areaFt2(primaryFootprint)));
 
   const computedOpenSpace = _difference(simplifiedBuildable, primaryFootprint);
   const computedOpenAreaFt2 = _areaFt2(computedOpenSpace);
   if (computedOpenSpace && computedOpenAreaFt2 > 60) {
-    features.push(_makePlanFeature(computedOpenSpace, "far_open_space", "#98d8bb", typology, "open-space", computedOpenAreaFt2));
+    features.push(_makePlanFeature(computedOpenSpace, "far_open_space", "#98d8bb", "box", "open-space", computedOpenAreaFt2));
   }
 
   if ((Number(openSpaceTargetFt2) || 0) > 0 && computedOpenAreaFt2 < Number(openSpaceTargetFt2)) {
@@ -702,34 +676,19 @@ export function buildFarMassing({
   if (!rawFeatures.length && _areaFt2(simplifiedBuildable) > 1) {
     const strictFallbackFootprint = _guaranteedInBoundsFootprint(
       simplifiedBuildable,
-      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
+      orientationDeg
     );
     const strictFallbackHeightFt = Math.max(safeFloorHeight, Number(buildingHeightFt) || safeFloorHeight);
-    const fallbackMass = _makeMassFeature(strictFallbackFootprint, 0, strictFallbackHeightFt, color, typology || "fallback", Math.max(1, numFloors || 1), "fallback");
-    const fallbackFootprint = _makePlanFeature(strictFallbackFootprint, "far_footprint", "#1a7f54", typology || "fallback", "fallback-footprint", _areaFt2(strictFallbackFootprint));
+    const fallbackMass = _makeMassFeature(strictFallbackFootprint, 0, strictFallbackHeightFt, color, "box", Math.max(1, numFloors || 1), "fallback");
+    const fallbackFootprint = _makePlanFeature(strictFallbackFootprint, "far_footprint", "#1a7f54", "box", "fallback-footprint", _areaFt2(strictFallbackFootprint));
     rawFeatures = [fallbackMass, fallbackFootprint].filter(Boolean);
-    warnings.push("FAR last-resort fallback applied: generated compact box volume/footprint.");
+    const emptyReason = "raw feature generation returned empty; created rectangular fallback footprint.";
+    warnings.push(`FAR fallback: ${emptyReason}`);
+    console.warn(`[far-massing] reason for fallback: ${emptyReason}`);
   }
 
-  const clippedFeatures = rawFeatures
-    .filter(Boolean)
-    .map((feature) => _clipToBuildable(feature, simplifiedBuildable))
-    .filter(Boolean);
-
-  // Keep output strictly in-bounds. If clipping fails, synthesize a compact in-bounds box.
-  let finalFeatures = clippedFeatures;
-  if (!finalFeatures.length && _areaFt2(simplifiedBuildable) > 1) {
-    const inBoundsFootprint = _guaranteedInBoundsFootprint(
-      simplifiedBuildable,
-      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
-    );
-    const inBoundsHeightFt = Math.max(safeFloorHeight, Number(buildingHeightFt) || safeFloorHeight);
-    finalFeatures = [
-      _makeMassFeature(inBoundsFootprint, 0, inBoundsHeightFt, color, typology || "fallback", Math.max(1, numFloors || 1), "in-bounds-fallback"),
-      _makePlanFeature(inBoundsFootprint, "far_footprint", "#1a7f54", typology || "fallback", "in-bounds-fallback-footprint", _areaFt2(inBoundsFootprint)),
-    ].filter(Boolean);
-    warnings.push("FAR clipping fallback applied: synthesized compact in-bounds box massing.");
-  }
+  // Avoid clipping the final FAR massing footprint to prevent triangular leftovers.
+  const finalFeatures = rawFeatures;
 
   return {
     features: finalFeatures,
@@ -737,15 +696,15 @@ export function buildFarMassing({
     numFloors,
     buildingHeightFt,
     footprintAreaFt2: _areaFt2(primaryFootprint),
-    selectedTypology: typology,
+    selectedTypology: "box",
     scoreBreakdown: {
-      ...score,
+      compactness: footprintAreaFt2 / Math.max(1, buildableAreaFt2),
       targetOpenSpaceFt2: Math.max(0, Number(openSpaceTargetFt2) || 0),
       requestedMassingOption: massingOption,
-      farIntensity,
+      farIntensity: targetFloorArea / Math.max(1, buildableAreaFt2),
       buildableAreaFt2,
-      targetCoverage: safeCoverage,
-      frontageOrientationDeg: Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null,
+      targetCoverage: targetFootprintArea / Math.max(1, buildableAreaFt2),
+      frontageOrientationDeg: orientationDeg,
     },
   };
 }

@@ -5307,28 +5307,23 @@ function _computeFrontageOrientationDeg(lotAnalysis) {
 
   if (!frontEdges.length) return null;
 
-  // Circular weighted mean so opposite edge directions don't cancel due to angle wrap.
-  let sumX = 0;
-  let sumY = 0;
-  let weightTotal = 0;
-  for (const edge of frontEdges) {
-    const a = edge?.a;
-    const b = edge?.b;
-    if (!Array.isArray(a) || !Array.isArray(b)) continue;
-    const dx = Number(b[0]) - Number(a[0]);
-    const dy = Number(b[1]) - Number(a[1]);
-    const length = Math.hypot(dx, dy);
-    if (!(length > 0)) continue;
-    const ux = dx / length;
-    const uy = dy / length;
-    const w = Number(edge.lengthFt) > 0 ? Number(edge.lengthFt) : 1;
-    sumX += ux * w;
-    sumY += uy * w;
-    weightTotal += w;
-  }
+  // Use the longest street-facing edge as the primary FAR axis.
+  const longestFrontEdge = frontEdges.reduce((best, edge) => {
+    const length = Number(edge?.lengthFt);
+    const safeLength = Number.isFinite(length) && length > 0 ? length : 0;
+    const bestLength = Number(best?.lengthFt);
+    const safeBest = Number.isFinite(bestLength) && bestLength > 0 ? bestLength : 0;
+    return safeLength > safeBest ? edge : best;
+  }, frontEdges[0]);
 
-  if (!(weightTotal > 0)) return null;
-  const angleRad = Math.atan2(sumY, sumX);
+  const a = longestFrontEdge?.a;
+  const b = longestFrontEdge?.b;
+  if (!Array.isArray(a) || !Array.isArray(b)) return null;
+  const dx = Number(b[0]) - Number(a[0]);
+  const dy = Number(b[1]) - Number(a[1]);
+  if (!(Math.hypot(dx, dy) > 0)) return null;
+
+  const angleRad = Math.atan2(dy, dx);
   const angleDeg = angleRad * (180 / Math.PI);
   return Number.isFinite(angleDeg) ? angleDeg : null;
 }
