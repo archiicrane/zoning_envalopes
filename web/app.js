@@ -40,6 +40,37 @@ const ZONING_RULES_URLS = [
 
 const feetToMeters = (ft) => Number(ft || 0) * 0.3048;
 
+const STYLE_PRESET = {
+  maxEnvelope: {
+    fillColor: "#0ea5e9",
+    fillOpacityDefault: 0.42,
+    fillOpacityMin: 0.22,
+    outlineColor: "#1d4ed8",
+    outlineOpacity: 1,
+    outlineWidth: 3,
+  },
+  farEnvelope: {
+    fillColor: "#22c55e",
+    fillOpacityDefault: 0.5,
+    fillOpacityMin: 0.18,
+    outlineColor: "#15803d",
+    outlineOpacity: 1,
+    outlineWidth: 2,
+  },
+  existingBuildings: {
+    color: "#b8bec6",
+    opacityDefault: 0.2,
+    opacityFocus: 0.15,
+    opacityPresentation: 0.16,
+  },
+  contextEnvelope: {
+    fillOpacityDefault: 0.1,
+    fillOpacityPresentation: 0.05,
+    outlineOpacityDefault: 0.22,
+    outlineOpacityPresentation: 0.12,
+  },
+};
+
 function _defaultAssumptionOverrides() {
   return {
     floorHeightFt: 10,
@@ -339,10 +370,20 @@ function _envelopeOpacityValues() {
   const transparencyPercent = Number(envelopeOpacitySlider.value);
   const opacityValue = 1 - transparencyPercent / 100;
   const baselineMultiplier = transparencyPercent === 0 ? 1 : 0.35;
+  const maxEnvelopeFillOpacity = Math.max(
+    STYLE_PRESET.maxEnvelope.fillOpacityMin,
+    STYLE_PRESET.maxEnvelope.fillOpacityDefault * opacityValue
+  );
+  const farEnvelopeFillOpacity = Math.max(
+    STYLE_PRESET.farEnvelope.fillOpacityMin,
+    STYLE_PRESET.farEnvelope.fillOpacityDefault * opacityValue
+  );
   return {
     transparencyPercent,
     scenarioOpacity: opacityValue,
     baselineOpacity: opacityValue * baselineMultiplier,
+    maxEnvelopeFillOpacity,
+    farEnvelopeFillOpacity,
   };
 }
 
@@ -350,7 +391,12 @@ function applyEnvelopeOpacityToLayers() {
   if (!map) {
     return;
   }
-  const { scenarioOpacity, baselineOpacity } = _envelopeOpacityValues();
+  const {
+    scenarioOpacity,
+    baselineOpacity,
+    maxEnvelopeFillOpacity,
+    farEnvelopeFillOpacity,
+  } = _envelopeOpacityValues();
   if (map.getLayer("zoning-envelope-fill")) {
     map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-opacity", scenarioOpacity);
   }
@@ -359,15 +405,32 @@ function applyEnvelopeOpacityToLayers() {
   }
   // Also apply (scaled down) to the neighborhood ghost-volume envelope
   if (map.getLayer("zoning-envelope-layer")) {
-    // Envelope opacity: higher base for visibility
-    const baseOpacity = presentationMode ? 0.12 : 0.40;
-    // Opacity scales with slider across full range
-    const opacity = baseOpacity + scenarioOpacity * 0.15;
+    const baseOpacity = presentationMode
+      ? STYLE_PRESET.contextEnvelope.fillOpacityPresentation
+      : STYLE_PRESET.contextEnvelope.fillOpacityDefault;
+    const opacity = Math.max(0.03, baseOpacity * (0.65 + scenarioOpacity * 0.35));
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", opacity);
   }
   if (map.getLayer("zoning-envelope-outline")) {
-    const outlineOpacity = presentationMode ? 0.0 : (0.5 + scenarioOpacity * 0.15);
+    const outlineOpacity = presentationMode
+      ? STYLE_PRESET.contextEnvelope.outlineOpacityPresentation
+      : STYLE_PRESET.contextEnvelope.outlineOpacityDefault;
     map.setPaintProperty("zoning-envelope-outline", "line-opacity", outlineOpacity);
+  }
+
+  if (map.getLayer("selected-max-envelope-fill")) {
+    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-opacity", maxEnvelopeFillOpacity);
+  }
+  if (map.getLayer("selected-far-envelope-fill")) {
+    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", farEnvelopeFillOpacity);
+  }
+  if (map.getLayer("selected-max-envelope-outline")) {
+    map.setPaintProperty("selected-max-envelope-outline", "line-opacity", STYLE_PRESET.maxEnvelope.outlineOpacity);
+    map.setPaintProperty("selected-max-envelope-outline", "line-width", STYLE_PRESET.maxEnvelope.outlineWidth);
+  }
+  if (map.getLayer("selected-far-envelope-outline")) {
+    map.setPaintProperty("selected-far-envelope-outline", "line-opacity", STYLE_PRESET.farEnvelope.outlineOpacity);
+    map.setPaintProperty("selected-far-envelope-outline", "line-width", STYLE_PRESET.farEnvelope.outlineWidth);
   }
 }
 
@@ -521,18 +584,17 @@ function applyDiagramMode() {
     map.setPaintProperty(
       "existing-buildings-mapbox",
       "fill-extrusion-color",
-      presentationMode ? "#f5f5f5" : diagramMode ? "#eeeeee" : "#d8d8d8"
+      STYLE_PRESET.existingBuildings.color
     );
     map.setPaintProperty(
       "existing-buildings-mapbox",
       "fill-extrusion-opacity",
-      presentationMode ? 0.55 : diagramMode ? (focusSelectedLotMode ? 0.15 : 0.4) : (focusSelectedLotMode ? 0.2 : 0.68)
+      presentationMode
+        ? STYLE_PRESET.existingBuildings.opacityPresentation
+        : (focusSelectedLotMode ? STYLE_PRESET.existingBuildings.opacityFocus : STYLE_PRESET.existingBuildings.opacityDefault)
     );
   }
-  if (map.getLayer("zoning-envelope-layer")) {
-    const fillOpacity = presentationMode ? 0.12 : 0.40;
-    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", fillOpacity);
-  }
+  applyEnvelopeOpacityToLayers();
 }
 
 function applyPresentationMode() {
@@ -548,18 +610,17 @@ function applyPresentationMode() {
     map.setPaintProperty(
       "existing-buildings-mapbox",
       "fill-extrusion-color",
-      presentationMode ? "#f5f5f5" : "#d8d8d8"
+      STYLE_PRESET.existingBuildings.color
     );
     map.setPaintProperty(
       "existing-buildings-mapbox",
       "fill-extrusion-opacity",
-      presentationMode ? 0.55 : 0.68
+      presentationMode
+        ? STYLE_PRESET.existingBuildings.opacityPresentation
+        : STYLE_PRESET.existingBuildings.opacityDefault
     );
   }
-  if (map.getLayer("zoning-envelope-layer")) {
-    const fillOpacity = presentationMode ? 0.12 : 0.40;
-    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", fillOpacity);
-  }
+  applyEnvelopeOpacityToLayers();
 }
 
 if (diagramModeBtn) {
@@ -1298,10 +1359,10 @@ function ensureSourcesAndLayers() {
         minzoom: 10,
         filter: ["==", "$type", "Polygon"],
         paint: {
-          "fill-extrusion-color": "#d8d8d8",
+          "fill-extrusion-color": STYLE_PRESET.existingBuildings.color,
           "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 10],
           "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
-          "fill-extrusion-opacity": 0.65,
+          "fill-extrusion-opacity": STYLE_PRESET.existingBuildings.opacityDefault,
           "fill-extrusion-vertical-gradient": true,
         },
       },
@@ -1326,7 +1387,7 @@ function ensureSourcesAndLayers() {
       paint: {
         // Subtle ghost volumes for surrounding neighborhood lots
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#3b82f6"],
-        "fill-extrusion-opacity": 0.15,  // deliberately subtle — selected lots use dedicated layers
+        "fill-extrusion-opacity": STYLE_PRESET.contextEnvelope.fillOpacityDefault,
         "fill-extrusion-base": ["*", ["coalesce", ["get", "envelopeBase"], 0], 0.3048],
         "fill-extrusion-height": ["*", ["coalesce", ["get", "envelopeHeight"], 0], 0.3048],
         "fill-extrusion-vertical-gradient": false,
@@ -1440,7 +1501,7 @@ function ensureSourcesAndLayers() {
       filter: ["==", ["get", "kind"], "buildable_footprint"],
       paint: {
         "fill-color": "#14b8a6",
-        "fill-opacity": 0.44,
+        "fill-opacity": 0.28,
       },
     });
 
@@ -1625,8 +1686,8 @@ function ensureSourcesAndLayers() {
       type: "fill-extrusion",
       source: "selected-max-envelope",
       paint: {
-        "fill-extrusion-color": "#3b82f6",
-        "fill-extrusion-opacity": 0.18,
+        "fill-extrusion-color": STYLE_PRESET.maxEnvelope.fillColor,
+        "fill-extrusion-opacity": STYLE_PRESET.maxEnvelope.fillOpacityDefault,
         "fill-extrusion-base": ["*", ["coalesce", ["get", "envelopeBase"], 0], 0.3048],
         "fill-extrusion-height": ["*", ["coalesce", ["get", "envelopeHeight"], 0], 0.3048],
         "fill-extrusion-vertical-gradient": false,
@@ -1639,9 +1700,9 @@ function ensureSourcesAndLayers() {
       source: "selected-max-envelope",
       minzoom: 14,
       paint: {
-        "line-color": "#1d4ed8",
-        "line-width": 1.8,
-        "line-opacity": 0.7,
+        "line-color": STYLE_PRESET.maxEnvelope.outlineColor,
+        "line-width": STYLE_PRESET.maxEnvelope.outlineWidth,
+        "line-opacity": STYLE_PRESET.maxEnvelope.outlineOpacity,
       },
     });
   }
@@ -1655,8 +1716,8 @@ function ensureSourcesAndLayers() {
       type: "fill-extrusion",
       source: "selected-far-envelope",
       paint: {
-        "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#22c55e"],
-        "fill-extrusion-opacity": 0.35,
+        "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], STYLE_PRESET.farEnvelope.fillColor],
+        "fill-extrusion-opacity": STYLE_PRESET.farEnvelope.fillOpacityDefault,
         "fill-extrusion-base": ["*", ["coalesce", ["get", "envelopeBase"], 0], 0.3048],
         "fill-extrusion-height": ["*", ["coalesce", ["get", "envelopeHeight"], 0], 0.3048],
         "fill-extrusion-vertical-gradient": true,
@@ -1669,9 +1730,9 @@ function ensureSourcesAndLayers() {
       source: "selected-far-envelope",
       minzoom: 14,
       paint: {
-        "line-color": "#15803d",
-        "line-width": 1.8,
-        "line-opacity": 0.7,
+        "line-color": STYLE_PRESET.farEnvelope.outlineColor,
+        "line-width": STYLE_PRESET.farEnvelope.outlineWidth,
+        "line-opacity": STYLE_PRESET.farEnvelope.outlineOpacity,
         "line-dasharray": [2, 2],
       },
     });
@@ -1713,7 +1774,11 @@ function applyFocusModeVisuals() {
     map.setPaintProperty("neighborhood-lot-outline", "line-opacity", focusSelectedLotMode ? 0.12 : 0.5);
   }
   if (map.getLayer("existing-buildings-mapbox")) {
-    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", focusSelectedLotMode ? 0.2 : 0.65);
+    map.setPaintProperty(
+      "existing-buildings-mapbox",
+      "fill-extrusion-opacity",
+      focusSelectedLotMode ? STYLE_PRESET.existingBuildings.opacityFocus : STYLE_PRESET.existingBuildings.opacityDefault
+    );
   }
 }
 
