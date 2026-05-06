@@ -147,24 +147,51 @@ function classifyLotEdges(edges, roads, neighborLines) {
   }
 
   edgesByRoadDistance.sort((a, b) => a.minRoadDistM - b.minRoadDistM);
+  const primaryFront = edgesByRoadDistance[0] || edges[0] || null;
 
-  // Classify every edge as street-facing (FRONT) if its midpoint is within the road's
-  // effective right-of-way.  Threshold = half the road width + ~18 ft for sidewalk/buffer.
-  // We always include at least the closest edge; then include any other edge that passes.
-  const frontEdgeIndices = [];
+  const isAdjacentEdge = (a, b, edgeCount) => {
+    if (!Number.isInteger(a) || !Number.isInteger(b) || !edgeCount) return false;
+    const delta = Math.abs(a - b);
+    return delta === 1 || delta === (edgeCount - 1);
+  };
+
+  // Street-facing candidates: close to road centerline and not likely shared lot line.
+  const streetFacingCandidates = [];
 
   for (const edge of edgesByRoadDistance) {
-    // Threshold: half road width + 18 ft sidewalk allowance, minimum 30 ft
-    const thresholdFt = Math.max(30, (edge.streetWidthFt / 2) + 18);
+    // Slightly conservative threshold to avoid misclassifying side/rear edges as FRONT.
+    const thresholdFt = Math.max(24, (edge.streetWidthFt / 2) + 12);
     if (Number.isFinite(edge.minRoadDistM) && edge.minRoadDistM <= thresholdFt * FT_TO_M) {
-      frontEdgeIndices.push(edge.idx);
+      streetFacingCandidates.push(edge);
     }
   }
 
-  // Always have at least one front edge (the closest road edge)
-  if (!frontEdgeIndices.length) {
-    const primaryFront = edgesByRoadDistance[0] || edges[0] || null;
-    if (primaryFront) frontEdgeIndices.push(primaryFront.idx);
+  // Prefer edges that do not touch neighboring lot boundaries.
+  const nonNeighborStreetEdges = streetFacingCandidates.filter((edge) => !edge.touchesNeighbor);
+  let chosenFrontEdges = nonNeighborStreetEdges.length ? nonNeighborStreetEdges : streetFacingCandidates;
+
+  // Always have at least one FRONT edge (closest road edge).
+  if (!chosenFrontEdges.length && primaryFront) {
+    chosenFrontEdges = [primaryFront];
+  }
+
+  // Keep FRONT edges compact to avoid over-constraining insets on noisy geometries.
+  const sortedFrontCandidates = [...chosenFrontEdges].sort((a, b) => a.minRoadDistM - b.minRoadDistM);
+  const frontEdgeIndices = [];
+  if (sortedFrontCandidates.length) {
+    frontEdgeIndices.push(sortedFrontCandidates[0].idx);
+  }
+  for (let i = 1; i < sortedFrontCandidates.length; i += 1) {
+    const candidate = sortedFrontCandidates[i];
+    const nearestExisting = frontEdgeIndices.find((idx) => isAdjacentEdge(idx, candidate.idx, edges.length));
+    if (nearestExisting != null) {
+      frontEdgeIndices.push(candidate.idx);
+      break; // Max 2 FRONT edges for stable directional setbacks.
+    }
+  }
+
+  if (!frontEdgeIndices.length && primaryFront) {
+    frontEdgeIndices.push(primaryFront.idx);
   }
 
   const all = edges.map((e) => e.idx);

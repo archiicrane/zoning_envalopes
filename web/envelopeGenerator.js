@@ -254,6 +254,7 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
 
   const workingEdges = closeRing(ring);
   const edgeRoles = {};
+  const warnedOverConstraintRoles = new Set();
   for (let i = 0; i < workingEdges.length - 1; i += 1) {
     const role = roleMap.get(i) || "side";
     edgeRoles[i] = role;
@@ -278,7 +279,11 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
 
     const clipped = clipRingByDirectedLine(ring, lineA, lineB, isCcw);
     if (clipped.length < 4) {
-      warnings.push(`Yard offsets over-constrained lot on ${role.toUpperCase()} edge; keeping previous valid footprint.`);
+      const roleKey = String(role || "").toLowerCase();
+      if (!warnedOverConstraintRoles.has(roleKey)) {
+        warnings.push(`Yard offsets over-constrained lot on ${role.toUpperCase()} edge; keeping previous valid footprint.`);
+        warnedOverConstraintRoles.add(roleKey);
+      }
       continue;
     }
     ring = clipped;
