@@ -205,6 +205,7 @@ function _humanizeTypology(value) {
   return token
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (s) => s.toUpperCase());
+}
 
 // ---- Workflow panel ----
 const workflowPanel = document.getElementById("workflowPanel");
