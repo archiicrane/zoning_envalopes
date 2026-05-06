@@ -262,6 +262,197 @@
   filter: saturate(0.78) brightness(0.86);
 }
 
+/* Reference-style board UI for study sheet */
+.analysis-modal.study-sheet-modal {
+  width: min(97vw, 1400px);
+  max-height: 92vh;
+  border-radius: 0;
+  border-color: #d8dce2;
+  background: #fbfcfd;
+}
+
+.study-sheet-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.study-view-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  align-self: flex-start;
+  border: 1px solid #d9dee6;
+  background: #f3f5f9;
+}
+
+.study-view-tab {
+  appearance: none;
+  border: none;
+  border-right: 1px solid #d9dee6;
+  background: transparent;
+  height: 38px;
+  min-width: 128px;
+  padding: 0 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 800;
+  color: #505d72;
+}
+
+.study-view-tab:last-child {
+  border-right: none;
+}
+
+.study-view-tab.is-active {
+  background: #ffffff;
+  color: #32286a;
+}
+
+.study-board-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(460px, 1.45fr) minmax(300px, 0.9fr);
+  gap: 10px;
+  min-height: min(72vh, 760px);
+}
+
+.diagram-card--plan,
+.diagram-card--iso,
+.study-rail {
+  border: 1px solid #d9dde4;
+  background: #ffffff;
+}
+
+.diagram-card--plan,
+.diagram-card--iso {
+  border-radius: 0;
+  min-height: 0;
+}
+
+.diagram-card--plan .diagram-card__header,
+.diagram-card--iso .diagram-card__header {
+  background: #f5f7fa;
+  color: #49556a;
+  font-size: 10px;
+}
+
+.diagram-card--plan .diagram-card__body,
+.diagram-card--iso .diagram-card__body {
+  padding: 6px;
+  min-height: 320px;
+}
+
+.study-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  border-radius: 0;
+}
+
+.study-rail__section {
+  border-bottom: 1px solid #e3e7ee;
+  padding: 14px;
+}
+
+.study-rail__section:last-child {
+  border-bottom: none;
+}
+
+.study-rail__title {
+  margin: 0 0 10px;
+  font-size: 35px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #39316c;
+}
+
+.study-kv-grid {
+  display: grid;
+  gap: 2px;
+}
+
+.study-kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #eceff4;
+}
+
+.study-kv span {
+  color: #626f83;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.study-kv strong {
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.controls-card--rail {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.controls-card--rail .controls-card__header {
+  padding: 0 0 8px;
+  border: none;
+  background: none;
+  color: #50447f;
+  font-size: 27px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.analysis-sheet__controls--rail {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  gap: 10px;
+}
+
+.analysis-sheet__controls--rail .analysis-control {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.analysis-sheet__controls--rail .analysis-control label {
+  font-size: 12px;
+}
+
+.analysis-sheet__stats--rail {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 14px;
+}
+
+.analysis-sheet__stats--rail .metric-card {
+  border-radius: 0;
+  background: #f7f9fc;
+}
+
+.analysis-sheet__stats--rail .metric-card__value {
+  font-size: 14px;
+}
+
+.analysis-iso-labels--rail {
+  border-top: 1px solid #e3e7ee;
+  grid-template-columns: 1fr;
+  gap: 3px;
+  font-size: 10px;
+}
+
 @media (max-width: 1200px) {
   .analysis-modal-overlay {
     padding: var(--space-4);
@@ -277,16 +468,20 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .diagram-grid {
-    grid-template-columns: 1fr;
+  .study-board-grid {
+    grid-template-columns: 1fr 1fr;
     min-height: auto;
+  }
+
+  .study-rail {
+    grid-column: 1 / -1;
   }
 
   .analysis-sheet__controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .metrics-grid {
+  .analysis-sheet__stats--rail {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
@@ -320,8 +515,21 @@
   .lot-info-grid,
   .analysis-sheet__controls,
   .metrics-grid,
-  .analysis-iso-labels {
+  .analysis-iso-labels,
+  .study-board-grid,
+  .analysis-sheet__stats--rail {
     grid-template-columns: 1fr;
+  }
+
+  .study-view-tabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .study-view-tab {
+    min-width: 0;
+    padding: 0 8px;
   }
 
   .study-sheet-actions {
