@@ -6601,7 +6601,7 @@ function clearCanvas(canvas) {
 
 // ─── SVG-based plan/iso renderers (crisp, vector, using proven transforms) ────
 
-function drawPlanSVG(w, h, g) {
+function drawPlanSVG(w, h, g, mode = "comparison") {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("xmlns", ns);
@@ -6612,7 +6612,8 @@ function drawPlanSVG(w, h, g) {
   // Defs: hatch pattern
   const defs = document.createElementNS(ns, "defs");
   const pat = document.createElementNS(ns, "pattern");
-  pat.setAttribute("id", "plan-hatch");
+  const hatchId = `plan-hatch-${mode}`;
+  pat.setAttribute("id", hatchId);
   pat.setAttribute("patternUnits", "userSpaceOnUse");
   pat.setAttribute("width", "8");
   pat.setAttribute("height", "8");
@@ -6651,30 +6652,50 @@ function drawPlanSVG(w, h, g) {
     return el;
   };
 
-  // Draw layers (same order as canvas drawPlan)
-  addPoly(g.buildable, "transparent", "rgba(36,92,66,0.4)", 1, "6 5");
+  const lotBounds = getBounds(transform(g.lot));
+  for (let i = 0; i < 3; i += 1) {
+    const y = lotBounds.minY - 30 - (i * 18);
+    const line = document.createElementNS(ns, "line");
+    line.setAttribute("x1", String(Math.max(6, lotBounds.minX - 120)));
+    line.setAttribute("y1", String(y));
+    line.setAttribute("x2", String(Math.min(w - 6, lotBounds.maxX + 120)));
+    line.setAttribute("y2", String(y));
+    line.setAttribute("stroke", "#d4d8df");
+    line.setAttribute("stroke-width", "1");
+    line.setAttribute("stroke-dasharray", "3 4");
+    svg.appendChild(line);
+  }
 
   // Existing building hatch
   const existingPts = pts(g.existing);
   if (existingPts) {
-    addPoly(g.existing, "rgba(200,200,200,0.18)", "#6b7280", 1.4);
+    addPoly(g.existing, "rgba(107,114,128,0.22)", "#4b5563", 1.3);
     const hatchEl = document.createElementNS(ns, "polygon");
     hatchEl.setAttribute("points", existingPts);
-    hatchEl.setAttribute("fill", "url(#plan-hatch)");
+    hatchEl.setAttribute("fill", `url(#${hatchId})`);
     hatchEl.setAttribute("stroke", "none");
     svg.appendChild(hatchEl);
   }
 
-  // FAR footprint
-  addPoly(g.farFootprint,
-    g.isCapped ? "rgba(220,38,38,0.30)" : "rgba(80,180,120,0.42)",
-    g.isCapped ? "#b91c1c" : "#1f7a4d", 2.2);
+  if (mode === "comparison") {
+    addPoly(g.buildable, "transparent", "rgba(75,85,99,0.55)", 1, "5 5");
+    addPoly(
+      g.farFootprint,
+      g.isCapped ? "rgba(190,24,24,0.26)" : "rgba(87,138,111,0.35)",
+      g.isCapped ? "#991b1b" : "#4f7f65",
+      1.8
+    );
+    addPoly(g.maxEnvelope?.footprint || g.buildable, "transparent", "#7d67a8", 1.4, "7 5");
+  } else if (mode === "max") {
+    addPoly(g.maxEnvelope?.footprint || g.buildable, "rgba(137,108,177,0.23)", "#7d67a8", 1.8, "7 4");
+  }
 
   // Lot boundary on top
-  addPoly(g.lot, "transparent", "#111827", 2.2);
+  addPoly(g.lot, "transparent", "#374151", 1.2);
 
-  // Dimensions
+  // Dimensions (width/depth only)
   for (const dim of (g.dimensions?.dimensionLines || [])) {
+    if (dim.type !== "lot-width" && dim.type !== "lot-depth") continue;
     if (!dim.start || !dim.end) continue;
     const projPts = transform([dim.start, dim.end]);
     const [p1, p2] = projPts;
@@ -6719,8 +6740,10 @@ function drawPlanSVG(w, h, g) {
     svg.appendChild(txt);
   }
 
-  // Edge labels (setback lines)
+  // Edge labels (front / rear / side)
   for (const edge of (g.dimensions?.edges || [])) {
+    const tag = String(edge.label || "").toLowerCase();
+    if (!(tag.includes("front") || tag.includes("rear") || tag.includes("side"))) continue;
     if (!edge.start || !edge.end) continue;
     const projPts = transform([edge.start, edge.end]);
     const [p1, p2] = projPts;
@@ -6775,7 +6798,34 @@ function _isoExtrusionSVG(svg, ns, iso, ring, hFt, style) {
   svg.appendChild(tf);
 }
 
-function drawIsoSVG(w, h, g) {
+function _isoOutlineDashedSVG(svg, ns, iso, ring, hFt, color = "#7d67a8") {
+  if (!ring || ring.length < 3) return;
+  const top = ring.map((pt) => iso.project(pt[0], pt[1], hFt));
+  const bot = ring.map((pt) => iso.project(pt[0], pt[1], 0));
+  const ptStr = (arr) => arr.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+  const topPoly = document.createElementNS(ns, "polygon");
+  topPoly.setAttribute("points", ptStr(top));
+  topPoly.setAttribute("fill", "transparent");
+  topPoly.setAttribute("stroke", color);
+  topPoly.setAttribute("stroke-width", "1.2");
+  topPoly.setAttribute("stroke-dasharray", "6 4");
+  svg.appendChild(topPoly);
+
+  for (let i = 0; i < bot.length - 1; i += 1) {
+    const line = document.createElementNS(ns, "line");
+    line.setAttribute("x1", bot[i].x);
+    line.setAttribute("y1", bot[i].y);
+    line.setAttribute("x2", top[i].x);
+    line.setAttribute("y2", top[i].y);
+    line.setAttribute("stroke", color);
+    line.setAttribute("stroke-width", "1");
+    line.setAttribute("stroke-dasharray", "4 4");
+    svg.appendChild(line);
+  }
+}
+
+function drawIsoSVG(w, h, g, mode = "comparison") {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("xmlns", ns);
@@ -6799,32 +6849,41 @@ function drawIsoSVG(w, h, g) {
     fill: "#e5e7eb", sideFill: "#d1d5db", topFill: "#e5e7eb", stroke: "#9ca3af", lineWidth: 0.8,
   });
 
-  // Max envelope ghost
-  _isoExtrusionSVG(svg, ns, iso, ring(g.maxEnvelope), g.maxHeight, {
-    fill: "rgba(140,190,160,0.10)", sideFill: "rgba(140,190,160,0.07)", topFill: "rgba(140,190,160,0.14)",
-    stroke: "rgba(36,92,66,0.35)", lineWidth: 0.8,
-  });
-
-  // Existing building
-  _isoExtrusionSVG(svg, ns, iso, ring(g.existingMass), hFt(g.existingMass), {
-    fill: "#f3f4f6", sideFill: "#e5e7eb", topFill: "#f3f4f6", stroke: "#374151", lineWidth: 1.8,
-  });
-
-  // FAR massing
-  _isoExtrusionSVG(svg, ns, iso, ring(g.farEnvelope), hFt(g.farEnvelope), {
-    fill: g.isCapped ? "rgba(220,38,38,0.28)" : "rgba(80,180,120,0.36)",
-    sideFill: g.isCapped ? "rgba(220,38,38,0.20)" : "rgba(80,180,120,0.26)",
-    topFill: g.isCapped ? "rgba(220,38,38,0.38)" : "rgba(80,180,120,0.48)",
-    stroke: g.isCapped ? "#b91c1c" : "#1f7a4d", lineWidth: 1.8,
-  });
+  if (mode === "existing") {
+    _isoExtrusionSVG(svg, ns, iso, ring(g.existingMass), hFt(g.existingMass), {
+      fill: "rgba(107,114,128,0.20)", sideFill: "rgba(107,114,128,0.16)", topFill: "rgba(107,114,128,0.24)", stroke: "#4b5563", lineWidth: 1.3,
+    });
+  } else if (mode === "comparison") {
+    _isoExtrusionSVG(svg, ns, iso, ring(g.existingMass), hFt(g.existingMass), {
+      fill: "rgba(107,114,128,0.22)", sideFill: "rgba(107,114,128,0.18)", topFill: "rgba(107,114,128,0.26)", stroke: "#4b5563", lineWidth: 1.2,
+    });
+    _isoExtrusionSVG(svg, ns, iso, ring(g.farEnvelope), hFt(g.farEnvelope), {
+      fill: g.isCapped ? "rgba(190,24,24,0.24)" : "rgba(87,138,111,0.30)",
+      sideFill: g.isCapped ? "rgba(190,24,24,0.17)" : "rgba(87,138,111,0.23)",
+      topFill: g.isCapped ? "rgba(190,24,24,0.32)" : "rgba(87,138,111,0.37)",
+      stroke: g.isCapped ? "#991b1b" : "#4f7f65", lineWidth: 1.3,
+    });
+    _isoOutlineDashedSVG(svg, ns, iso, ring(g.maxEnvelope), g.maxHeight, "#7d67a8");
+  } else {
+    _isoExtrusionSVG(svg, ns, iso, ring(g.maxEnvelope), g.maxHeight, {
+      fill: "rgba(137,108,177,0.24)", sideFill: "rgba(137,108,177,0.18)", topFill: "rgba(137,108,177,0.30)",
+      stroke: "#7d67a8", lineWidth: 1.3,
+    });
+    _isoOutlineDashedSVG(svg, ns, iso, ring(g.maxEnvelope), g.maxHeight, "#7d67a8");
+  }
 
   // Height dimension lines on right side
   const dimX = w - 100;
-  const dimEntries = [
-    { label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#6b7280" },
-    { label: `FAR: ${Math.round(hFt(g.farEnvelope))} ft`, h: hFt(g.farEnvelope), color: g.isCapped ? "#b91c1c" : "#16a34a" },
-    { label: `Max: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#1d4ed8" },
-  ];
+  const dimEntries = [];
+  if (mode === "existing") {
+    dimEntries.push({ label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#4b5563" });
+  } else if (mode === "comparison") {
+    dimEntries.push({ label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#4b5563" });
+    dimEntries.push({ label: `FAR: ${Math.round(hFt(g.farEnvelope))} ft`, h: hFt(g.farEnvelope), color: g.isCapped ? "#991b1b" : "#4f7f65" });
+    dimEntries.push({ label: `Max: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#7d67a8" });
+  } else {
+    dimEntries.push({ label: `Max: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#7d67a8" });
+  }
 
   // Calculate pixel height of a 1ft extrusion using the lot's first point
   const refPt = g.lot[0];
@@ -6854,6 +6913,120 @@ function drawIsoSVG(w, h, g) {
       svg.appendChild(txt);
     }
   }
+
+  return svg;
+}
+
+function drawSectionSVG(w, h, g, mode = "comparison") {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("xmlns", ns);
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+
+  const bg = document.createElementNS(ns, "rect");
+  bg.setAttribute("width", w);
+  bg.setAttribute("height", h);
+  bg.setAttribute("fill", "#ffffff");
+  svg.appendChild(bg);
+
+  const padX = 34;
+  const baseY = h - 36;
+  const plotW = w - (padX * 2) - 66;
+  const maxH = Math.max(1, Number(g.maxHeight || 1));
+  const yFor = (ft) => baseY - ((Math.max(0, ft) / maxH) * (h - 78));
+
+  const ground = document.createElementNS(ns, "line");
+  ground.setAttribute("x1", String(padX));
+  ground.setAttribute("y1", String(baseY));
+  ground.setAttribute("x2", String(padX + plotW));
+  ground.setAttribute("y2", String(baseY));
+  ground.setAttribute("stroke", "#6b7280");
+  ground.setAttribute("stroke-width", "1.2");
+  svg.appendChild(ground);
+
+  const bars = [];
+  if (mode === "existing") {
+    bars.push({ label: "Existing Height", height: g.analysis?.existingHeightFt || 0, color: "rgba(107,114,128,0.34)", stroke: "#4b5563", widthPct: 0.44 });
+  } else if (mode === "comparison") {
+    bars.push({ label: "Existing Height", height: g.analysis?.existingHeightFt || 0, color: "rgba(107,114,128,0.30)", stroke: "#4b5563", widthPct: 0.42 });
+    bars.push({ label: "FAR Height", height: g.farHeight || 0, color: g.isCapped ? "rgba(190,24,24,0.30)" : "rgba(87,138,111,0.30)", stroke: g.isCapped ? "#991b1b" : "#4f7f65", widthPct: 0.66 });
+    bars.push({ label: "Max Height", height: g.maxHeight || 0, color: "rgba(137,108,177,0.16)", stroke: "#7d67a8", widthPct: 0.84, dashed: true });
+  } else {
+    bars.push({ label: "Max Height", height: g.maxHeight || 0, color: "rgba(137,108,177,0.24)", stroke: "#7d67a8", widthPct: 0.84, dashed: true });
+  }
+
+  for (const bar of bars) {
+    const bw = plotW * bar.widthPct;
+    const x = padX + ((plotW - bw) / 2);
+    const y = yFor(bar.height);
+    const rect = document.createElementNS(ns, "rect");
+    rect.setAttribute("x", String(x));
+    rect.setAttribute("y", String(y));
+    rect.setAttribute("width", String(bw));
+    rect.setAttribute("height", String(Math.max(1, baseY - y)));
+    rect.setAttribute("fill", bar.color);
+    rect.setAttribute("stroke", bar.stroke);
+    rect.setAttribute("stroke-width", "1.2");
+    if (bar.dashed) rect.setAttribute("stroke-dasharray", "6 4");
+    svg.appendChild(rect);
+  }
+
+  const dims = [];
+  if (mode === "existing") {
+    dims.push({ label: `Existing ${Math.round(g.analysis?.existingHeightFt || 0)} ft`, h: g.analysis?.existingHeightFt || 0, color: "#4b5563" });
+  } else if (mode === "comparison") {
+    dims.push({ label: `Existing ${Math.round(g.analysis?.existingHeightFt || 0)} ft`, h: g.analysis?.existingHeightFt || 0, color: "#4b5563" });
+    dims.push({ label: `FAR ${Math.round(g.farHeight || 0)} ft`, h: g.farHeight || 0, color: g.isCapped ? "#991b1b" : "#4f7f65" });
+    dims.push({ label: `Max ${Math.round(g.maxHeight || 0)} ft`, h: g.maxHeight || 0, color: "#7d67a8" });
+  } else {
+    dims.push({ label: `Max ${Math.round(g.maxHeight || 0)} ft`, h: g.maxHeight || 0, color: "#7d67a8" });
+  }
+
+  const dimX = padX + plotW + 26;
+  let step = 0;
+  for (const dim of dims) {
+    const x = dimX + (step * 8);
+    const topY = yFor(dim.h);
+    const v = document.createElementNS(ns, "line");
+    v.setAttribute("x1", String(x));
+    v.setAttribute("y1", String(baseY));
+    v.setAttribute("x2", String(x));
+    v.setAttribute("y2", String(topY));
+    v.setAttribute("stroke", dim.color);
+    v.setAttribute("stroke-width", "1");
+    svg.appendChild(v);
+
+    const t = document.createElementNS(ns, "text");
+    t.setAttribute("x", String(x + 7));
+    t.setAttribute("y", String((topY + baseY) / 2));
+    t.setAttribute("fill", dim.color);
+    t.setAttribute("font-size", "9.5");
+    t.setAttribute("font-family", "ui-monospace,monospace");
+    t.textContent = dim.label;
+    svg.appendChild(t);
+    step += 1;
+  }
+
+  const front = document.createElementNS(ns, "text");
+  front.setAttribute("x", String(padX + 4));
+  front.setAttribute("y", String(baseY + 16));
+  front.setAttribute("fill", "#6b7280");
+  front.setAttribute("font-size", "9");
+  front.setAttribute("font-family", "ui-monospace,monospace");
+  front.textContent = `FRONT ${Math.round(g.setbacks?.front || 0)} ft`;
+  svg.appendChild(front);
+
+  const rear = document.createElementNS(ns, "text");
+  rear.setAttribute("x", String(padX + plotW - 6));
+  rear.setAttribute("y", String(baseY + 16));
+  rear.setAttribute("text-anchor", "end");
+  rear.setAttribute("fill", "#6b7280");
+  rear.setAttribute("font-size", "9");
+  rear.setAttribute("font-family", "ui-monospace,monospace");
+  rear.textContent = `REAR ${Math.round(g.setbacks?.rear || 0)} ft`;
+  svg.appendChild(rear);
 
   return svg;
 }
@@ -7219,12 +7392,22 @@ function setText(selector, value) {
 }
 
 function updateStudyLabels(g) {
+  const maxFarNode = document.getElementById("zdtMaxFar");
+  const maxFar = maxFarNode ? Number(maxFarNode.textContent || 0) : 0;
+  const lotAreaFt2 = Number(g.lotArea || g.analysis?.lotAreaFt2 || 0);
   setText("#floor-count", g.floorCount);
-  setText("#far-displayed", g.farUsed.toFixed(2));
   setText("#buildable-area", `${Math.round(g.buildableArea).toLocaleString()} sf`);
   setText("#far-footprint-area", `${Math.round(g.farFootprintArea).toLocaleString()} sf`);
   setText("#far-envelope-height", `${Math.round(g.farHeight)} ft`);
   setText("#max-zoning-height", `${Math.round(g.maxHeight)} ft`);
+  setText("#zdtFarUsed", `${g.farUsed.toFixed(2)} (${Math.round(g.allowedFloorArea).toLocaleString()} sf)`);
+  setText("#zdtFarRemaining", `${Math.max(0, maxFar - g.farUsed).toFixed(2)}`);
+  setText("#zdtCurrentHeight", `${Math.round(g.analysis?.existingHeightFt || 0)} ft`);
+  setText("#zdtLotCoverage", `${Math.round(g.coverage)}%`);
+  setText("#zdtBuildableArea", `${Math.round(g.buildableArea).toLocaleString()} sf`);
+  if (lotAreaFt2 > 0) {
+    setText("#zdtFarUsed", `${g.farUsed.toFixed(2)} (${Math.round(g.farUsed * lotAreaFt2).toLocaleString()} sf)`);
+  }
   setText("#floor-height-display", `${g.floorHeight} ft`);
   setText("#far-used-display", g.farUsed.toFixed(2));
   setText("#coverage-display", `${Math.round(g.coverage)}%`);
@@ -7283,32 +7466,32 @@ function renderStudySheet() {
   if (!studyState.analysis || !analysisPanelOpen) return;
   const geometry = computeStudyGeometry(studyState);
 
-  const planWrap = document.getElementById("amPlanDiagram");
-  const isoWrap = document.getElementById("amIsoViewport");
-
   // Use fixed intrinsic SVG size; CSS scales to container
-  const SVG_W = 600;
-  const SVG_H = 420;
+  const SVG_W = 560;
+  const SVG_H = 300;
+  const SECTION_H = 170;
+  const views = [
+    { id: "amExistingPlan", draw: () => drawPlanSVG(SVG_W, SVG_H, geometry, "existing") },
+    { id: "amExistingIso", draw: () => drawIsoSVG(SVG_W, SVG_H, geometry, "existing") },
+    { id: "amExistingSection", draw: () => drawSectionSVG(SVG_W, SECTION_H, geometry, "existing") },
+    { id: "amComparisonPlan", draw: () => drawPlanSVG(SVG_W, SVG_H, geometry, "comparison") },
+    { id: "amComparisonIso", draw: () => drawIsoSVG(SVG_W, SVG_H, geometry, "comparison") },
+    { id: "amComparisonSection", draw: () => drawSectionSVG(SVG_W, SECTION_H, geometry, "comparison") },
+    { id: "amMaxPlan", draw: () => drawPlanSVG(SVG_W, SVG_H, geometry, "max") },
+    { id: "amMaxIso", draw: () => drawIsoSVG(SVG_W, SVG_H, geometry, "max") },
+    { id: "amMaxSection", draw: () => drawSectionSVG(SVG_W, SECTION_H, geometry, "max") },
+  ];
 
-  if (planWrap) {
+  for (const view of views) {
+    const wrap = document.getElementById(view.id);
+    if (!wrap) continue;
     try {
-      const planSvg = drawPlanSVG(SVG_W, SVG_H, geometry);
-      planSvg.style.cssText = "width:100%;height:100%;display:block;";
-      planWrap.innerHTML = "";
-      planWrap.appendChild(planSvg);
+      const svg = view.draw();
+      svg.style.cssText = "width:100%;height:100%;display:block;";
+      wrap.innerHTML = "";
+      wrap.appendChild(svg);
     } catch (e) {
-      console.error("drawPlanSVG error:", e);
-    }
-  }
-
-  if (isoWrap) {
-    try {
-      const isoSvg = drawIsoSVG(SVG_W, SVG_H, geometry);
-      isoSvg.style.cssText = "width:100%;height:100%;display:block;";
-      isoWrap.innerHTML = "";
-      isoWrap.appendChild(isoSvg);
-    } catch (e) {
-      console.error("drawIsoSVG error:", e);
+      console.error(`${view.id} render error:`, e);
     }
   }
 
@@ -7402,118 +7585,145 @@ function _renderAnalysisPanelContent(lots) {
   const study = baselineEnvelopeResults?.zoning_buildability_study || {};
   const maxFar = Number(zoning.base_far || study.far || 3);
   const currentFar = Number(farInput.value || maxFar || 3);
-  const lotCount = analysisModalLots.length || 1;
+  const lotAreaSf = Math.round(coerceNumber(primaryLot.lot_area) ?? coerceNumber(primaryLot.lotarea) ?? coerceNumber(zoning.lot_area_sf) ?? 0);
+  const farRemaining = Math.max(0, maxFar - currentFar);
+  const maxHeightFt = coerceNumber(study.envelope_height_ft) ?? coerceNumber(study.maximum_building_height_ft) ?? coerceNumber(zoning.max_height_ft);
+  const currentHeightFt = coerceNumber(primaryLot.heightroof) ?? coerceNumber(primaryLot.bldgheight) ?? 0;
+  const frontYardFt = Math.round(coerceNumber(study.front_yard_requirement_ft) ?? 0);
+  const rearYardFt = Math.round(coerceNumber(study.rear_yard_requirement_ft) ?? 20);
+  const sideYardFt = Math.round(coerceNumber(study.side_yard_requirement_ft) ?? 0);
+  const openSpaceRatio = coerceNumber(zoning.open_space_ratio) ?? coerceNumber(study.open_space_ratio_required) ?? 0;
+  const buildableAreaSf = Math.round(coerceNumber(study.buildable_area_sqft) ?? coerceNumber(study.buildable_area_sf) ?? 0);
   const selectedBbls = analysisModalLots
     .map((f) => f?.properties?.bbl)
     .filter(Boolean)
     .join(", ");
+  const district = primaryLot.zonedist1 || zoning.primary_zone || "n/a";
 
   container.innerHTML = `
-    <div class="analysis-sheet study-sheet-layout">
-      <section class="study-view-tabs" aria-label="Study views">
-        <button type="button" class="study-view-tab is-active">Map</button>
-        <button type="button" class="study-view-tab">3D View</button>
-        <button type="button" class="study-view-tab">Comparison</button>
-      </section>
+    <div class="analysis-sheet board-sheet">
+      <header class="board-sheet__head">
+        <h2 class="board-sheet__title">EXISTING VS. ALLOWABLE</h2>
+        <p class="board-sheet__subtitle">Making the invisible visible.</p>
+      </header>
 
-      <section class="study-board-grid">
-        <article class="diagram-card diagram-card--plan">
-          <header class="diagram-card__header">Map</header>
-          <div class="diagram-card__body analysis-plan-wrap" id="amPlanDiagram"></div>
-        </article>
-
-        <article class="diagram-card diagram-card--iso">
-          <header class="diagram-card__header">3D View</header>
-          <div class="diagram-card__body analysis-iso-wrap" id="amIsoViewport"></div>
-        </article>
-
-        <aside class="study-rail" aria-label="Analysis">
-          <section class="study-rail__section">
-            <h3 class="study-rail__title">Analysis</h3>
-            <div class="study-kv-grid">
-              <div class="study-kv"><span>Zoning District</span><strong>${primaryLot.zonedist1 || zoning.primary_zone || "n/a"}</strong></div>
-              <div class="study-kv"><span>Lot Area</span><strong>${Math.round(coerceNumber(primaryLot.lot_area) ?? coerceNumber(primaryLot.lotarea) ?? coerceNumber(zoning.lot_area_sf) ?? 0).toLocaleString()} SF</strong></div>
-              <div class="study-kv"><span>Max FAR</span><strong>${maxFar.toFixed(2)}</strong></div>
-              <div class="study-kv"><span>FAR Used</span><strong>${currentFar.toFixed(2)}</strong></div>
-              <div class="study-kv"><span>Max Height</span><strong>${coerceNumber(study.envelope_height_ft) != null ? `${Math.round(coerceNumber(study.envelope_height_ft))} FT` : "n/a"}</strong></div>
-              <div class="study-kv"><span>Front Yard</span><strong>${Math.round(coerceNumber(study.front_yard_requirement_ft) ?? 0)} FT</strong></div>
-              <div class="study-kv"><span>Rear Yard</span><strong>${Math.round(coerceNumber(study.rear_yard_requirement_ft) ?? 20)} FT</strong></div>
-              <div class="study-kv"><span>Side Yard (Each)</span><strong>${Math.round(coerceNumber(study.side_yard_requirement_ft) ?? 0)} FT</strong></div>
-              <div class="study-kv"><span>Lots Selected</span><strong>${lotCount}</strong></div>
+      <section class="board-sheet__body">
+        <div class="board-columns">
+          <article class="board-column">
+            <h3 class="board-column__title">EXISTING CONDITIONS</h3>
+            <div class="board-view">
+              <div class="board-view__label">PLAN VIEW</div>
+              <div class="board-view__canvas" id="amExistingPlan"></div>
             </div>
-          </section>
-
-          <section class="study-rail__section controls-card controls-card--rail">
-            <header class="controls-card__header">Controls</header>
-            <div class="analysis-sheet__controls analysis-sheet__controls--rail">
-              <div class="analysis-control">
-                <label for="farSliderModal">FAR <span id="far-used-display">${currentFar.toFixed(2)}</span></label>
-                <input id="farSliderModal" type="range" min="0" max="${Math.max(1, maxFar).toFixed(2)}" step="0.05" value="${Math.min(currentFar, Math.max(1, maxFar)).toFixed(2)}" />
-              </div>
-              <div class="analysis-control">
-                <label for="floorHeightSlider">Height (ft) <span id="floor-height-display">${Number(studyState.floorHeight || 10)} ft</span></label>
-                <input id="floorHeightSlider" type="range" min="8" max="20" step="0.5" value="${studyState.floorHeight}" />
-              </div>
-              <div class="analysis-control">
-                <label for="coverageSliderModal">Coverage <span id="coverage-display">${Number(coverageInput.value || 80)}%</span></label>
-                <input id="coverageSliderModal" type="range" min="20" max="100" step="5" value="${Number(coverageInput.value || 80)}" />
-              </div>
-              <div class="analysis-control">
-                <label for="opacitySliderModal">Opacity <span id="opacity-display">${Math.round(studyState.envelopeOpacity * 100)}%</span></label>
-                <input id="opacitySliderModal" type="range" min="10" max="70" step="1" value="${Math.round(studyState.envelopeOpacity * 100)}" />
-              </div>
-              <div class="analysis-control analysis-control--select">
-                <label for="massingTypeSelect">Massing</label>
-                <select id="massingTypeSelect">
-                  <option value="fullBlock">Full Block</option>
-                  <option value="tower">Tower</option>
-                  <option value="slab">Slab</option>
-                  <option value="courtyard">Courtyard</option>
-                  <option value="stepped">Stepped</option>
-                </select>
-              </div>
+            <div class="board-view">
+              <div class="board-view__label">ISOMETRIC VIEW</div>
+              <div class="board-view__canvas" id="amExistingIso"></div>
             </div>
-          </section>
+            <div class="board-view">
+              <div class="board-view__label">SECTION / HEIGHT VIEW</div>
+              <div class="board-view__canvas board-view__canvas--section" id="amExistingSection"></div>
+            </div>
+          </article>
 
-          <section class="metrics-grid analysis-sheet__stats analysis-sheet__stats--rail">
-            <article class="metric-card">
-              <div class="metric-card__label">Floor count</div>
-              <div class="metric-card__value" id="floor-count">—</div>
-            </article>
-            <article class="metric-card">
-              <div class="metric-card__label">Buildable area</div>
-              <div class="metric-card__value" id="buildable-area">—</div>
-            </article>
-            <article class="metric-card">
-              <div class="metric-card__label">FAR footprint area</div>
-              <div class="metric-card__value" id="far-footprint-area">—</div>
-            </article>
-            <article class="metric-card">
-              <div class="metric-card__label">FAR envelope height</div>
-              <div class="metric-card__value" id="far-envelope-height">—</div>
-            </article>
-            <article class="metric-card">
-              <div class="metric-card__label">Max zoning height</div>
-              <div class="metric-card__value" id="max-zoning-height">${coerceNumber(study.envelope_height_ft) != null ? `${Math.round(coerceNumber(study.envelope_height_ft))} ft` : "n/a"}</div>
-            </article>
-            <article class="metric-card">
-              <div class="metric-card__label">BBL(s)</div>
-              <div class="metric-card__value">${selectedBbls || primaryLot.bbl || "n/a"}</div>
-            </article>
-          </section>
+          <article class="board-column">
+            <h3 class="board-column__title">COMPARISON</h3>
+            <div class="board-view">
+              <div class="board-view__label">PLAN VIEW</div>
+              <div class="board-view__canvas" id="amComparisonPlan"></div>
+            </div>
+            <div class="board-view">
+              <div class="board-view__label">ISOMETRIC VIEW</div>
+              <div class="board-view__canvas" id="amComparisonIso"></div>
+            </div>
+            <div class="board-view">
+              <div class="board-view__label">SECTION / HEIGHT VIEW</div>
+              <div class="board-view__canvas board-view__canvas--section" id="amComparisonSection"></div>
+            </div>
+          </article>
 
-          <div class="analysis-iso-labels analysis-iso-labels--rail">
-            <div id="amLabelExisting">Existing Building</div>
-            <div id="amLabelFar">FAR Envelope</div>
-            <div id="amLabelMax">Max Zoning Envelope</div>
-            <div id="amHeightMax">${coerceNumber(study.envelope_height_ft) != null ? `${Math.round(coerceNumber(study.envelope_height_ft))} ft max height` : "Missing full rule data for this condition"}</div>
-            <div id="amHeightFar">90 ft FAR massing</div>
-            <div id="amRearLabel">${Math.round(coerceNumber(study.rear_yard_requirement_ft) ?? 20)} ft rear yard</div>
+          <article class="board-column">
+            <h3 class="board-column__title">MAX ZONING ENVELOPE (ALLOWABLE)</h3>
+            <div class="board-view">
+              <div class="board-view__label">PLAN VIEW</div>
+              <div class="board-view__canvas" id="amMaxPlan"></div>
+            </div>
+            <div class="board-view">
+              <div class="board-view__label">ISOMETRIC VIEW</div>
+              <div class="board-view__canvas" id="amMaxIso"></div>
+            </div>
+            <div class="board-view">
+              <div class="board-view__label">SECTION / HEIGHT VIEW</div>
+              <div class="board-view__canvas board-view__canvas--section" id="amMaxSection"></div>
+            </div>
+          </article>
+        </div>
+
+        <aside class="board-data" aria-label="Zoning data table">
+          <h3 class="board-data__title">ZONING DATA (${district})</h3>
+          <div class="board-table">
+            <div class="board-row"><span>Zoning District</span><strong>${district}</strong></div>
+            <div class="board-row"><span>Lot Area</span><strong>${lotAreaSf.toLocaleString()} SF</strong></div>
+            <div class="board-row"><span>Max FAR</span><strong id="zdtMaxFar">${maxFar.toFixed(2)}</strong></div>
+            <div class="board-row"><span>FAR Used / Existing FAR</span><strong id="zdtFarUsed">${currentFar.toFixed(2)} (${Math.round(currentFar * lotAreaSf).toLocaleString()} SF)</strong></div>
+            <div class="board-row"><span>FAR Remaining</span><strong id="zdtFarRemaining">${farRemaining.toFixed(2)}</strong></div>
+            <div class="board-row"><span>Max Building Height</span><strong id="max-zoning-height">${Number.isFinite(maxHeightFt) ? `${Math.round(maxHeightFt)} FT` : "N/A"}</strong></div>
+            <div class="board-row"><span>Current Height</span><strong id="zdtCurrentHeight">${currentHeightFt > 0 ? `${Math.round(currentHeightFt)} FT` : "N/A"}</strong></div>
+            <div class="board-row"><span>Front Yard</span><strong>${frontYardFt} FT</strong></div>
+            <div class="board-row"><span>Rear Yard</span><strong>${rearYardFt} FT</strong></div>
+            <div class="board-row"><span>Side Yard Each</span><strong>${sideYardFt} FT</strong></div>
+            <div class="board-row"><span>Open Space Ratio</span><strong>${openSpaceRatio ? `${openSpaceRatio}%` : "N/A"}</strong></div>
+            <div class="board-row"><span>Lot Coverage</span><strong id="zdtLotCoverage">${Math.round(Number(coverageInput.value || 80))}%</strong></div>
+            <div class="board-row"><span>Buildable Area</span><strong id="zdtBuildableArea">${buildableAreaSf > 0 ? `${buildableAreaSf.toLocaleString()} SF` : "N/A"}</strong></div>
+            <div class="board-row"><span>BBL</span><strong>${selectedBbls || primaryLot.bbl || "n/a"}</strong></div>
           </div>
-
-          <div class="analysis-sheet__cap-note" id="ap-cap-note" style="display:none;"></div>
         </aside>
       </section>
+
+      <section class="board-controls-strip" aria-label="Study controls">
+        <div class="board-control">
+          <label for="farSliderModal">FAR <span id="far-used-display">${currentFar.toFixed(2)}</span></label>
+          <input id="farSliderModal" type="range" min="0" max="${Math.max(1, maxFar).toFixed(2)}" step="0.05" value="${Math.min(currentFar, Math.max(1, maxFar)).toFixed(2)}" />
+        </div>
+        <div class="board-control">
+          <label for="floorHeightSlider">Height <span id="floor-height-display">${Number(studyState.floorHeight || 10)} ft</span></label>
+          <input id="floorHeightSlider" type="range" min="8" max="20" step="0.5" value="${studyState.floorHeight}" />
+        </div>
+        <div class="board-control">
+          <label for="coverageSliderModal">Coverage <span id="coverage-display">${Number(coverageInput.value || 80)}%</span></label>
+          <input id="coverageSliderModal" type="range" min="20" max="100" step="5" value="${Number(coverageInput.value || 80)}" />
+        </div>
+        <div class="board-control">
+          <label for="opacitySliderModal">Opacity <span id="opacity-display">${Math.round(studyState.envelopeOpacity * 100)}%</span></label>
+          <input id="opacitySliderModal" type="range" min="10" max="70" step="1" value="${Math.round(studyState.envelopeOpacity * 100)}" />
+        </div>
+        <div class="board-control board-control--select">
+          <label for="massingTypeSelect">Massing Mode</label>
+          <select id="massingTypeSelect">
+            <option value="fullBlock">Full Block</option>
+            <option value="tower">Tower</option>
+            <option value="slab">Slab</option>
+            <option value="courtyard">Courtyard</option>
+            <option value="stepped">Stepped</option>
+          </select>
+        </div>
+      </section>
+
+      <footer class="board-footer">
+        <div class="board-techline">
+          <span>FLOORS <strong id="floor-count">—</strong></span>
+          <span>FAR FOOTPRINT <strong id="far-footprint-area">—</strong></span>
+          <span>BUILDABLE AREA <strong id="buildable-area">—</strong></span>
+          <span>FAR HEIGHT <strong id="far-envelope-height">—</strong></span>
+        </div>
+        <div class="board-legend" aria-label="Legend">
+          <div><span class="swatch swatch--existing"></span> Gray = Existing Buildings</div>
+          <div><span class="swatch swatch--far"></span> Green = FAR Envelope</div>
+          <div><span class="swatch swatch--max"></span> Purple = Max Zoning Envelope</div>
+          <div><span class="swatch swatch--dashed"></span> Dashed Line = Setbacks / Height Plane</div>
+        </div>
+      </footer>
+
+      <div class="analysis-sheet__cap-note" id="ap-cap-note" style="display:none;"></div>
     </div>
   `;
 
@@ -7801,8 +8011,13 @@ if (exportDiagramBtn) {
 if (exportReportBtn) {
   exportReportBtn.addEventListener("click", () => {
     const study = baselineEnvelopeResults?.zoning_buildability_study || {};
+    const boardGeometry = studyState.analysis ? computeStudyGeometry(studyState) : null;
+    const lotArea = Number(activeLotData?.lotarea || activeLotData?.lot_area || 0);
+    const maxFar = Number(activeLotData?.zoning_analysis?.base_far || study?.far || farInput.value || 0);
+    const farUsed = Number(document.getElementById("farSliderModal")?.value || farInput.value || 0);
     const payload = {
       generated_at: new Date().toISOString(),
+      report_type: "existing-vs-allowable-board",
       lot: {
         bbl: activeLotData?.bbl || null,
         address: activeLotData?.address || null,
@@ -7810,9 +8025,42 @@ if (exportReportBtn) {
       },
       controls: {
         floor_height_ft: Number(document.getElementById("floorHeightSlider")?.value || 10),
-        far_used: Number(document.getElementById("farSliderModal")?.value || farInput.value || 0),
+        far_used: farUsed,
         coverage_pct: Number(document.getElementById("coverageSliderModal")?.value || coverageInput.value || 80),
         massing_type: document.getElementById("massingTypeSelect")?.value || "fullBlock",
+      },
+      zoning_data_table: {
+        zoning_district: activeLotData?.zonedist1 || activeLotData?.zoning_analysis?.primary_zone || null,
+        lot_area_sf: lotArea || null,
+        max_far: maxFar || null,
+        far_used: farUsed || null,
+        far_remaining: Number.isFinite(maxFar) ? Math.max(0, maxFar - farUsed) : null,
+        max_building_height_ft: coerceNumber(study.envelope_height_ft) ?? null,
+        current_height_ft: coerceNumber(activeLotData?.heightroof) ?? coerceNumber(activeLotData?.bldgheight) ?? null,
+        front_yard_ft: coerceNumber(study.front_yard_requirement_ft) ?? null,
+        rear_yard_ft: coerceNumber(study.rear_yard_requirement_ft) ?? null,
+        side_yard_each_ft: coerceNumber(study.side_yard_requirement_ft) ?? null,
+        open_space_ratio: coerceNumber(activeLotData?.zoning_analysis?.open_space_ratio) ?? null,
+        lot_coverage_pct: Number(document.getElementById("coverageSliderModal")?.value || coverageInput.value || 80),
+        buildable_area_sf: boardGeometry ? Math.round(boardGeometry.buildableArea) : null,
+        bbl: activeLotData?.bbl || null,
+      },
+      board_views: {
+        existing_conditions: {
+          plan: "existing-footprint",
+          isometric: "existing-massing",
+          section: "existing-height-profile",
+        },
+        comparison: {
+          plan: "existing+far+max-overlay",
+          isometric: "existing+far+max-overlay",
+          section: "existing/far/max-height-overlay",
+        },
+        max_zoning_envelope: {
+          plan: "max-envelope-footprint",
+          isometric: "max-envelope-massing",
+          section: "max-envelope-height-profile",
+        },
       },
       metrics: {
         far_floors: lastFarEnvelopeData?.numFloors || null,
