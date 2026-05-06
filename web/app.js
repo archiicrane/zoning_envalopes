@@ -5895,27 +5895,35 @@ function _renderAnalysisPanelContent(lots) {
     .join(", ");
 
   container.innerHTML = `
-    <div class="analysis-sheet">
-      <div class="analysis-sheet__meta">
-        <div><strong>Address:</strong> ${primaryLot.address || "n/a"}</div>
-        <div><strong>BBL(s):</strong> ${selectedBbls || primaryLot.bbl || "n/a"}</div>
-        <div><strong>Zoning:</strong> ${primaryLot.zonedist1 || zoning.primary_zone || "n/a"}</div>
-        <div><strong>Lots Selected:</strong> ${lotCount}</div>
-      </div>
+    <div class="analysis-sheet study-sheet-layout">
+      <section class="lot-info-grid">
+        <article class="lot-info-card">
+          <div class="lot-info-card__label">Address</div>
+          <div class="lot-info-card__value">${primaryLot.address || "n/a"}</div>
+        </article>
+        <article class="lot-info-card">
+          <div class="lot-info-card__label">BBL(s)</div>
+          <div class="lot-info-card__value">${selectedBbls || primaryLot.bbl || "n/a"}</div>
+        </article>
+        <article class="lot-info-card">
+          <div class="lot-info-card__label">Zoning</div>
+          <div class="lot-info-card__value">${primaryLot.zonedist1 || zoning.primary_zone || "n/a"}</div>
+        </article>
+        <article class="lot-info-card">
+          <div class="lot-info-card__label">Lots Selected</div>
+          <div class="lot-info-card__value">${lotCount}</div>
+        </article>
+      </section>
 
-      <div class="analysis-sheet__grid">
-        <section class="analysis-sheet__pane">
-          <div class="analysis-sheet__pane-title">Top View Plan Diagram</div>
-          <div class="analysis-plan-wrap" id="amPlanDiagram">
-            <canvas id="planCanvas" class="analysis-plan-canvas"></canvas>
-          </div>
-        </section>
+      <section class="diagram-grid">
+        <article class="diagram-card">
+          <header class="diagram-card__header">Top View Plan Diagram</header>
+          <div class="diagram-card__body analysis-plan-wrap" id="amPlanDiagram"></div>
+        </article>
 
-        <section class="analysis-sheet__pane">
-          <div class="analysis-sheet__pane-title">Isometric Massing Diagram</div>
-          <div class="analysis-iso-wrap" id="amIsoViewport">
-            <canvas id="isoCanvas" class="analysis-plan-canvas"></canvas>
-          </div>
+        <article class="diagram-card">
+          <header class="diagram-card__header">Isometric Massing Diagram</header>
+          <div class="diagram-card__body analysis-iso-wrap" id="amIsoViewport"></div>
           <div class="analysis-iso-labels">
             <div id="amLabelExisting">Existing Building</div>
             <div id="amLabelFar">FAR Envelope</div>
@@ -5924,46 +5932,67 @@ function _renderAnalysisPanelContent(lots) {
             <div id="amHeightFar">90 ft FAR massing</div>
             <div id="amRearLabel">${Math.round(coerceNumber(study.rear_yard_requirement_ft) ?? 20)} ft rear yard</div>
           </div>
-        </section>
-      </div>
+        </article>
+      </section>
 
-      <div class="analysis-sheet__controls">
-        <div class="analysis-control">
-          <label for="floorHeightSlider">Floor height <span id="floor-height-display">10 ft</span></label>
-          <input id="floorHeightSlider" type="range" min="8" max="20" step="0.5" value="${studyState.floorHeight}" />
+      <section class="controls-card">
+        <header class="controls-card__header">Envelope Controls</header>
+        <div class="analysis-sheet__controls">
+          <div class="analysis-control">
+            <label for="floorHeightSlider">Floor height <span id="floor-height-display">10 ft</span></label>
+            <input id="floorHeightSlider" type="range" min="8" max="20" step="0.5" value="${studyState.floorHeight}" />
+          </div>
+          <div class="analysis-control">
+            <label for="farSliderModal">FAR used <span id="far-used-display">${currentFar.toFixed(2)}</span></label>
+            <input id="farSliderModal" type="range" min="0" max="${Math.max(1, maxFar).toFixed(2)}" step="0.05" value="${Math.min(currentFar, Math.max(1, maxFar)).toFixed(2)}" />
+          </div>
+          <div class="analysis-control">
+            <label for="coverageSliderModal">Footprint coverage <span id="coverage-display">${Number(coverageInput.value || 80)}%</span></label>
+            <input id="coverageSliderModal" type="range" min="20" max="100" step="5" value="${Number(coverageInput.value || 80)}" />
+          </div>
+          <div class="analysis-control">
+            <label for="opacitySliderModal">Envelope opacity <span id="opacity-display">${Math.round(studyState.envelopeOpacity * 100)}%</span></label>
+            <input id="opacitySliderModal" type="range" min="10" max="70" step="1" value="${Math.round(studyState.envelopeOpacity * 100)}" />
+          </div>
+          <div class="analysis-control analysis-control--select">
+            <label for="massingTypeSelect">Massing type</label>
+            <select id="massingTypeSelect">
+              <option value="fullBlock">Full Block</option>
+              <option value="tower">Tower</option>
+              <option value="slab">Slab</option>
+              <option value="courtyard">Courtyard</option>
+              <option value="stepped">Stepped</option>
+            </select>
+          </div>
         </div>
-        <div class="analysis-control">
-          <label for="farSliderModal">FAR used <span id="far-used-display">${currentFar.toFixed(2)}</span></label>
-          <input id="farSliderModal" type="range" min="0" max="${Math.max(1, maxFar).toFixed(2)}" step="0.05" value="${Math.min(currentFar, Math.max(1, maxFar)).toFixed(2)}" />
-        </div>
-        <div class="analysis-control">
-          <label for="coverageSliderModal">Footprint coverage <span id="coverage-display">${Number(coverageInput.value || 80)}%</span></label>
-          <input id="coverageSliderModal" type="range" min="20" max="100" step="5" value="${Number(coverageInput.value || 80)}" />
-        </div>
-        <div class="analysis-control">
-          <label for="opacitySliderModal">Envelope opacity <span id="opacity-display">${Math.round(studyState.envelopeOpacity * 100)}%</span></label>
-          <input id="opacitySliderModal" type="range" min="10" max="70" step="1" value="${Math.round(studyState.envelopeOpacity * 100)}" />
-        </div>
-        <div class="analysis-control analysis-control--select">
-          <label for="massingTypeSelect">Massing type</label>
-          <select id="massingTypeSelect">
-            <option value="fullBlock">Full Block</option>
-            <option value="tower">Tower</option>
-            <option value="slab">Slab</option>
-            <option value="courtyard">Courtyard</option>
-            <option value="stepped">Stepped</option>
-          </select>
-        </div>
-      </div>
+      </section>
 
-      <div class="analysis-sheet__stats">
-        <div>Floor count: <strong id="floor-count">—</strong></div>
-        <div>FAR displayed: <strong id="far-displayed">${currentFar.toFixed(2)}</strong></div>
-        <div>Buildable area: <strong id="buildable-area">—</strong></div>
-        <div>FAR footprint area: <strong id="far-footprint-area">—</strong></div>
-        <div>FAR envelope height: <strong id="far-envelope-height">—</strong></div>
-        <div>Max zoning height: <strong id="max-zoning-height">${Math.round(coerceNumber(study.envelope_height_ft) ?? 120)} ft</strong></div>
-      </div>
+      <section class="metrics-grid analysis-sheet__stats">
+        <article class="metric-card">
+          <div class="metric-card__label">Floor count</div>
+          <div class="metric-card__value" id="floor-count">—</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-card__label">FAR displayed</div>
+          <div class="metric-card__value" id="far-displayed">${currentFar.toFixed(2)}</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-card__label">Buildable area</div>
+          <div class="metric-card__value" id="buildable-area">—</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-card__label">FAR footprint area</div>
+          <div class="metric-card__value" id="far-footprint-area">—</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-card__label">FAR envelope height</div>
+          <div class="metric-card__value" id="far-envelope-height">—</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-card__label">Max zoning height</div>
+          <div class="metric-card__value" id="max-zoning-height">${Math.round(coerceNumber(study.envelope_height_ft) ?? 120)} ft</div>
+        </article>
+      </section>
       <div class="analysis-sheet__cap-note" id="ap-cap-note" style="display:none;"></div>
     </div>
   `;

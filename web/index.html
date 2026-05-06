@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="/web/favicon.svg" />
     <link rel="shortcut icon" href="/web/favicon.ico" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/web/styles.css?v=20260505d" />
+    <link rel="stylesheet" href="/web/styles.css?v=20260505e" />
   </head>
   <body>
     <div class="app-shell">
@@ -62,17 +62,17 @@
 
         <!-- Analysis Modal (centered architectural sheet) -->
         <div class="analysis-modal-overlay" id="analysisModalOverlay" aria-hidden="true">
-          <div class="analysis-modal" id="analysisModal" role="dialog" aria-modal="true" aria-label="Lot Analysis Drawing Sheet">
-            <div class="analysis-modal__header">
-              <div class="analysis-modal__title-wrap">
+          <div class="analysis-modal study-sheet-modal" id="analysisModal" role="dialog" aria-modal="true" aria-label="Lot Analysis Drawing Sheet">
+            <div class="analysis-modal__header study-sheet-header">
+              <div class="analysis-modal__title-wrap study-sheet-title">
                 <span class="analysis-modal__title">Zoning Study Sheet</span>
                 <span class="analysis-modal__subtitle">Plan Diagram + Isometric Massing</span>
               </div>
-              <div class="analysis-modal__actions">
-                <button id="exportDiagramBtn" type="button" class="bar-btn bar-btn--secondary">Export Diagram PNG</button>
-                <button id="exportReportBtn" type="button" class="bar-btn bar-btn--secondary">Export Report</button>
-                <button id="openFullAnalysisBtn" type="button" class="bar-btn bar-btn--secondary">Open Full Analysis Page</button>
-                <button id="closePanelBtn" class="analysis-modal__close" title="Close modal" aria-label="Close analysis modal">Close</button>
+              <div class="analysis-modal__actions study-sheet-actions">
+                <button id="exportDiagramBtn" type="button" class="study-sheet-btn study-sheet-btn--primary">Export Diagram PNG</button>
+                <button id="exportReportBtn" type="button" class="study-sheet-btn study-sheet-btn--secondary">Export Report</button>
+                <button id="openFullAnalysisBtn" type="button" class="study-sheet-btn study-sheet-btn--secondary">Full Analysis</button>
+                <button id="closePanelBtn" class="analysis-modal__close study-sheet-btn study-sheet-btn--ghost" title="Close modal" aria-label="Close analysis modal">Close</button>
               </div>
             </div>
             <div class="analysis-modal__body" id="analysisModalContent">
@@ -148,6 +148,6 @@
         document.head.appendChild(s);
       }
     </script>
-    <script type="module" src="/web/app.js?v=20260505d"></script>
+    <script type="module" src="/web/app.js?v=20260505e"></script>
   </body>
 </html>
