@@ -641,13 +641,22 @@ export function buildFarMassing({
     warnings.push(`Open space shortfall: ${Math.round(Number(openSpaceTargetFt2) - computedOpenAreaFt2)} sf below target.`);
   }
 
-  const clippedFeatures = features
+  const rawFeatures = features.filter(Boolean);
+
+  const clippedFeatures = rawFeatures
     .filter(Boolean)
     .map((feature) => _clipToBuildable(feature, simplifiedBuildable))
     .filter(Boolean);
 
+  // Some irregular multi-frontage geometries can make turf.intersect drop all features
+  // even when raw FAR features are valid. Keep raw output as a fallback so extrusion can render.
+  const finalFeatures = clippedFeatures.length ? clippedFeatures : rawFeatures;
+  if (!clippedFeatures.length && rawFeatures.length) {
+    warnings.push("FAR clipping fallback applied: using un-clipped massing features due to geometry intersection failure.");
+  }
+
   return {
-    features: clippedFeatures,
+    features: finalFeatures,
     warnings,
     numFloors,
     buildingHeightFt,
