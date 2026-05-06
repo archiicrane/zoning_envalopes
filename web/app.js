@@ -5085,6 +5085,267 @@ function clearCanvas(canvas) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+// ─── SVG-based plan/iso renderers (crisp, vector, using proven transforms) ────
+
+function drawPlanSVG(w, h, g) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("xmlns", ns);
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+
+  // Defs: hatch pattern
+  const defs = document.createElementNS(ns, "defs");
+  const pat = document.createElementNS(ns, "pattern");
+  pat.setAttribute("id", "plan-hatch");
+  pat.setAttribute("patternUnits", "userSpaceOnUse");
+  pat.setAttribute("width", "8");
+  pat.setAttribute("height", "8");
+  const pl = document.createElementNS(ns, "line");
+  pl.setAttribute("x1", "0"); pl.setAttribute("y1", "8");
+  pl.setAttribute("x2", "8"); pl.setAttribute("y2", "0");
+  pl.setAttribute("stroke", "#9ca3af"); pl.setAttribute("stroke-width", "1");
+  pl.setAttribute("opacity", "0.5");
+  pat.appendChild(pl);
+  defs.appendChild(pat);
+  svg.appendChild(defs);
+
+  // White background
+  const bg = document.createElementNS(ns, "rect");
+  bg.setAttribute("width", w); bg.setAttribute("height", h); bg.setAttribute("fill", "#fff");
+  svg.appendChild(bg);
+
+  // Reuse proven transform
+  const fakeCanvas = { width: w, height: h };
+  const transform = fitGeometryToCanvas(g.lot, fakeCanvas, 80);
+  const pts = (ring) => {
+    if (!ring || ring.length < 3) return null;
+    return transform(ring).map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  };
+  const addPoly = (ring, fill, stroke, sw, dash = "", opacity = 1) => {
+    const p = pts(ring);
+    if (!p) return;
+    const el = document.createElementNS(ns, "polygon");
+    el.setAttribute("points", p);
+    el.setAttribute("fill", fill);
+    el.setAttribute("stroke", stroke);
+    el.setAttribute("stroke-width", sw);
+    if (dash) el.setAttribute("stroke-dasharray", dash);
+    if (opacity !== 1) el.setAttribute("opacity", String(opacity));
+    svg.appendChild(el);
+    return el;
+  };
+
+  // Draw layers (same order as canvas drawPlan)
+  addPoly(g.buildable, "transparent", "rgba(36,92,66,0.4)", 1, "6 5");
+
+  // Existing building hatch
+  const existingPts = pts(g.existing);
+  if (existingPts) {
+    addPoly(g.existing, "rgba(200,200,200,0.18)", "#6b7280", 1.4);
+    const hatchEl = document.createElementNS(ns, "polygon");
+    hatchEl.setAttribute("points", existingPts);
+    hatchEl.setAttribute("fill", "url(#plan-hatch)");
+    hatchEl.setAttribute("stroke", "none");
+    svg.appendChild(hatchEl);
+  }
+
+  // FAR footprint
+  addPoly(g.farFootprint,
+    g.isCapped ? "rgba(220,38,38,0.30)" : "rgba(80,180,120,0.42)",
+    g.isCapped ? "#b91c1c" : "#1f7a4d", 2.2);
+
+  // Lot boundary on top
+  addPoly(g.lot, "transparent", "#111827", 2.2);
+
+  // Dimensions
+  if (g.dimensions) {
+    for (const dim of g.dimensions) {
+      const projPts = transform([dim.start, dim.end]);
+      const [p1, p2] = projPts;
+      const dx = p2.x - p1.x; const dy = p2.y - p1.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len; const ny = dx / len;
+      const off = 32;
+      const sx = p1.x + nx * off; const sy = p1.y + ny * off;
+      const ex = p2.x + nx * off; const ey = p2.y + ny * off;
+      const mx = (sx + ex) / 2; const my = (sy + ey) / 2;
+
+      // Extension lines
+      for (const [ax, ay, bx, by] of [[p1.x, p1.y, sx, sy], [p2.x, p2.y, ex, ey]]) {
+        const el = document.createElementNS(ns, "line");
+        el.setAttribute("x1", ax); el.setAttribute("y1", ay);
+        el.setAttribute("x2", bx); el.setAttribute("y2", by);
+        el.setAttribute("stroke", "#9ca3af"); el.setAttribute("stroke-width", "1");
+        svg.appendChild(el);
+      }
+      // Dim line
+      const dl = document.createElementNS(ns, "line");
+      dl.setAttribute("x1", sx); dl.setAttribute("y1", sy);
+      dl.setAttribute("x2", ex); dl.setAttribute("y2", ey);
+      dl.setAttribute("stroke", "#9ca3af"); dl.setAttribute("stroke-width", "1.4");
+      svg.appendChild(dl);
+      // Label background
+      const labelW = (dim.label || "").length * 7 + 12;
+      const bg2 = document.createElementNS(ns, "rect");
+      bg2.setAttribute("x", mx - labelW / 2); bg2.setAttribute("y", my - 9);
+      bg2.setAttribute("width", labelW); bg2.setAttribute("height", 14);
+      bg2.setAttribute("fill", "white"); bg2.setAttribute("stroke", "none");
+      svg.appendChild(bg2);
+      // Label
+      const txt = document.createElementNS(ns, "text");
+      txt.setAttribute("x", mx); txt.setAttribute("y", my + 3);
+      txt.setAttribute("text-anchor", "middle");
+      txt.setAttribute("fill", "#4b5563");
+      txt.setAttribute("font-size", "11");
+      txt.setAttribute("font-family", "ui-monospace,monospace");
+      txt.textContent = dim.label || "";
+      svg.appendChild(txt);
+    }
+  }
+
+  // Edge labels (setback lines)
+  if (g.edgeLabels) {
+    for (const edge of g.edgeLabels) {
+      const projPts = transform([edge.start, edge.end]);
+      const [p1, p2] = projPts;
+      const mx = (p1.x + p2.x) / 2; const my = (p1.y + p2.y) / 2;
+      const txt = document.createElementNS(ns, "text");
+      txt.setAttribute("x", mx); txt.setAttribute("y", my);
+      txt.setAttribute("text-anchor", "middle");
+      txt.setAttribute("fill", "#374151");
+      txt.setAttribute("font-size", "9.5");
+      txt.setAttribute("font-family", "ui-monospace,monospace");
+      txt.textContent = edge.label || "";
+      svg.appendChild(txt);
+    }
+  }
+
+  return svg;
+}
+
+function _isoExtrusionSVG(svg, ns, iso, ring, hFt, style) {
+  if (!ring || ring.length < 3) return;
+  const bot = ring.map(pt => iso.project(pt[0], pt[1], 0));
+  const top = ring.map(pt => iso.project(pt[0], pt[1], hFt));
+
+  const ptStr = (arr) => arr.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+  // Side faces per edge
+  for (let i = 0; i < bot.length - 1; i++) {
+    const face = [bot[i], bot[i + 1], top[i + 1], top[i]];
+    const el = document.createElementNS(ns, "polygon");
+    el.setAttribute("points", ptStr(face));
+    el.setAttribute("fill", style.sideFill || style.fill);
+    el.setAttribute("stroke", style.stroke);
+    el.setAttribute("stroke-width", style.lineWidth || 1.2);
+    el.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(el);
+  }
+
+  // Bottom face
+  const bf = document.createElementNS(ns, "polygon");
+  bf.setAttribute("points", ptStr(bot));
+  bf.setAttribute("fill", style.fill);
+  bf.setAttribute("stroke", style.stroke);
+  bf.setAttribute("stroke-width", style.lineWidth || 1.2);
+  svg.appendChild(bf);
+
+  // Top face (drawn last = on top)
+  const tf = document.createElementNS(ns, "polygon");
+  tf.setAttribute("points", ptStr(top));
+  tf.setAttribute("fill", style.topFill || style.fill);
+  tf.setAttribute("stroke", style.stroke);
+  tf.setAttribute("stroke-width", style.lineWidth || 1.2);
+  svg.appendChild(tf);
+}
+
+function drawIsoSVG(w, h, g) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("xmlns", ns);
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+
+  const bg = document.createElementNS(ns, "rect");
+  bg.setAttribute("width", w); bg.setAttribute("height", h); bg.setAttribute("fill", "#fff");
+  svg.appendChild(bg);
+
+  const fakeCanvas = { width: w, height: h };
+  const iso = createIsoTransform(g.lot, fakeCanvas, { maxHeightFt: g.maxHeight, dimOffsetPx: 140 });
+
+  // Helper to extract ring from mass object or plain ring
+  const ring = (m) => (m && m.footprint) ? m.footprint : (Array.isArray(m) ? m : []);
+  const hFt = (m) => (m && m.heightFt != null) ? m.heightFt : 0;
+
+  // Ground slab
+  _isoExtrusionSVG(svg, ns, iso, g.lot, 1.5, {
+    fill: "#e5e7eb", sideFill: "#d1d5db", topFill: "#e5e7eb", stroke: "#9ca3af", lineWidth: 0.8,
+  });
+
+  // Max envelope ghost
+  _isoExtrusionSVG(svg, ns, iso, ring(g.maxEnvelope), g.maxHeight, {
+    fill: "rgba(140,190,160,0.10)", sideFill: "rgba(140,190,160,0.07)", topFill: "rgba(140,190,160,0.14)",
+    stroke: "rgba(36,92,66,0.35)", lineWidth: 0.8,
+  });
+
+  // Existing building
+  _isoExtrusionSVG(svg, ns, iso, ring(g.existingMass), hFt(g.existingMass), {
+    fill: "#f3f4f6", sideFill: "#e5e7eb", topFill: "#f3f4f6", stroke: "#374151", lineWidth: 1.8,
+  });
+
+  // FAR massing
+  _isoExtrusionSVG(svg, ns, iso, ring(g.farEnvelope), hFt(g.farEnvelope), {
+    fill: g.isCapped ? "rgba(220,38,38,0.28)" : "rgba(80,180,120,0.36)",
+    sideFill: g.isCapped ? "rgba(220,38,38,0.20)" : "rgba(80,180,120,0.26)",
+    topFill: g.isCapped ? "rgba(220,38,38,0.38)" : "rgba(80,180,120,0.48)",
+    stroke: g.isCapped ? "#b91c1c" : "#1f7a4d", lineWidth: 1.8,
+  });
+
+  // Height dimension lines on right side
+  const dimX = w - 100;
+  const dimEntries = [
+    { label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#6b7280" },
+    { label: `FAR: ${Math.round(hFt(g.farEnvelope))} ft`, h: hFt(g.farEnvelope), color: g.isCapped ? "#b91c1c" : "#16a34a" },
+    { label: `Max: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#1d4ed8" },
+  ];
+
+  // Calculate pixel height of a 1ft extrusion using the lot's first point
+  const refPt = g.lot[0];
+  if (refPt) {
+    const botY = iso.project(refPt[0], refPt[1], 0).y;
+    let dimBaseY = botY;
+    for (const d of dimEntries) {
+      if (!d.h) continue;
+      const topY = iso.project(refPt[0], refPt[1], d.h).y;
+      const vl = document.createElementNS(ns, "line");
+      vl.setAttribute("x1", dimX); vl.setAttribute("y1", dimBaseY);
+      vl.setAttribute("x2", dimX); vl.setAttribute("y2", topY);
+      vl.setAttribute("stroke", d.color); vl.setAttribute("stroke-width", "1.2");
+      svg.appendChild(vl);
+      for (const ty of [dimBaseY, topY]) {
+        const t = document.createElementNS(ns, "line");
+        t.setAttribute("x1", dimX - 5); t.setAttribute("y1", ty);
+        t.setAttribute("x2", dimX + 5); t.setAttribute("y2", ty);
+        t.setAttribute("stroke", d.color); t.setAttribute("stroke-width", "1.2");
+        svg.appendChild(t);
+      }
+      const txt = document.createElementNS(ns, "text");
+      txt.setAttribute("x", dimX + 8); txt.setAttribute("y", (dimBaseY + topY) / 2 + 4);
+      txt.setAttribute("fill", d.color); txt.setAttribute("font-size", "10");
+      txt.setAttribute("font-family", "ui-monospace,monospace");
+      txt.textContent = d.label;
+      svg.appendChild(txt);
+    }
+  }
+
+  return svg;
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+
 function drawPlan(canvas, g) {
   const ctx = canvas.getContext("2d");
   const transform = fitGeometryToCanvas(g.lot, canvas, 105);
@@ -5508,27 +5769,28 @@ function renderStudySheet() {
   if (!studyState.analysis || !analysisPanelOpen) return;
   const geometry = computeStudyGeometry(studyState);
 
-  const planCanvas = document.getElementById("planCanvas");
-  const isoCanvas = document.getElementById("isoCanvas");
+  const planWrap = document.getElementById("amPlanDiagram");
+  const isoWrap = document.getElementById("amIsoViewport");
 
-  // Use new SVG diagram system if available, otherwise fall back to canvas
-  if (diagramSystem) {
-    updateStudyLabels(geometry);
-    _updateTopPlanDiagram();
-    _updateIsometricDiagram();
-  } else if (planCanvas && isoCanvas) {
-    planCanvas.width = Math.max(520, planCanvas.clientWidth || 620);
-    planCanvas.height = Math.max(360, planCanvas.clientHeight || 420);
-    isoCanvas.width = Math.max(520, isoCanvas.clientWidth || 620);
-    isoCanvas.height = Math.max(360, isoCanvas.clientHeight || 420);
-    clearCanvas(planCanvas);
-    clearCanvas(isoCanvas);
-    drawPlan(planCanvas, geometry);
-    drawIso(isoCanvas, geometry);
-    updateStudyLabels(geometry);
-  } else {
-    return;
+  // Use fixed intrinsic SVG size; CSS scales to container
+  const SVG_W = 600;
+  const SVG_H = 420;
+
+  if (planWrap) {
+    const planSvg = drawPlanSVG(SVG_W, SVG_H, geometry);
+    planSvg.style.cssText = "width:100%;height:100%;display:block;";
+    planWrap.innerHTML = "";
+    planWrap.appendChild(planSvg);
   }
+
+  if (isoWrap) {
+    const isoSvg = drawIsoSVG(SVG_W, SVG_H, geometry);
+    isoSvg.style.cssText = "width:100%;height:100%;display:block;";
+    isoWrap.innerHTML = "";
+    isoWrap.appendChild(isoSvg);
+  }
+
+  updateStudyLabels(geometry);
 
   // Keep map-side FAR layer synced with sheet sliders.
   farInput.value = geometry.farUsed;
