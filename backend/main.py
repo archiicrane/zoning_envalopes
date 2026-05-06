@@ -451,7 +451,7 @@ def _rule_far(rule: Dict[str, Any], use_type: str) -> Optional[float]:
 
 
 def _rule_max_height_ft(rule: Dict[str, Any]) -> Optional[float]:
-    for key in ("maximumBuildingHeightFt", "ridgeHeightFt"):
+    for key in ("maximumBuildingHeightFt", "ridgeHeightFt", "maximumFrontWallHeightFt"):
         value = _coerce_float(rule.get(key))
         if value and value > 0:
             return value

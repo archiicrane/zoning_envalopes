@@ -422,6 +422,7 @@ export function getApplicableControls(lotAnalysis, zoneRule) {
 
   const maxBuildingHeight = coerceNumber(zoneRule?.maximumBuildingHeightFt)
     ?? coerceNumber(zoneRule?.ridgeHeightFt)
+    ?? coerceNumber(zoneRule?.maximumFrontWallHeightFt)
     ?? null;
   if (maxBuildingHeight == null) {
     warnings.push("Missing full rule data for this condition.");

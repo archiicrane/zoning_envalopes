@@ -825,6 +825,7 @@ function ruleMaxHeightFt(rule) {
   return coerceNumber(
     rule?.maximumBuildingHeightFt
       ?? rule?.ridgeHeightFt
+      ?? rule?.maximumFrontWallHeightFt
   );
 }
 
