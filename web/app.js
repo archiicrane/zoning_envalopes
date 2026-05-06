@@ -7634,10 +7634,6 @@ processStepTriggers.forEach((btn) => {
   btn.addEventListener("click", (event) => {
     event.stopPropagation();
     const step = btn.dataset.workflowStep;
-    if (!activeLotData) {
-      setReport("Select a lot first to view workflow diagrams.");
-      return;
-    }
     openWorkflowPanel(step);
   });
 });

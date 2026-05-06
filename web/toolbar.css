@@ -228,8 +228,9 @@
 
 .typology-hud {
   position: fixed;
-  top: calc(var(--topbar-h) + var(--space-3));
-  left: var(--space-4);
+  top: calc(var(--topbar-h) + 116px);
+  right: calc(320px + var(--space-4));
+  left: auto;
   z-index: 31;
   width: min(280px, calc(100vw - 28px));
   padding: 8px 10px;

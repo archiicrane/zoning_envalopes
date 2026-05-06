@@ -334,7 +334,6 @@ body {
   font-size: 10px;
   letter-spacing: 0.04em;
   color: #646d7c;
-  pointer-events: none;
   pointer-events: auto;
   cursor: pointer;
 }
@@ -362,6 +361,7 @@ body {
 
 .process-step-trigger:active {
   transform: scale(0.98);
+}
 
 .process-step--accent {
   color: #5d4f95;
