@@ -5160,66 +5160,66 @@ function drawPlanSVG(w, h, g) {
   addPoly(g.lot, "transparent", "#111827", 2.2);
 
   // Dimensions
-  if (g.dimensions) {
-    for (const dim of g.dimensions) {
-      const projPts = transform([dim.start, dim.end]);
-      const [p1, p2] = projPts;
-      const dx = p2.x - p1.x; const dy = p2.y - p1.y;
-      const len = Math.hypot(dx, dy) || 1;
-      const nx = -dy / len; const ny = dx / len;
-      const off = 32;
-      const sx = p1.x + nx * off; const sy = p1.y + ny * off;
-      const ex = p2.x + nx * off; const ey = p2.y + ny * off;
-      const mx = (sx + ex) / 2; const my = (sy + ey) / 2;
+  for (const dim of (g.dimensions?.dimensionLines || [])) {
+    if (!dim.start || !dim.end) continue;
+    const projPts = transform([dim.start, dim.end]);
+    const [p1, p2] = projPts;
+    if (!p1 || !p2) continue;
+    const dx = p2.x - p1.x; const dy = p2.y - p1.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len; const ny = dx / len;
+    const off = dim.offsetPx || 32;
+    const sx = p1.x + nx * off; const sy = p1.y + ny * off;
+    const ex = p2.x + nx * off; const ey = p2.y + ny * off;
+    const mx = (sx + ex) / 2; const my = (sy + ey) / 2;
 
-      // Extension lines
-      for (const [ax, ay, bx, by] of [[p1.x, p1.y, sx, sy], [p2.x, p2.y, ex, ey]]) {
-        const el = document.createElementNS(ns, "line");
-        el.setAttribute("x1", ax); el.setAttribute("y1", ay);
-        el.setAttribute("x2", bx); el.setAttribute("y2", by);
-        el.setAttribute("stroke", "#9ca3af"); el.setAttribute("stroke-width", "1");
-        svg.appendChild(el);
-      }
-      // Dim line
-      const dl = document.createElementNS(ns, "line");
-      dl.setAttribute("x1", sx); dl.setAttribute("y1", sy);
-      dl.setAttribute("x2", ex); dl.setAttribute("y2", ey);
-      dl.setAttribute("stroke", "#9ca3af"); dl.setAttribute("stroke-width", "1.4");
-      svg.appendChild(dl);
-      // Label background
-      const labelW = (dim.label || "").length * 7 + 12;
-      const bg2 = document.createElementNS(ns, "rect");
-      bg2.setAttribute("x", mx - labelW / 2); bg2.setAttribute("y", my - 9);
-      bg2.setAttribute("width", labelW); bg2.setAttribute("height", 14);
-      bg2.setAttribute("fill", "white"); bg2.setAttribute("stroke", "none");
-      svg.appendChild(bg2);
-      // Label
-      const txt = document.createElementNS(ns, "text");
-      txt.setAttribute("x", mx); txt.setAttribute("y", my + 3);
-      txt.setAttribute("text-anchor", "middle");
-      txt.setAttribute("fill", "#4b5563");
-      txt.setAttribute("font-size", "11");
-      txt.setAttribute("font-family", "ui-monospace,monospace");
-      txt.textContent = dim.label || "";
-      svg.appendChild(txt);
+    // Extension lines
+    for (const [ax, ay, bx, by] of [[p1.x, p1.y, sx, sy], [p2.x, p2.y, ex, ey]]) {
+      const el = document.createElementNS(ns, "line");
+      el.setAttribute("x1", ax); el.setAttribute("y1", ay);
+      el.setAttribute("x2", bx); el.setAttribute("y2", by);
+      el.setAttribute("stroke", "#9ca3af"); el.setAttribute("stroke-width", "1");
+      svg.appendChild(el);
     }
+    // Dim line
+    const dl = document.createElementNS(ns, "line");
+    dl.setAttribute("x1", sx); dl.setAttribute("y1", sy);
+    dl.setAttribute("x2", ex); dl.setAttribute("y2", ey);
+    dl.setAttribute("stroke", "#9ca3af"); dl.setAttribute("stroke-width", "1.4");
+    svg.appendChild(dl);
+    // Label background
+    const labelW = (dim.label || "").length * 7 + 12;
+    const bg2 = document.createElementNS(ns, "rect");
+    bg2.setAttribute("x", mx - labelW / 2); bg2.setAttribute("y", my - 9);
+    bg2.setAttribute("width", labelW); bg2.setAttribute("height", 14);
+    bg2.setAttribute("fill", "white"); bg2.setAttribute("stroke", "none");
+    svg.appendChild(bg2);
+    // Label
+    const txt = document.createElementNS(ns, "text");
+    txt.setAttribute("x", mx); txt.setAttribute("y", my + 3);
+    txt.setAttribute("text-anchor", "middle");
+    txt.setAttribute("fill", "#4b5563");
+    txt.setAttribute("font-size", "10");
+    txt.setAttribute("font-family", "ui-monospace,monospace");
+    txt.textContent = dim.label || "";
+    svg.appendChild(txt);
   }
 
   // Edge labels (setback lines)
-  if (g.edgeLabels) {
-    for (const edge of g.edgeLabels) {
-      const projPts = transform([edge.start, edge.end]);
-      const [p1, p2] = projPts;
-      const mx = (p1.x + p2.x) / 2; const my = (p1.y + p2.y) / 2;
-      const txt = document.createElementNS(ns, "text");
-      txt.setAttribute("x", mx); txt.setAttribute("y", my);
-      txt.setAttribute("text-anchor", "middle");
-      txt.setAttribute("fill", "#374151");
-      txt.setAttribute("font-size", "9.5");
-      txt.setAttribute("font-family", "ui-monospace,monospace");
-      txt.textContent = edge.label || "";
-      svg.appendChild(txt);
-    }
+  for (const edge of (g.dimensions?.edges || [])) {
+    if (!edge.start || !edge.end) continue;
+    const projPts = transform([edge.start, edge.end]);
+    const [p1, p2] = projPts;
+    if (!p1 || !p2) continue;
+    const mx = (p1.x + p2.x) / 2; const my = (p1.y + p2.y) / 2;
+    const txt = document.createElementNS(ns, "text");
+    txt.setAttribute("x", mx); txt.setAttribute("y", my);
+    txt.setAttribute("text-anchor", "middle");
+    txt.setAttribute("fill", "#374151");
+    txt.setAttribute("font-size", "9.5");
+    txt.setAttribute("font-family", "ui-monospace,monospace");
+    txt.textContent = edge.label || "";
+    svg.appendChild(txt);
   }
 
   return svg;
@@ -5777,17 +5777,25 @@ function renderStudySheet() {
   const SVG_H = 420;
 
   if (planWrap) {
-    const planSvg = drawPlanSVG(SVG_W, SVG_H, geometry);
-    planSvg.style.cssText = "width:100%;height:100%;display:block;";
-    planWrap.innerHTML = "";
-    planWrap.appendChild(planSvg);
+    try {
+      const planSvg = drawPlanSVG(SVG_W, SVG_H, geometry);
+      planSvg.style.cssText = "width:100%;height:100%;display:block;";
+      planWrap.innerHTML = "";
+      planWrap.appendChild(planSvg);
+    } catch (e) {
+      console.error("drawPlanSVG error:", e);
+    }
   }
 
   if (isoWrap) {
-    const isoSvg = drawIsoSVG(SVG_W, SVG_H, geometry);
-    isoSvg.style.cssText = "width:100%;height:100%;display:block;";
-    isoWrap.innerHTML = "";
-    isoWrap.appendChild(isoSvg);
+    try {
+      const isoSvg = drawIsoSVG(SVG_W, SVG_H, geometry);
+      isoSvg.style.cssText = "width:100%;height:100%;display:block;";
+      isoWrap.innerHTML = "";
+      isoWrap.appendChild(isoSvg);
+    } catch (e) {
+      console.error("drawIsoSVG error:", e);
+    }
   }
 
   updateStudyLabels(geometry);
