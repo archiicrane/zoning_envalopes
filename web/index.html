@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260507e" />
+    <link rel="stylesheet" href="/styles.css?v=20260507f" />
   </head>
   <body>
 
@@ -21,19 +21,21 @@
       <div class="topbar__titleblock">
         <span class="topbar__brand">Zoning Envelope Visualizer</span>
         <span class="topbar__subtitle">Translating NYC zoning rules into interactive spatial form</span>
+        <div class="process-strip" aria-label="Workflow">
+          <button type="button" class="process-step process-step-trigger" data-workflow-step="data" title="View data sources">ZR TEXT</button>
+          <span class="process-arrow">→</span>
+          <button type="button" class="process-step process-step-trigger" data-workflow-step="rules" title="View zoning rules">STRUCTURED DATA</button>
+          <span class="process-arrow">→</span>
+          <button type="button" class="process-step process-step-trigger" data-workflow-step="rules" title="View rule logic">RULE LOGIC</button>
+          <span class="process-arrow">→</span>
+          <button type="button" class="process-step process-step-trigger" data-workflow-step="geometry" title="View lot geometry">GEOMETRY</button>
+          <span class="process-arrow">→</span>
+          <button type="button" class="process-step process-step-trigger process-step--accent" data-workflow-step="envelope" title="View envelope generation">VISUAL ENVELOPE</button>
+        </div>
       </div>
       <select id="neighborhoodSelect" class="topbar__select">
         <option value="">Select neighborhood…</option>
       </select>
-      <div class="topbar__status" aria-label="Process status">
-        <span class="status-step is-active">DATA</span>
-        <span class="status-sep">→</span>
-        <span class="status-step is-active">RULES</span>
-        <span class="status-sep">→</span>
-        <span class="status-step is-active">GEOMETRY</span>
-        <span class="status-sep">→</span>
-        <span class="status-step is-active">ENVELOPE</span>
-      </div>
       <div class="topbar__more">
         <button id="toolbarMoreBtn" class="topbar__more-btn" type="button" aria-haspopup="true" aria-expanded="false" title="More options">···</button>
         <div id="toolbarMoreMenu" class="topbar__more-menu" hidden>
@@ -222,18 +224,6 @@
           <div id="envelopePage" class="workflow-page"></div>
         </div>
       </div>
-    </div>
-
-    <div class="process-strip" aria-label="Workflow">
-      <button type="button" class="process-step process-step-trigger" data-workflow-step="data" title="View data sources">ZR TEXT</button>
-      <span class="process-arrow">→</span>
-      <button type="button" class="process-step process-step-trigger" data-workflow-step="rules" title="View zoning rules">STRUCTURED DATA</button>
-      <span class="process-arrow">→</span>
-      <button type="button" class="process-step process-step-trigger" data-workflow-step="rules" title="View rule logic">RULE LOGIC</button>
-      <span class="process-arrow">→</span>
-      <button type="button" class="process-step process-step-trigger" data-workflow-step="geometry" title="View lot geometry">GEOMETRY</button>
-      <span class="process-arrow">→</span>
-      <button type="button" class="process-step process-step-trigger process-step--accent" data-workflow-step="envelope" title="View envelope generation">VISUAL ENVELOPE</button>
     </div>
 
     <!-- Hidden functional inputs preserved for JS compatibility -->

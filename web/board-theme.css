@@ -8,7 +8,7 @@
   --line: #d6dae2;
   --green: #507c64;
   --blue: #6e5ca5;
-  --topbar-h: 72px;
+  --topbar-h: 104px;
 
   --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
   --sans: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
@@ -48,8 +48,8 @@ body {
 .topbar__titleblock {
   display: flex;
   flex-direction: column;
-  min-width: 290px;
-  gap: 3px;
+  min-width: 460px;
+  gap: 4px;
 }
 
 .topbar__brand {
@@ -74,32 +74,6 @@ body {
   background: #fff;
   font-family: var(--mono);
   font-size: 12px;
-}
-
-.topbar__status {
-  margin-top: 5px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  background: #fff;
-  border-radius: 3px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.05em;
-}
-
-.status-step {
-  color: #7c8391;
-}
-
-.status-step.is-active {
-  color: #2b3340;
-}
-
-.status-sep {
-  color: #9aa1ad;
 }
 
 .topbar__more-btn {
@@ -318,16 +292,17 @@ body {
 }
 
 .process-strip {
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: calc(var(--sheet-peek-h) + 6px);
-  z-index: 12;
+  position: static;
+  z-index: auto;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  width: fit-content;
+  max-width: 100%;
   gap: 8px;
   height: 28px;
+  margin-top: 4px;
+  padding: 0 8px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.95);
   font-family: var(--mono);
@@ -405,7 +380,7 @@ body {
 
 @media (max-width: 980px) {
   :root {
-    --topbar-h: 86px;
+    --topbar-h: 122px;
   }
 
   .topbar {
@@ -418,16 +393,14 @@ body {
     min-width: 100%;
   }
 
-  .topbar__status {
-    order: 3;
-    width: 100%;
-    justify-content: flex-start;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-
   .topbar__more {
     margin-left: 0;
+  }
+
+  .process-strip {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
   }
 
   .viewport-frame {
@@ -456,9 +429,7 @@ body {
   }
 
   .process-strip {
-    left: 10px;
-    right: 10px;
-    bottom: calc(var(--sheet-peek-h) + 4px);
+    width: 100%;
     justify-content: flex-start;
     padding: 0 8px;
     overflow-x: auto;
