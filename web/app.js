@@ -1317,8 +1317,8 @@ function ensureSourcesAndLayers() {
         // Subtle ghost volumes for surrounding neighborhood lots
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#3b82f6"],
         "fill-extrusion-opacity": 0.15,  // deliberately subtle — selected lots use dedicated layers
-        "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
-        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 0],
+        "fill-extrusion-base": ["*", ["coalesce", ["get", "envelopeBase"], 0], 0.3048],
+        "fill-extrusion-height": ["*", ["coalesce", ["get", "envelopeHeight"], 0], 0.3048],
         "fill-extrusion-vertical-gradient": false,
       },
     });
@@ -1445,8 +1445,8 @@ function ensureSourcesAndLayers() {
       ],
       paint: {
         "fill-extrusion-color": ["coalesce", ["get", "color"], "#93c5fd"],
-        "fill-extrusion-height": ["coalesce", ["get", "height_ft"], 0],
-        "fill-extrusion-base": ["coalesce", ["get", "base_ft"], 0],
+        "fill-extrusion-height": ["*", ["coalesce", ["get", "height_ft"], 0], 0.3048],
+        "fill-extrusion-base": ["*", ["coalesce", ["get", "base_ft"], 0], 0.3048],
         "fill-extrusion-opacity": baselineOpacity,
       },
     });
@@ -1462,8 +1462,8 @@ function ensureSourcesAndLayers() {
       ],
       paint: {
         "fill-extrusion-color": ["coalesce", ["get", "color"], "#2563eb"],
-        "fill-extrusion-height": ["coalesce", ["get", "height_ft"], 0],
-        "fill-extrusion-base": ["coalesce", ["get", "base_ft"], 0],
+        "fill-extrusion-height": ["*", ["coalesce", ["get", "height_ft"], 0], 0.3048],
+        "fill-extrusion-base": ["*", ["coalesce", ["get", "base_ft"], 0], 0.3048],
         "fill-extrusion-opacity": scenarioOpacity,
       },
     });
@@ -1616,8 +1616,8 @@ function ensureSourcesAndLayers() {
       paint: {
         "fill-extrusion-color": "#3b82f6",
         "fill-extrusion-opacity": 0.18,
-        "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
-        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 0],
+        "fill-extrusion-base": ["*", ["coalesce", ["get", "envelopeBase"], 0], 0.3048],
+        "fill-extrusion-height": ["*", ["coalesce", ["get", "envelopeHeight"], 0], 0.3048],
         "fill-extrusion-vertical-gradient": false,
       },
     });
@@ -1646,8 +1646,8 @@ function ensureSourcesAndLayers() {
       paint: {
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#22c55e"],
         "fill-extrusion-opacity": 0.35,
-        "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
-        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 0],
+        "fill-extrusion-base": ["*", ["coalesce", ["get", "envelopeBase"], 0], 0.3048],
+        "fill-extrusion-height": ["*", ["coalesce", ["get", "envelopeHeight"], 0], 0.3048],
         "fill-extrusion-vertical-gradient": true,
       },
     });
