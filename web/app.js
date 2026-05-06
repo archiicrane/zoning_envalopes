@@ -218,6 +218,7 @@ const workflowPages = {
   envelope: document.getElementById("envelopePage"),
 };
 let currentWorkflowStep = "data";
+let workflowRenderRequestId = 0;
 
 function openWorkflowPanel(initialStep = "data") {
   if (!workflowPanel) return;
@@ -250,16 +251,19 @@ function _switchWorkflowStep(step) {
   });
 
   // Render diagram for this step
-  _renderWorkflowDiagram(step);
+  void _renderWorkflowDiagram(step);
 }
 
-function _renderWorkflowDiagram(step) {
+async function _renderWorkflowDiagram(step) {
   if (!window.workflowDiagrams) return;
 
   const container = workflowPages[step];
   if (!container) return;
 
-  let svg;
+  const requestId = ++workflowRenderRequestId;
+  container.innerHTML = '<div class="workflow-loading">Capturing live interface and building analytical overlay...</div>';
+
+  let board;
   
   // Get current controls/results
   const controls = baselineEnvelopeResults?.zoning_buildability_study || {};
@@ -276,16 +280,16 @@ function _renderWorkflowDiagram(step) {
 
   switch (step) {
     case "data":
-      svg = window.workflowDiagrams.renderDataDiagram(activeLotData, activeLotPolygon);
+      board = await window.workflowDiagrams.renderDataDiagram(activeLotData, activeLotPolygon);
       break;
     case "rules":
-      svg = window.workflowDiagrams.renderRulesDiagram(zoneControls, zone);
+      board = await window.workflowDiagrams.renderRulesDiagram(zoneControls, zone);
       break;
     case "geometry":
-      svg = window.workflowDiagrams.renderGeometryDiagram(activeLotData, activeLotAnalysis);
+      board = await window.workflowDiagrams.renderGeometryDiagram(activeLotData, activeLotAnalysis, zoneControls);
       break;
     case "envelope":
-      svg = window.workflowDiagrams.renderEnvelopeDiagram(
+      board = await window.workflowDiagrams.renderEnvelopeDiagram(
         zoneControls,
         baselineEnvelopeResults,
         lastFarEnvelopeData
@@ -293,9 +297,15 @@ function _renderWorkflowDiagram(step) {
       break;
   }
 
-  if (svg) {
+  if (requestId !== workflowRenderRequestId) {
+    return;
+  }
+
+  if (board) {
     container.innerHTML = "";
-    container.appendChild(svg);
+    container.appendChild(board);
+  } else {
+    container.innerHTML = '<div class="workflow-loading">Unable to render workflow board for this step.</div>';
   }
 }
 
