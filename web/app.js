@@ -6,6 +6,10 @@ import {
   extractZoneTokens as extractZoneTokensModule,
 } from "./zoningRuleEngine.js";
 import { buildFarMassing } from "./src/zoning/farMassing.js";
+import { DiagramSystemIntegration } from "./src/diagrams/DiagramSystemIntegration.js";
+import { ArchitecturalDiagramRenderer } from "./src/diagrams/ArchitecturalDiagramRenderer.js";
+import { ArchitecturalIsometricRenderer } from "./src/diagrams/ArchitecturalIsometricRenderer.js";
+import { HighResolutionExporter } from "./src/diagrams/HighResolutionExporter.js";
 
 async function resolveMapboxToken() {
   const local = (window.APP_CONFIG && window.APP_CONFIG.mapboxToken) || "";
@@ -78,6 +82,7 @@ let isoScene = null;
 let isoCamera = null;
 let isoAnimationFrame = null;
 let analysisModalLots = [];
+let diagramSystem = null; // New: integrated diagram rendering system
 let studyState = {
   floorHeight: 10,
   farUsed: 3.0,
@@ -4309,118 +4314,59 @@ function _buildPlanDiagramSvg() {
 
 function _updateTopPlanDiagram() {
   const el = document.getElementById("amPlanDiagram");
-  if (!el || !analysisPanelOpen) return;
-  const state = window.__studySheetState || _analysisPlanContext();
+  if (!el || !analysisPanelOpen || !diagramSystem) return;
 
-  const width = Math.max(560, el.clientWidth || 760);
-  const height = Math.max(360, el.clientHeight || 520);
-  let canvas = document.getElementById("amPlanCanvas");
-  if (!canvas) {
-    el.innerHTML = `<canvas id="amPlanCanvas" class="analysis-plan-canvas"></canvas>`;
-    canvas = document.getElementById("amPlanCanvas");
-  }
-  if (!canvas) return;
-  canvas.width = width;
-  canvas.height = height;
-  const ctx2d = canvas.getContext("2d");
-  if (!ctx2d) return;
-
-  const selectedRings = state.selectedRings?.length ? state.selectedRings : [state.lotRing];
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-  for (const r of selectedRings) {
-    for (const [x, y] of r) {
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x);
-      minY = Math.min(minY, y);
-      maxY = Math.max(maxY, y);
-    }
-  }
-  const pad = 70;
-  const sx = maxX - minX || 0.0001;
-  const sy = maxY - minY || 0.0001;
-  const scale = Math.min((width - (pad * 2)) / sx, (height - (pad * 2)) / sy);
-  const project = ([x, y]) => ({ x: pad + ((x - minX) * scale), y: height - pad - ((y - minY) * scale) });
-
-  const drawPoly = (ring, opts = {}) => {
-    const pts = ring.map(project);
-    if (pts.length < 3) return;
-    ctx2d.beginPath();
-    ctx2d.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i += 1) {
-      ctx2d.lineTo(pts[i].x, pts[i].y);
-    }
-    if (opts.fill) {
-      ctx2d.fillStyle = opts.fill;
-      ctx2d.fill();
-    }
-    ctx2d.lineWidth = opts.lineWidth ?? 1.5;
-    if (opts.dash) ctx2d.setLineDash(opts.dash);
-    ctx2d.strokeStyle = opts.stroke || "#111827";
-    ctx2d.stroke();
-    ctx2d.setLineDash([]);
-  };
-
-  ctx2d.clearRect(0, 0, width, height);
-  ctx2d.fillStyle = "#ffffff";
-  ctx2d.fillRect(0, 0, width, height);
-
-  // Selected lots only
-  for (let i = 1; i < selectedRings.length; i += 1) {
-    drawPoly(selectedRings[i], { stroke: "#94a3b8", lineWidth: 1.2 });
-  }
-
-  const farFill = state.isCapped ? "rgba(220,38,38,0.24)" : "rgba(22,163,74,0.24)";
-  const farStroke = state.isCapped ? "#b91c1c" : "#166534";
-  drawPoly(_shapeRingFromGeometry(state.maxBuildableGeometry), { stroke: "#0f766e", lineWidth: 1.8, dash: [7, 4] });
-  drawPoly(_shapeRingFromGeometry(state.farFootprintGeometry), { fill: farFill, stroke: farStroke, lineWidth: 1.8 });
-  drawPoly(_shapeRingFromGeometry(state.existingGeometry), { fill: "rgba(107,114,128,0.45)", stroke: "#4b5563", lineWidth: 1.4 });
-  drawPoly(state.lotRing, { stroke: "#111827", lineWidth: 2.4 });
-
-  const lotPts = state.lotRing.map(project);
-  const dims = [];
-  if (lotPts.length > 3) {
-    const ys = lotPts.map((p) => p.y);
-    const xs = lotPts.map((p) => p.x);
-    const minPy = Math.min(...ys);
-    const maxPy = Math.max(...ys);
-    const minPx = Math.min(...xs);
-    const maxPx = Math.max(...xs);
-    const bottomEdges = [];
-    for (let i = 0; i < lotPts.length - 1; i += 1) {
-      const p1 = lotPts[i];
-      const p2 = lotPts[i + 1];
-      if (((p1.y + p2.y) / 2) > (maxPy - ((maxPy - minPy) * 0.25))) {
-        bottomEdges.push({ p1, p2 });
-      }
-    }
-    const widthEdge = bottomEdges.sort((a, b) => Math.abs((b.p2.x - b.p1.x)) - Math.abs((a.p2.x - a.p1.x)))[0] || { p1: { x: minPx, y: maxPy }, p2: { x: maxPx, y: maxPy } };
-    const depthEdge = {
-      p1: lotPts.reduce((a, b) => (a.x < b.x ? a : b)),
-      p2: lotPts.reduce((a, b) => (a.y < b.y ? a : b)),
+  try {
+    // Get the analysis state
+    const state = window.__studySheetState || _analysisPlanContext();
+    
+    // Prepare lot feature for diagram system
+    const lotFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [_closeRing(state.lotRing || [])],
+      },
+      properties: activeLotData || {},
     };
 
-    dims.push({ start: widthEdge.p1, end: widthEdge.p2, label: `Front yard setback: ${Math.round(state.frontYard)} ft` });
-    dims.push({ start: widthEdge.p1, end: widthEdge.p2, label: `Rear yard setback: ${Math.round(state.rearYard)} ft` });
-    dims.push({ start: widthEdge.p1, end: widthEdge.p2, label: `Side yard setback: ${Math.round(state.sideYard)} ft` });
-    dims.push({ start: widthEdge.p1, end: widthEdge.p2, label: `Street setback: ${Math.round(state.streetSetback)} ft` });
-    dims.push({ start: widthEdge.p1, end: widthEdge.p2, label: `Lot width: ${Math.round(state.lotWidthFt || 0)} ft` });
-    dims.push({ start: depthEdge.p1, end: depthEdge.p2, label: `Lot depth: ${Math.round(state.lotDepthFt || 0)} ft` });
-  }
+    // Prepare analysis data
+    const analysisData = {
+      lotGeometry: lotFeature.geometry,
+      existingGeometry: state.existingGeometry,
+      buildableGeometry: state.maxBuildableGeometry,
+      farFootprintGeometry: state.farFootprintGeometry,
+      lotArea: state.maxBuildableAreaFt2 || 0,
+      buildableArea: state.maxBuildableAreaFt2 || 0,
+      farFootprintArea: state.farFootprintAreaFt2 || 0,
+      existingHeightFt: state.existingHeightFt || 10,
+      farHeight: state.farHeightFt || 80,
+      maxHeight: state.maxHeightFt || 120,
+      coverage: state.footprintCoveragePct || 80,
+      isCapped: state.isCapped || false,
+      controls: {
+        frontYardFt: state.frontYard || 0,
+        rearYardFt: state.rearYard || 0,
+        sideYardFt: state.sideYard || 0,
+      },
+    };
 
-  let offset = 20;
-  for (const d of dims) {
-    drawArchitecturalDimension(ctx2d, d.start, d.end, offset, d.label);
-    offset += 20;
+    // Generate diagrams
+    diagramSystem.generateDiagrams(lotFeature, analysisData, map).then(result => {
+      if (result.success && result.planSvg) {
+        el.innerHTML = '';
+        diagramSystem.renderPlanDiagram(result.planSvg, el);
+      } else {
+        el.innerHTML = `<div style="padding:20px; color:#6b7280;">Failed to render diagram: ${result.error || 'Unknown error'}</div>`;
+      }
+    }).catch(err => {
+      console.error('Diagram rendering error:', err);
+      el.innerHTML = `<div style="padding:20px; color:#dc2626;">Diagram error: ${err.message}</div>`;
+    });
+  } catch (err) {
+    console.error('Plan diagram update error:', err);
+    el.innerHTML = `<div style="padding:20px; color:#dc2626;">Error: ${err.message}</div>`;
   }
-
-  ctx2d.fillStyle = "#111827";
-  ctx2d.font = "12px 'Segoe UI', sans-serif";
-  ctx2d.textAlign = "right";
-  ctx2d.fillText(`Buildable area: ${Math.round(state.maxBuildableAreaFt2).toLocaleString()} sf`, width - 14, 22);
-  ctx2d.fillText(`FAR footprint: ${Math.round(state.farFootprintAreaFt2).toLocaleString()} sf`, width - 14, 40);
 }
 
 function updateStudySheetGeometry() {
@@ -4578,132 +4524,51 @@ function _updateIsometricLabels(maxHeightFt, farHeightFt, existingHeightFt) {
 }
 
 async function _updateIsometricDiagram() {
-  if (!analysisPanelOpen) return;
+  if (!analysisPanelOpen || !diagramSystem) return;
   const viewport = document.getElementById("amIsoViewport");
   if (!viewport) return;
 
   try {
-    const THREE = await _ensureThreeLoaded();
     const ctx = _analysisPlanContext();
-    const selectedRings = ctx.selectedRings?.length ? ctx.selectedRings : [ctx.lotRing];
-    if (!selectedRings.length || !selectedRings[0]?.length) return;
-
-    _disposeIsometricRenderer();
-    viewport.innerHTML = "";
-
-    isoScene = new THREE.Scene();
-    isoScene.background = new THREE.Color(0xffffff);
-
-    const width = Math.max(280, viewport.clientWidth || 560);
-    const height = Math.max(240, viewport.clientHeight || 420);
-    const projector = _lotToLocalProjectorFromRings(selectedRings);
-
-    let minLocalX = Infinity;
-    let maxLocalX = -Infinity;
-    let minLocalZ = Infinity;
-    let maxLocalZ = -Infinity;
-    for (const ring of selectedRings) {
-      for (const pt of ring) {
-        const [lx, lz] = projector(pt);
-        minLocalX = Math.min(minLocalX, lx);
-        maxLocalX = Math.max(maxLocalX, lx);
-        minLocalZ = Math.min(minLocalZ, lz);
-        maxLocalZ = Math.max(maxLocalZ, lz);
-      }
-    }
-
-    const spanX = Math.max(1, maxLocalX - minLocalX);
-    const spanZ = Math.max(1, maxLocalZ - minLocalZ);
-    const centerX = (minLocalX + maxLocalX) / 2;
-    const centerZ = (minLocalZ + maxLocalZ) / 2;
-    const cameraSize = Math.max(20, Math.max(spanX, spanZ) * 0.95);
-    const aspect = width / height;
-    isoCamera = new THREE.OrthographicCamera(
-      (-cameraSize * aspect),
-      (cameraSize * aspect),
-      cameraSize,
-      -cameraSize,
-      0.1,
-      5000
-    );
-    isoCamera.position.set(centerX + (cameraSize * 1.25), cameraSize * 1.4, centerZ + (cameraSize * 1.25));
-    isoCamera.lookAt(centerX, 0, centerZ);
-
-    isoRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    isoRenderer.setSize(width, height);
-    viewport.appendChild(isoRenderer.domElement);
-
-    isoScene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-    dir.position.set(120, 200, 80);
-    isoScene.add(dir);
-
-    for (const ring of selectedRings) {
-      const lotShape = _shapeFromRingLocal(ring, projector, THREE);
-      const lotOutlinePts = lotShape.getPoints().map((p) => new THREE.Vector3(p.x, 0.01, p.y));
-      if (lotOutlinePts.length) {
-        lotOutlinePts.push(lotOutlinePts[0].clone());
-      }
-      const lotOutline = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(lotOutlinePts),
-        new THREE.LineBasicMaterial({ color: 0x0f172a })
-      );
-      isoScene.add(lotOutline);
-    }
-
-    const existingHeights = [];
-    const selectedFeatures = ctx.selectedFeatures?.length ? ctx.selectedFeatures : [{ geometry: ctx.lotGeometry, properties: ctx.props }];
-    for (const feature of selectedFeatures) {
-      const featureProps = feature?.properties || {};
-      const lotGeom = feature?.geometry;
-      if (!lotGeom) continue;
-      const builtFar = coerceNumber(featureProps.built_far ?? featureProps.BuiltFAR) ?? 0.85;
-      const existingHeightFt = coerceNumber(featureProps.existing_height_ft) ?? estimateExistingHeightFt(featureProps) ?? 10;
-      existingHeights.push(existingHeightFt);
-      const existingFootprintRatio = Math.max(0.2, Math.min(0.95, Math.sqrt(Math.max(0.05, builtFar / Math.max(ctx.far, 0.25)))));
-      const existingGeometry = _scaleGeometryFromCenter(lotGeom, existingFootprintRatio);
-      const existingRing = _shapeRingFromGeometry(existingGeometry);
-      _addExtrusion(isoScene, existingRing, projector, existingHeightFt, 0x9ca3af, 1, 0x4b5563, THREE);
-    }
-
-    const maxOpacity = Number(document.getElementById("amOpacitySlider")?.value || 18) / 100;
-    const farOpacity = Number(document.getElementById("amOpacitySlider")?.value || 35) / 100;
-
-    for (const f of lastMaxEnvelopeGeojson.features || []) {
-      const ring = _shapeRingFromGeometry(f.geometry);
-      const h = coerceNumber(f.properties?.envelopeHeight) ?? coerceNumber(ctx.study.envelope_height_ft) ?? 120;
-      _addExtrusion(isoScene, ring, projector, h, 0x60a5fa, maxOpacity, 0x1d4ed8, THREE);
-    }
-
-    const sheetState = window.__studySheetState || {};
-    const farColor = sheetState.isCapped ? 0xdc2626 : 0x16a34a;
-    const farEdgeColor = sheetState.isCapped ? 0x991b1b : 0x166534;
-
-    for (const f of lastFarEnvelopeGeojson.features || []) {
-      const ring = _shapeRingFromGeometry(f.geometry);
-      const base = coerceNumber(f.properties?.envelopeBase) ?? 0;
-      const h = Math.max(1, (coerceNumber(f.properties?.envelopeHeight) ?? 0) - base);
-      _addExtrusion(isoScene, ring, projector, h, farColor, farOpacity, farEdgeColor, THREE);
-    }
-
-    const maxHeightFt = coerceNumber(ctx.study.envelope_height_ft) ?? coerceNumber(ctx.zoning.max_height_ft) ?? 120;
-    const farHeightFt = coerceNumber(lastFarEnvelopeData?.buildingHeightFt) ?? Math.min(maxHeightFt, ctx.far * 10);
-    const existingHeightFt = existingHeights.length ? Math.max(...existingHeights) : ctx.existingHeightFt;
-    const dimX = minLocalX - (cameraSize * 0.15);
-    const dimZ = minLocalZ - (cameraSize * 0.15);
-    _addHeightDimension(isoScene, { x: dimX, z: dimZ, heightFt: existingHeightFt, color: 0x4b5563, anchorX: centerX, anchorZ: centerZ }, THREE);
-    _addHeightDimension(isoScene, { x: dimX + 4, z: dimZ, heightFt: farHeightFt, color: 0x16a34a, anchorX: centerX, anchorZ: centerZ }, THREE);
-    _addHeightDimension(isoScene, { x: dimX + 8, z: dimZ, heightFt: maxHeightFt, color: 0x1d4ed8, anchorX: centerX, anchorZ: centerZ }, THREE);
-    _updateIsometricLabels(maxHeightFt, farHeightFt, existingHeightFt);
-
-    const render = () => {
-      if (!isoRenderer || !isoScene || !isoCamera) return;
-      isoRenderer.render(isoScene, isoCamera);
-      isoAnimationFrame = requestAnimationFrame(render);
+    
+    // Prepare lot feature for diagram system
+    const lotFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [_closeRing(ctx.lotRing || [])],
+      },
+      properties: activeLotData || {},
     };
-    render();
+
+    // Prepare analysis data
+    const analysisData = {
+      lotGeometry: lotFeature.geometry,
+      existingGeometry: ctx.existingGeometry,
+      buildableGeometry: ctx.maxBuildableGeometry,
+      farFootprintGeometry: ctx.farFootprintGeometry,
+      lotArea: ctx.maxBuildableAreaFt2 || 0,
+      buildableArea: ctx.maxBuildableAreaFt2 || 0,
+      farFootprintArea: ctx.farFootprintAreaFt2 || 0,
+      existingHeightFt: ctx.existingHeightFt || 10,
+      farHeight: ctx.farHeightFt || 80,
+      maxHeight: ctx.maxHeightFt || 120,
+      coverage: ctx.footprintCoveragePct || 80,
+      isCapped: ctx.isCapped || false,
+    };
+
+    // Generate diagrams (includes isometric)
+    const result = await diagramSystem.generateDiagrams(lotFeature, analysisData, map);
+    
+    if (result.success && result.isoSvg) {
+      viewport.innerHTML = '';
+      diagramSystem.renderIsometricDiagram(result.isoSvg, viewport);
+    } else {
+      viewport.innerHTML = `<div class="ap-empty">Isometric rendering failed: ${result.error || 'Unknown error'}</div>`;
+    }
   } catch (err) {
-    viewport.innerHTML = `<div class="ap-empty">Isometric rendering unavailable: ${String(err)}</div>`;
+    console.error('Isometric diagram error:', err);
+    viewport.innerHTML = `<div class="ap-empty">Isometric error: ${err.message}</div>`;
   }
 }
 
@@ -6015,39 +5880,38 @@ if (analysisPanel) {
 }
 
 if (exportDiagramBtn) {
-  exportDiagramBtn.addEventListener("click", () => {
-    const planSvg = document.querySelector("#amPlanDiagram svg");
-    const isoCanvas = document.querySelector("#amIsoViewport canvas");
-    if (!planSvg || !isoCanvas) {
+  exportDiagramBtn.addEventListener("click", async () => {
+    if (!diagramSystem || !diagramSystem.lastGeneratedDiagrams.planSvg) {
       setReport("Open Analyze Selection with a selected lot before exporting PNG.");
       return;
     }
 
-    const serializer = new XMLSerializer();
-    const svgText = serializer.serializeToString(planSvg);
-    const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    const img = new Image();
-    img.onload = () => {
-      const out = document.createElement("canvas");
-      out.width = 1800;
-      out.height = 1000;
-      const ctx = out.getContext("2d");
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, out.width, out.height);
-      ctx.drawImage(img, 40, 80, 860, 840);
-      ctx.drawImage(isoCanvas, 940, 80, 820, 840);
-      URL.revokeObjectURL(svgUrl);
-      const link = document.createElement("a");
-      link.href = out.toDataURL("image/png");
-      link.download = `zoning-study-${activeLotData?.bbl || "lot"}.png`;
-      link.click();
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(svgUrl);
-      setReport("Could not export diagram PNG.");
-    };
-    img.src = svgUrl;
+    try {
+      // Verify export quality first
+      const qualityCheck = diagramSystem.verifyExportQuality(300); // 300 DPI
+      if (!qualityCheck.valid && qualityCheck.warnings.length > 0) {
+        console.warn('Export warnings:', qualityCheck.warnings);
+      }
+
+      // Export as high-resolution PNG (300 DPI)
+      const filename = `zoning-study-${activeLotData?.bbl || "lot"}.png`;
+      setReport(`Exporting diagram at 300 DPI (${qualityCheck.exportWidth}×${qualityCheck.exportHeight}px)...`);
+
+      const result = await diagramSystem.exportDiagrams({
+        format: 'layout',
+        filename,
+        dpi: 300,
+        layout: 'side-by-side',
+      });
+
+      if (result.success) {
+        setReport(`✓ Exported ${filename} - ${result.result.size} at 300 DPI`);
+      } else {
+        setReport(`✗ Export failed: ${result.error}`);
+      }
+    } catch (err) {
+      setReport(`Export error: ${String(err)}`);
+    }
   });
 }
 
@@ -6099,6 +5963,29 @@ if (openFullAnalysisBtn) {
     // Ensure NTA boundaries are ready before first neighborhood render.
     await loadNtaBoundaries();
     await loadNeighborhoodOptions();
+    
+    // Initialize new high-quality diagram system
+    diagramSystem = new DiagramSystemIntegration({
+      mapboxMap: map,
+      enableStreetDetection: true,
+      enableHighResExport: true,
+      defaultExportDpi: 300,
+      planRendererOptions: {
+        svgWidth: 2400,
+        svgHeight: 1560,
+        padding: 180,
+      },
+      isoRendererOptions: {
+        svgWidth: 2400,
+        svgHeight: 1560,
+        isometricAngle: 30,
+        explodedSpacing: 150,
+      },
+      exporterOptions: {
+        defaultDpi: 300,
+        maxCanvasSize: 16384,
+      },
+    });
   } catch (err) {
     setReport(String(err));
   }
