@@ -44,7 +44,7 @@ const STYLE_PRESET = {
   maxEnvelope: {
     fillColor: "#0ea5e9",
     fillOpacityDefault: 0.42,
-    fillOpacityMin: 0.22,
+    fillOpacityMin: 0.32,
     outlineColor: "#1d4ed8",
     outlineOpacity: 1,
     outlineWidth: 3,
@@ -64,9 +64,9 @@ const STYLE_PRESET = {
     opacityPresentation: 0.16,
   },
   contextEnvelope: {
-    fillOpacityDefault: 0.1,
-    fillOpacityPresentation: 0.05,
-    outlineOpacityDefault: 0.22,
+    fillOpacityDefault: 0.2,
+    fillOpacityPresentation: 0.1,
+    outlineOpacityDefault: 0.45,
     outlineOpacityPresentation: 0.12,
   },
 };
@@ -408,7 +408,7 @@ function applyEnvelopeOpacityToLayers() {
     const baseOpacity = presentationMode
       ? STYLE_PRESET.contextEnvelope.fillOpacityPresentation
       : STYLE_PRESET.contextEnvelope.fillOpacityDefault;
-    const opacity = Math.max(0.03, baseOpacity * (0.65 + scenarioOpacity * 0.35));
+    const opacity = Math.max(0.16, baseOpacity * (0.7 + scenarioOpacity * 0.3));
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", opacity);
   }
   if (map.getLayer("zoning-envelope-outline")) {
