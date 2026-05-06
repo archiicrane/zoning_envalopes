@@ -31,7 +31,12 @@ async function resolveMapboxToken() {
 }
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
-const ZONING_RULES_URLS = ["/web/zoning-rules.jsonld?v=20260507e", "/web/zoningRules.json?v=20260507e"];
+const ZONING_RULES_URLS = [
+  "/zoning-rules.jsonld?v=20260507f",
+  "/zoningRules.json?v=20260507f",
+  "/web/zoning-rules.jsonld?v=20260507f",
+  "/web/zoningRules.json?v=20260507f",
+];
 
 const feetToMeters = (ft) => Number(ft || 0) * 0.3048;
 
@@ -1314,7 +1319,7 @@ function ensureSourcesAndLayers() {
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#3b82f6"],
         "fill-extrusion-opacity": 0.15,  // deliberately subtle — selected lots use dedicated layers
         "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
-        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
+        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 0],
         "fill-extrusion-vertical-gradient": false,
       },
     });
@@ -1613,7 +1618,7 @@ function ensureSourcesAndLayers() {
         "fill-extrusion-color": "#3b82f6",
         "fill-extrusion-opacity": 0.18,
         "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
-        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
+        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 0],
         "fill-extrusion-vertical-gradient": false,
       },
     });
@@ -1643,7 +1648,7 @@ function ensureSourcesAndLayers() {
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], "#22c55e"],
         "fill-extrusion-opacity": 0.35,
         "fill-extrusion-base": ["coalesce", ["get", "envelopeBase"], 0],
-        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 30],
+        "fill-extrusion-height": ["coalesce", ["get", "envelopeHeight"], 0],
         "fill-extrusion-vertical-gradient": true,
       },
     });
