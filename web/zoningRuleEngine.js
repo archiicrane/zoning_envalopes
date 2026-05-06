@@ -533,12 +533,16 @@ export function getControlsForLot(lotAnalysis, rulesIndex) {
     controlsByZone.push({
       zone: token,
       zoneCode: resolvedRule.zoneCode || token,
+      resolvedZoneCode: resolvedRule.zoneCode || token,
+      ruleFound: true,
+      residentialEquivalent: normalizeZoneToken((rulesIndex?.get(resolvedRule.zoneCode || token)?.residentialEquivalent) || "") || null,
       selectedVariant: resolvedRule.selectedVariant,
       overlapRatio: 1 / zones.length,
       controls: getApplicableControls(rawAnalysis, {
         ...resolvedRule,
         maximumBuildingHeightFt: resolvedRule.maximumBuildingHeightFt,
       }),
+      resolvedRule,
     });
   }
 

@@ -49,6 +49,8 @@
     "zr-23-433": "https://zr.planning.nyc.gov/article-ii/chapter-3/23-433",
     "zr-23-736": "https://zr.planning.nyc.gov/article-ii/chapter-3/23-736",
     "zr-34-112": "https://zr.planning.nyc.gov/article-iii/chapter-4/34-112",
+    "zr-35-61": "https://zr.planning.nyc.gov/article-iii/chapter-5/35-61",
+    "zr-35-62": "https://zr.planning.nyc.gov/article-iii/chapter-5/35-62",
     "zr-43-12": "https://zr.planning.nyc.gov/article-iv/chapter-3/43-12",
     "zr-43-25": "https://zr.planning.nyc.gov/article-iv/chapter-3/43-25",
     "zr-43-26": "https://zr.planning.nyc.gov/article-iv/chapter-3/43-26",
@@ -2935,6 +2937,79 @@
           "far": null,
           "sourceSections": [
             "zr-34-112"
+          ]
+        }
+      }
+    },
+    {
+      "zoneCode": "C8-1",
+      "zoneType": "commercial",
+      "bulkRegime": "manufacturing-sky-exposure",
+      "residentialEquivalent": "M1-1",
+      "standardFar": 1.0,
+      "rearYardFt": 20,
+      "maximumFrontWallHeightFt": 30,
+      "streetSetbackWideFt": 15,
+      "streetSetbackNarrowFt": 20,
+      "simplifiedPlanInsetFt": 15,
+      "sourceSections": [
+        "zr-35-61",
+        "zr-35-62",
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Market Rate / Standard Residential",
+          "far": 1.0,
+          "maximumFrontWallHeightFt": 30,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-35-61",
+            "zr-35-62",
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingAffordableOrSenior": {
+          "label": "Qualifying Affordable or Senior Housing",
+          "far": 1.0,
+          "maximumFrontWallHeightFt": 30,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-35-61",
+            "zr-35-62",
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "buildingsOrOtherStructures": {
+          "label": "Buildings or Other Structures",
+          "far": 1.0,
+          "maximumFrontWallHeightFt": 30,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-35-61",
+            "zr-35-62",
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
           ]
         }
       }

@@ -265,9 +265,11 @@ function _updateSheetPeek(data, zoning) {
   if (lotZoneBadge) lotZoneBadge.textContent = zone;
   if (lotSheetAddress) lotSheetAddress.textContent = data.address || data.bbl || "Selected lot";
   if (lotSheetChips) {
+    const hasHeight = coerceNumber(height) != null;
+    const hasFar = coerceNumber(far) != null;
     lotSheetChips.innerHTML = [
-      height ? `<div class="stat-chip"><span class="stat-chip__val">${Math.round(height)}<small>ft</small></span><span class="stat-chip__label">Max Ht</span></div>` : "",
-      far ? `<div class="stat-chip"><span class="stat-chip__val">${Number(far).toFixed(1)}</span><span class="stat-chip__label">FAR</span></div>` : "",
+      hasHeight ? `<div class="stat-chip"><span class="stat-chip__val">${Math.round(Number(height))}<small>ft</small></span><span class="stat-chip__label">Max Ht</span></div>` : "",
+      hasFar ? `<div class="stat-chip"><span class="stat-chip__val">${Number(far).toFixed(1)}</span><span class="stat-chip__label">FAR</span></div>` : "",
     ].join("");
   }
 }
@@ -842,26 +844,21 @@ function ruleMaxHeightFt(rule) {
 function computeEnvelopeHeight(props) {
   const zoneRule = resolveZoneRule(props);
   const ruleHeight = ruleMaxHeightFt(zoneRule);
-  if (ruleHeight && ruleHeight > 0) {
+  if (ruleHeight != null) {
     return ruleHeight;
   }
 
   const maxHeight = coerceNumber(props.max_height ?? props.maxHeight);
-  if (maxHeight && maxHeight > 0) {
+  if (maxHeight != null) {
     return maxHeight;
   }
 
   const zoningHeight = coerceNumber(props.zoning_height ?? props.zoningHeight);
-  if (zoningHeight && zoningHeight > 0) {
+  if (zoningHeight != null) {
     return zoningHeight;
   }
 
-  const far = coerceNumber(props.FAR ?? props.far ?? props.resid_far ?? props.comm_far ?? props.facil_far);
-  if (far && far > 0) {
-    return far * 12;
-  }
-
-  return 45;
+  return null;
 }
 
 function normalizeZoneToken(value) {
@@ -1901,8 +1898,15 @@ function syncControlsFromLotData(data) {
 }
 
 function _ft(val) {
-  const n = formatNumber(val, 0);
-  return n !== "—" ? `${n} ft` : "—";
+  const n = coerceNumber(val);
+  if (n == null) return "Missing rule data";
+  return `${formatNumber(n, 0)} ft`;
+}
+
+function _heightLabel(val) {
+  const n = coerceNumber(val);
+  if (n == null) return "Missing rule data";
+  return `${formatNumber(n, 0)} ft`;
 }
 
 function _buildZoningReqRows(zoning) {
@@ -2251,8 +2255,8 @@ function _buildRuleEngineRows(snapshot) {
       : primaryVariant === "buildingsOrOtherStructures"
         ? "Buildings or Other Structures"
         : "Market Rate / Standard Residential";
-  const resolvedMaxHeight = primary ? _ft(primary.maxBuildingHeight) : "n/a";
-  const resolvedMaxBase = primary ? _ft(primary.maxBaseHeight) : "n/a";
+  const resolvedMaxHeight = primary ? _heightLabel(primary.maxBuildingHeight) : "Missing rule data";
+  const resolvedMaxBase = primary ? _heightLabel(primary.maxBaseHeight) : "Missing rule data";
   const resolvedFar = primary ? formatNumber(primary.far, 2) : "n/a";
 
   return `
@@ -2278,8 +2282,8 @@ function _buildRuleEngineRows(snapshot) {
     <div class="summary-row"><span>Total Side Yard</span><strong>${formatNumber(primary?.totalSideYardRequiredFt, 0)} ft</strong></div>
     <div class="summary-row"><span>Rear Yard</span><strong>${formatNumber(primary?.rearYard, 0)} ft</strong></div>
     <div class="summary-row"><span>Street Setback Applied</span><strong>${formatNumber(primary?.streetSetback, 0)} ft (${String(primary?.streetType || "narrow").toUpperCase()})</strong></div>
-    <div class="summary-row"><span>Base Height</span><strong>${formatNumber(primary?.maxBaseHeight, 0)} ft</strong></div>
-    <div class="summary-row"><span>Max Height</span><strong>${formatNumber(primary?.maxBuildingHeight, 0)} ft</strong></div>
+    <div class="summary-row"><span>Base Height</span><strong>${_heightLabel(primary?.maxBaseHeight)}</strong></div>
+    <div class="summary-row"><span>Max Height</span><strong>${_heightLabel(primary?.maxBuildingHeight)}</strong></div>
     <div class="summary-row"><span>Open Space Ratio</span><strong>${formatNumber(primary?.openSpaceRatio, 2)}</strong></div>
     <div class="summary-row summary-row--source"><span>ZR Sections</span><span>${sourceSections.join(", ") || "n/a"}</span></div>
   `;
@@ -2316,15 +2320,15 @@ function updateLotSummary(data, envelopeResults) {
     <div class="summary-metrics">
       <div class="metric-tag"><span class="metric-tag__key">Zoning</span><strong>${activeOriginalZone || "n/a"}</strong></div>
       <div class="metric-tag"><span class="metric-tag__key">FAR</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
-      <div class="metric-tag"><span class="metric-tag__key">Max Height</span><strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong></div>
+      <div class="metric-tag"><span class="metric-tag__key">Max Height</span><strong>${_heightLabel(zoning.max_height_ft)}</strong></div>
       <div class="metric-tag"><span class="metric-tag__key">Lot Area</span><strong>${formatNumber(data.lot_area || data.lotarea, 0)} sf</strong></div>
     </div>
     <div class="summary-row summary-row--overview"><span>Overview</span><strong>${activeOriginalZone || "n/a"} district</strong></div>
-    <div class="panel-help">This lot is in <strong>${activeOriginalZone || "n/a"}</strong>. With current assumptions, the maximum envelope is approximately <strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong> and about <strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong> FAR.</div>
+    <div class="panel-help">This lot is in <strong>${activeOriginalZone || "n/a"}</strong>. With current assumptions, the maximum envelope is approximately <strong>${_heightLabel(zoning.max_height_ft)}</strong> and about <strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong> FAR.</div>
     <div class="summary-row"><span>Address</span><strong>${data.address || "n/a"}</strong></div>
     <div class="summary-row"><span>Zoning</span><strong>${activeOriginalZone || "n/a"}</strong></div>
     <div class="summary-row"><span>BBL</span><strong>${data.bbl || "n/a"}</strong></div>
-    <div class="summary-row"><span>Max Height</span><strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong></div>
+    <div class="summary-row"><span>Max Height</span><strong>${_heightLabel(zoning.max_height_ft)}</strong></div>
     <div class="summary-row"><span>Allowed Floor Area (FAR)</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
     <details>
       <summary>Advanced Details</summary>
@@ -2333,8 +2337,8 @@ function updateLotSummary(data, envelopeResults) {
       <div class="summary-row"><span>Code FAR</span><strong>${formatNumber(zoning.base_far, 2)}</strong></div>
       <div class="summary-row"><span>Existing FAR</span><strong>${formatNumber(data.built_far ?? zoning.existing_far, 2)}</strong></div>
       <div class="summary-row"><span>Existing Height</span><strong>${formatNumber(existingHeight, 0)} ft</strong></div>
-      <div class="summary-row"><span>Baseline Envelope</span><strong>${formatNumber(baselineHeight, 0)} ft</strong></div>
-      <div class="summary-row"><span>Scenario Envelope</span><strong>${formatNumber(scenarioHeight ?? envelopeHeight, 0)} ft</strong></div>
+      <div class="summary-row"><span>Baseline Envelope</span><strong>${_heightLabel(baselineHeight)}</strong></div>
+      <div class="summary-row"><span>Scenario Envelope</span><strong>${_heightLabel(scenarioHeight ?? envelopeHeight)}</strong></div>
       ${_buildRuleEngineRows(ruleEngineSnapshot)}
       ${_buildZoningReqRows(zoning)}
       ${_buildBuildabilityStudyRows(zoning, envelopeResults)}
@@ -2409,7 +2413,12 @@ function buildClientLotData(feature) {
       street_type: primaryControls.streetType ?? lotAnalysis.streetType ?? "narrow",
       selected_variant: primaryEntry.selectedVariant || null,
       coverage_ratio: 0.8,
-      warnings: controlsResult.warnings || [],
+      warnings: [
+        ...(controlsResult.warnings || []),
+        ...(primaryControls.maxBuildingHeight == null && primaryControls.frontWallHeight == null
+          ? ["Rule data missing: maximumBuildingHeightFt and maximumFrontWallHeightFt are both unavailable."]
+          : []),
+      ],
     },
   };
 }
@@ -4362,20 +4371,25 @@ function buildMaxEnvelopeForSelectedLot() {
     if (!controlsArray.length) {
       map.getSource("selected-max-envelope").setData(EMPTY_FC);
       lastEnvelopeDebug = {
-        bbl: activeLotData?.bbl || activeLotData?.BBL || null,
         zoneCode: lotAnalysis?.primaryZone || null,
-        resolvedRule: null,
+        ruleFound: false,
+        resolvedZoneCode: null,
+        residentialEquivalent: null,
         bulkRegime: null,
+        maximumBuildingHeightFt: null,
+        maximumFrontWallHeightFt: null,
+        standardFar: null,
+        bbl: activeLotData?.bbl || activeLotData?.BBL || null,
+        resolvedRule: null,
         lotType: lotAnalysis?.lotType || null,
         streetEdges: lotAnalysis?.frontEdgeIndices || [],
         frontYardFt: null,
         sideYardEachFt: null,
         rearYardFt: null,
-        maximumBuildingHeightFt: null,
         generatedEnvelope: false,
         warnings: controlsResult?.warnings?.length
           ? controlsResult.warnings
-          : ["No controls were resolved for this lot."],
+          : [`Envelope: Not generated because ${lotAnalysis?.primaryZone || "selected zone"} height/bulk rules are missing.`],
       };
       updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
       console.warn("[envelope-debug]", lastEnvelopeDebug);
@@ -4408,8 +4422,15 @@ function buildMaxEnvelopeForSelectedLot() {
     };
     const primaryResolved = resolvedRuleRows[0] || {};
     lastEnvelopeDebug = {
+      zoneCode: lotAnalysis?.primaryZone || primaryResolved.zoneCode || null,
+      ruleFound: Boolean(primaryResolved.zoneCode),
+      resolvedZoneCode: primaryResolved.zoneCode || null,
+      residentialEquivalent: primaryResolved.residentialEquivalent || null,
+      bulkRegime: primaryResolved.controls?.bulkRegime || null,
+      maximumBuildingHeightFt: primaryResolved.controls?.maxBuildingHeight ?? null,
+      maximumFrontWallHeightFt: primaryResolved.controls?.frontWallHeight ?? null,
+      standardFar: primaryResolved.controls?.far ?? null,
       bbl: activeLotData?.bbl || activeLotData?.BBL || null,
-      zoneCode: primaryResolved.zoneCode || lotAnalysis?.primaryZone || null,
       resolvedRule: {
         far: primaryResolved.controls?.far ?? null,
         frontYardFt: primaryResolved.controls?.frontYard ?? null,
@@ -4420,16 +4441,17 @@ function buildMaxEnvelopeForSelectedLot() {
         maximumFrontWallHeightFt: primaryResolved.controls?.frontWallHeight ?? null,
         streetSetbackFt: primaryResolved.controls?.streetSetback ?? null,
       },
-      bulkRegime: primaryResolved.controls?.bulkRegime || null,
       lotType: lotAnalysis?.lotType || null,
       streetEdges: lotAnalysis?.frontEdgeIndices || [],
       frontYardFt: primaryResolved.controls?.frontYard ?? null,
       sideYardEachFt: primaryResolved.controls?.sideYard ?? null,
       rearYardFt: primaryResolved.controls?.rearYard ?? null,
-      maximumBuildingHeightFt: primaryResolved.controls?.maxBuildingHeight ?? null,
       generatedEnvelope: allFeatures.length > 0,
       warnings: Array.from(new Set(allWarnings)),
     };
+    if (!lastEnvelopeDebug.generatedEnvelope && !lastEnvelopeDebug.warnings.some((warning) => String(warning || "").includes("Envelope: Not generated"))) {
+      lastEnvelopeDebug.warnings.push(`Envelope: Not generated because ${lastEnvelopeDebug.zoneCode || "selected zone"} height/bulk rules are missing.`);
+    }
     updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
     console.log("[envelope-debug]", lastEnvelopeDebug);
   } catch (err) {
