@@ -335,7 +335,33 @@ body {
   letter-spacing: 0.04em;
   color: #646d7c;
   pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
+
+.process-step-trigger {
+  appearance: none;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  padding: 2px 4px;
+  margin: 0;
+  border-radius: 2px;
+  transition: all 120ms ease;
+}
+
+.process-step-trigger:hover {
+  background: rgba(102, 51, 153, 0.08);
+  color: #5d4f95;
+  font-weight: 600;
+}
+
+.process-step-trigger:active {
+  transform: scale(0.98);
 
 .process-step--accent {
   color: #5d4f95;

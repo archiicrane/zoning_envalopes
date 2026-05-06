@@ -200,16 +200,40 @@
       </div>
     </div>
 
+    <!-- Workflow Diagrams Panel -->
+    <div id="workflowPanel" class="workflow-panel" aria-hidden="true">
+      <div class="workflow-container">
+        <div class="workflow-header">
+          <div class="workflow-breadcrumb">
+            <button type="button" class="workflow-step is-active" data-workflow-step="data">DATA</button>
+            <span class="workflow-separator">→</span>
+            <button type="button" class="workflow-step" data-workflow-step="rules">RULES</button>
+            <span class="workflow-separator">→</span>
+            <button type="button" class="workflow-step" data-workflow-step="geometry">GEOMETRY</button>
+            <span class="workflow-separator">→</span>
+            <button type="button" class="workflow-step" data-workflow-step="envelope">ENVELOPE</button>
+          </div>
+          <button type="button" class="workflow-close" id="closeWorkflowBtn" aria-label="Close workflow">✕</button>
+        </div>
+        <div class="workflow-content">
+          <div id="dataPage" class="workflow-page is-active"></div>
+          <div id="rulesPage" class="workflow-page"></div>
+          <div id="geometryPage" class="workflow-page"></div>
+          <div id="envelopePage" class="workflow-page"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="process-strip" aria-label="Workflow">
-      <span class="process-step">ZR TEXT</span>
+      <button type="button" class="process-step process-step-trigger" data-workflow-step="data" title="View data sources">ZR TEXT</button>
       <span class="process-arrow">→</span>
-      <span class="process-step">STRUCTURED DATA</span>
+      <button type="button" class="process-step process-step-trigger" data-workflow-step="rules" title="View zoning rules">STRUCTURED DATA</button>
       <span class="process-arrow">→</span>
-      <span class="process-step">RULE LOGIC</span>
+      <button type="button" class="process-step process-step-trigger" data-workflow-step="rules" title="View rule logic">RULE LOGIC</button>
       <span class="process-arrow">→</span>
-      <span class="process-step">GEOMETRY</span>
+      <button type="button" class="process-step process-step-trigger" data-workflow-step="geometry" title="View lot geometry">GEOMETRY</button>
       <span class="process-arrow">→</span>
-      <span class="process-step process-step--accent">VISUAL ENVELOPE</span>
+      <button type="button" class="process-step process-step-trigger process-step--accent" data-workflow-step="envelope" title="View envelope generation">VISUAL ENVELOPE</button>
     </div>
 
     <!-- Hidden functional inputs preserved for JS compatibility -->
@@ -239,7 +263,6 @@
         s.src = "https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js";
         document.head.appendChild(s);
       }
-    </script>
-    <script type="module" src="/app.js?v=20260507aa"></script>
+    </script>    <script src="/workflow-diagrams.js"></script>    <script type="module" src="/app.js?v=20260507aa"></script>
   </body>
 </html>

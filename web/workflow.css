@@ -1,0 +1,233 @@
+/* =============================================
+   Workflow Diagrams — Educational explanation pages
+   ============================================= */
+
+.workflow-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: rgba(15, 23, 42, 0.56);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  overflow: auto;
+}
+
+.workflow-panel.open {
+  display: flex;
+}
+
+.workflow-container {
+  width: min(95vw, 1000px);
+  max-height: 90vh;
+  background: #fafbfd;
+  border: 1px solid #d7d5cf;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 18px 54px rgba(15, 23, 42, 0.24);
+}
+
+.workflow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid #e4e2dc;
+  background: #f7f4ec;
+}
+
+.workflow-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.workflow-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6a7481;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: all 120ms ease;
+}
+
+.workflow-step:hover:not(.is-active) {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.workflow-step.is-active {
+  color: #1f2a36;
+  background: rgba(102, 51, 153, 0.1);
+  font-weight: 800;
+}
+
+.workflow-separator {
+  color: #9aa1ad;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.workflow-close {
+  appearance: none;
+  border: none;
+  background: none;
+  color: #6a7481;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 120ms ease;
+}
+
+.workflow-close:hover {
+  color: #1f2a36;
+}
+
+.workflow-content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-5);
+  background: #ffffff;
+}
+
+.workflow-page {
+  display: none;
+}
+
+.workflow-page.is-active {
+  display: block;
+}
+
+.workflow-diagram {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.08));
+}
+
+.workflow-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  fill: #1f2a36;
+}
+
+.workflow-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  fill: #2a3644;
+}
+
+.workflow-item {
+  fill: #505d72;
+  font-family: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+.workflow-result-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  fill: #0066cc;
+}
+
+.workflow-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid #e3e7ee;
+}
+
+.workflow-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.workflow-legend-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+.workflow-legend-swatch--front {
+  background: #0066cc;
+}
+
+.workflow-legend-swatch--side {
+  background: #ff9800;
+}
+
+.workflow-legend-swatch--rear {
+  background: #d32f2f;
+}
+
+.workflow-legend-swatch--buildable {
+  background: #4caf50;
+}
+
+.workflow-legend-swatch--max {
+  background: #2196f3;
+}
+
+@media (max-width: 900px) {
+  .workflow-panel {
+    padding: var(--space-3);
+  }
+
+  .workflow-container {
+    width: 100%;
+    max-height: 94vh;
+  }
+
+  .workflow-header {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .workflow-breadcrumb {
+    width: 100%;
+    order: 2;
+    flex-wrap: wrap;
+  }
+
+  .workflow-step {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .workflow-separator {
+    display: none;
+  }
+
+  .workflow-content {
+    padding: var(--space-3);
+  }
+
+  .workflow-diagram {
+    max-height: 400px;
+  }
+}

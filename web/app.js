@@ -205,6 +205,97 @@ function _humanizeTypology(value) {
   return token
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (s) => s.toUpperCase());
+
+// ---- Workflow panel ----
+const workflowPanel = document.getElementById("workflowPanel");
+const closeWorkflowBtn = document.getElementById("closeWorkflowBtn");
+const workflowStepButtons = Array.from(document.querySelectorAll("[data-workflow-step]"));
+const workflowPages = {
+  data: document.getElementById("dataPage"),
+  rules: document.getElementById("rulesPage"),
+  geometry: document.getElementById("geometryPage"),
+  envelope: document.getElementById("envelopePage"),
+};
+let currentWorkflowStep = "data";
+
+function openWorkflowPanel(initialStep = "data") {
+  if (!workflowPanel) return;
+  currentWorkflowStep = initialStep;
+  workflowPanel.setAttribute("aria-hidden", "false");
+  workflowPanel.classList.add("open");
+  _switchWorkflowStep(initialStep);
+}
+
+function closeWorkflowPanel() {
+  if (!workflowPanel) return;
+  workflowPanel.setAttribute("aria-hidden", "true");
+  workflowPanel.classList.remove("open");
+}
+
+function _switchWorkflowStep(step) {
+  if (!workflowPages[step]) return;
+  
+  currentWorkflowStep = step;
+  
+  // Update buttons
+  workflowStepButtons.forEach((btn) => {
+    const isActive = btn.dataset.workflowStep === step;
+    btn.classList.toggle("is-active", isActive);
+  });
+
+  // Update pages
+  Object.keys(workflowPages).forEach((key) => {
+    workflowPages[key]?.classList.toggle("is-active", key === step);
+  });
+
+  // Render diagram for this step
+  _renderWorkflowDiagram(step);
+}
+
+function _renderWorkflowDiagram(step) {
+  if (!window.workflowDiagrams) return;
+
+  const container = workflowPages[step];
+  if (!container) return;
+
+  let svg;
+  
+  // Get current controls/results
+  const controls = baselineEnvelopeResults?.zoning_buildability_study || {};
+  const zone = activeLotData?.zonedist1 || "Unknown";
+  
+  // Find the matching controls from zoning rules
+  let zoneControls = controls;
+  if (zoningRuleIndex && zone) {
+    const ruleEntry = Array.from(zoningRuleIndex.values()).find((r) => r.zoneCode === zone);
+    if (ruleEntry) {
+      zoneControls = ruleEntry.controls || controls;
+    }
+  }
+
+  switch (step) {
+    case "data":
+      svg = window.workflowDiagrams.renderDataDiagram(activeLotData, activeLotPolygon);
+      break;
+    case "rules":
+      svg = window.workflowDiagrams.renderRulesDiagram(zoneControls, zone);
+      break;
+    case "geometry":
+      svg = window.workflowDiagrams.renderGeometryDiagram(activeLotData, activeLotAnalysis);
+      break;
+    case "envelope":
+      svg = window.workflowDiagrams.renderEnvelopeDiagram(
+        zoneControls,
+        baselineEnvelopeResults,
+        lastFarEnvelopeData
+      );
+      break;
+  }
+
+  if (svg) {
+    container.innerHTML = "";
+    container.appendChild(svg);
+  }
 }
 
 function _scorePercent(value) {
@@ -7515,6 +7606,40 @@ if (analysisPanel) {
     }
   });
 }
+
+// ── Workflow panel event listeners ──
+if (closeWorkflowBtn) {
+  closeWorkflowBtn.addEventListener("click", closeWorkflowPanel);
+}
+
+if (workflowPanel) {
+  workflowPanel.addEventListener("click", (event) => {
+    if (event.target === workflowPanel) {
+      closeWorkflowPanel();
+    }
+  });
+}
+
+workflowStepButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const step = btn.dataset.workflowStep;
+    _switchWorkflowStep(step);
+  });
+});
+
+// ── Process-strip trigger buttons (workflow entry points) ──
+const processStepTriggers = Array.from(document.querySelectorAll(".process-step-trigger"));
+processStepTriggers.forEach((btn) => {
+  btn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const step = btn.dataset.workflowStep;
+    if (!activeLotData) {
+      setReport("Select a lot first to view workflow diagrams.");
+      return;
+    }
+    openWorkflowPanel(step);
+  });
+});
 
 if (exportDiagramBtn) {
   exportDiagramBtn.addEventListener("click", async () => {
