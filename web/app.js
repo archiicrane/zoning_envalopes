@@ -5241,13 +5241,26 @@ function _ensureFarVolumeFeatures(featureCollection, fallbackHeightFt, fallbackC
   const source = featureCollection || EMPTY_FC;
   const features = Array.isArray(source.features) ? [...source.features] : [];
   const hasVolume = features.some((feature) => String(feature?.properties?.kind || "") === "far_volume");
-  if (hasVolume) return { type: "FeatureCollection", features };
+  
+  // DEBUG: Log what we're checking
+  const kindsFound = [...new Set(features.map(f => f?.properties?.kind || "no-kind"))];
+  console.log(`[FAR-DEBUG] _ensureFarVolumeFeatures: hasVolume=${hasVolume}, features=${features.length}, kinds=[${kindsFound.join(", ")}]`);
+  
+  if (hasVolume) {
+    console.log(`[FAR-DEBUG] Volume features found, returning as-is`);
+    return { type: "FeatureCollection", features };
+  }
 
   const safeHeightFt = Number.isFinite(Number(fallbackHeightFt)) && Number(fallbackHeightFt) > 0
     ? Number(fallbackHeightFt)
     : 12;
   const footprintFeatures = features.filter((feature) => String(feature?.properties?.kind || "") === "far_footprint");
-  if (!footprintFeatures.length) return { type: "FeatureCollection", features };
+  console.log(`[FAR-DEBUG] No volume found, creating synthetic from ${footprintFeatures.length} footprint features with fallbackHeightFt=${fallbackHeightFt} (safe=${safeHeightFt})`);
+  
+  if (!footprintFeatures.length) {
+    console.log(`[FAR-DEBUG] No footprint features to synthesize from, returning original features`);
+    return { type: "FeatureCollection", features };
+  }
 
   const syntheticVolumes = footprintFeatures
     .filter((feature) => feature?.geometry && (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon"))
@@ -5267,6 +5280,8 @@ function _ensureFarVolumeFeatures(featureCollection, fallbackHeightFt, fallbackC
       },
     }));
 
+  console.log(`[FAR-DEBUG] Created ${syntheticVolumes.length} synthetic volume features`);
+  
   return {
     type: "FeatureCollection",
     features: [...syntheticVolumes, ...features],
@@ -5434,6 +5449,13 @@ function buildFarEnvelopeForSelectedLot() {
       frontageOrientationDeg,
     });
 
+    // DEBUG: Log FAR feature generation
+    const volumeFeatures = features.filter(f => f.properties?.kind === "far_volume");
+    const maxEnvHeight = Math.max(...volumeFeatures.map(f => f.properties?.envelopeHeight || 0));
+    console.log(
+      `[FAR-DEBUG] buildFarMassing returned ${features.length} features (${volumeFeatures.length} volume). Max envelopeHeight: ${maxEnvHeight} ft. BuildingHeightFt: ${buildingHeightFt}`
+    );
+
     lastFarEnvelopeData = {
       numFloors,
       buildingHeightFt,
@@ -5452,8 +5474,23 @@ function buildFarEnvelopeForSelectedLot() {
       type: "FeatureCollection",
       features,
     }, lotGeometry);
+    console.log(`[FAR-DEBUG] After clamping: ${boundedFar.features.length} features. Volume features: ${boundedFar.features.filter(f => f.properties?.kind === "far_volume").length}`);
+
     const ensuredFar = _ensureFarVolumeFeatures(boundedFar, buildingHeightFt, "#22c55e");
+    console.log(`[FAR-DEBUG] After ensuring volume: ${ensuredFar.features.length} features. Volume features: ${ensuredFar.features.filter(f => f.properties?.kind === "far_volume").length}`);
+    
+    // DEBUG: Check layer visibility
+    const fillExtrusionLayer = map.getLayer("selected-far-envelope-fill");
+    if (fillExtrusionLayer) {
+      console.log(`[FAR-DEBUG] Layer exists. Visibility: ${map.getLayoutProperty("selected-far-envelope-fill", "visibility")}`);
+      console.log(`[FAR-DEBUG] Fill-extrusion-height: ${map.getPaintProperty("selected-far-envelope-fill", "fill-extrusion-height")}`);
+    } else {
+      console.warn("[FAR-DEBUG] Layer selected-far-envelope-fill does NOT exist!");
+    }
+
     map.getSource("selected-far-envelope").setData(ensuredFar);
+    console.log(`[FAR-DEBUG] Data set to map source.`);
+    
     lastFarEnvelopeGeojson = {
       type: ensuredFar.type,
       features: ensuredFar.features,
