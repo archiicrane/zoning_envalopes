@@ -4708,6 +4708,7 @@ function buildFarEnvelopeForSelectedLot() {
       floorHeightFt,
       coveragePct: effectiveCoveragePct,
       maxHeightFt,
+      enforceMaxHeight: false,
       massingOption,
       color: "#22c55e",
     });

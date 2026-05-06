@@ -55,6 +55,7 @@ function _makeFeature(geometry, base, height, color, massingOption, numFloors, l
  * @param {number} params.floorHeightFt             - floor height in feet (default 10)
  * @param {number} params.coveragePct               - buildable footprint coverage 20–100 (default 80)
  * @param {number} params.maxHeightFt               - hard ceiling from zoning (optional)
+ * @param {boolean} params.enforceMaxHeight         - when true, clamp FAR massing to maxHeightFt
  * @param {string} params.massingOption             - "full-block"|"courtyard"|"tower"|"slab"|"stepped"
  * @param {string} params.color                     - fill-extrusion color (default green)
  * @returns {{ features: GeoJSON.Feature[], warnings: string[], numFloors: number, buildingHeightFt: number }}
@@ -65,6 +66,7 @@ export function buildFarMassing({
   floorHeightFt = 10,
   coveragePct = 80,
   maxHeightFt = null,
+  enforceMaxHeight = false,
   massingOption = "full-block",
   color = "#22c55e",
 }) {
@@ -100,9 +102,12 @@ export function buildFarMassing({
     ? Math.max(safeFloorHeight, maxHeightFt)
     : null;
   if (safeMaxHeight != null && buildingHeightFt > safeMaxHeight) {
-    buildingHeightFt = safeMaxHeight;
-    numFloors = Math.max(1, Math.floor(buildingHeightFt / safeFloorHeight));
-    warnings.push(`FAR massing height clamped to max allowed ${safeMaxHeight} ft.`);
+    warnings.push(`FAR massing exceeds max-height control (${safeMaxHeight} ft): computed ${buildingHeightFt.toFixed(2)} ft from FAR/coverage.`);
+    if (enforceMaxHeight) {
+      buildingHeightFt = safeMaxHeight;
+      numFloors = Math.max(1, Math.floor(buildingHeightFt / safeFloorHeight));
+      warnings.push(`FAR massing height clamped to max allowed ${safeMaxHeight} ft.`);
+    }
   }
 
   const footprintGeom = buildableFootprintGeometry;
