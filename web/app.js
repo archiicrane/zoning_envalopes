@@ -64,7 +64,6 @@ let scenarioEnvelopeResults = null;
 let assumptionOverrides = _defaultAssumptionOverrides();
 let zoningStudyDefaults = null;
 let lastAssumptionChanged = null;
-let showYardEdgeTypes = false;
 let showYardEdgeTypes = true;
 let focusSelectedLotMode = false;
 let showRoadCenterlines = false;
