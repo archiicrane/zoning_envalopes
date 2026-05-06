@@ -54,7 +54,7 @@ function _makeFeature(geometry, base, height, color, massingOption, numFloors, l
  * @param {number} params.allowedFarFloorArea       - lot area × FAR (sq ft)
  * @param {number} params.floorHeightFt             - floor height in feet (default 10)
  * @param {number} params.coveragePct               - buildable footprint coverage 20–100 (default 80)
- * @param {number} params.maxHeightFt               - hard ceiling from zoning (default 120)
+ * @param {number} params.maxHeightFt               - hard ceiling from zoning (optional)
  * @param {string} params.massingOption             - "full-block"|"courtyard"|"tower"|"slab"|"stepped"
  * @param {string} params.color                     - fill-extrusion color (default green)
  * @returns {{ features: GeoJSON.Feature[], warnings: string[], numFloors: number, buildingHeightFt: number }}
@@ -64,7 +64,7 @@ export function buildFarMassing({
   allowedFarFloorArea,
   floorHeightFt = 10,
   coveragePct = 80,
-  maxHeightFt = 120,
+  maxHeightFt = null,
   massingOption = "full-block",
   color = "#22c55e",
 }) {
@@ -87,9 +87,11 @@ export function buildFarMassing({
   let numFloors = Math.max(1, Math.ceil(allowedFarFloorArea / usableFootprintFt2));
   let buildingHeightFt = numFloors * safeFloorHeight;
 
-  // Clamp to max height from zoning
-  const safeMaxHeight = Math.max(safeFloorHeight, maxHeightFt || 120);
-  if (buildingHeightFt > safeMaxHeight) {
+  // Clamp only when rule-backed max height is available.
+  const safeMaxHeight = Number.isFinite(maxHeightFt) && maxHeightFt > 0
+    ? Math.max(safeFloorHeight, maxHeightFt)
+    : null;
+  if (safeMaxHeight != null && buildingHeightFt > safeMaxHeight) {
     buildingHeightFt = safeMaxHeight;
     numFloors = Math.max(1, Math.floor(buildingHeightFt / safeFloorHeight));
     warnings.push(`FAR massing height clamped to max allowed ${safeMaxHeight} ft.`);
@@ -128,7 +130,9 @@ export function buildFarMassing({
       const slabGeom = _bufferInward(footprintGeom, slabInsetFt) || footprintGeom;
       const slabArea = _area(slabGeom);
       const slabFloors = slabArea > 0 ? Math.max(1, Math.ceil(allowedFarFloorArea / slabArea)) : numFloors;
-      const slabHeight = Math.min(slabFloors * safeFloorHeight, safeMaxHeight);
+      const slabHeight = safeMaxHeight != null
+        ? Math.min(slabFloors * safeFloorHeight, safeMaxHeight)
+        : slabFloors * safeFloorHeight;
       features.push(_makeFeature(slabGeom, 0, slabHeight, color, massingOption, slabFloors, "slab"));
       break;
     }

@@ -52,11 +52,14 @@ DEFAULT_ZONE_RULE = {"far": 3.0, "max_height_ft": 85.0, "coverage": 0.8}
 class EnvelopeRequest(BaseModel):
     lot_polygon: List[List[float]] = Field(..., description="[[lng, lat], ...] closed or open")
     use_type: str = Field(default="market_rate")
+    building_use_type: Optional[str] = Field(default="residential")
+    housing_type: Optional[str] = Field(default="marketRate")
+    footnote_variant: Optional[str] = Field(default=None)
     far_mode: bool = Field(default=False)
     lot_coverage: float = Field(default=0.75, ge=0.2, le=1.0)
     floor_height_ft: float = Field(default=10.0, ge=8.0, le=20.0)
     zoning_far: float = Field(default=3.0, ge=0.1, le=30.0)
-    max_height_ft: float = Field(default=120.0, ge=20.0, le=2000.0)
+    max_height_ft: Optional[float] = Field(default=None, ge=20.0, le=2000.0)
     zonedist1: Optional[str] = None
     zonedist2: Optional[str] = None
     overlay1: Optional[str] = None
@@ -222,6 +225,156 @@ def _normalize_zone_token(value: Optional[str]) -> str:
     return str(value or "").strip().upper().replace(" ", "")
 
 
+def _normalize_building_use_type(value: Optional[str]) -> str:
+    text = str(value or "residential").strip()
+    if text in {"communityFacility", "facility"}:
+        return "communityFacility"
+    if text in {"nonResidential", "commercial", "non_residential"}:
+        return "nonResidential"
+    if text in {"mixedUse", "mixed"}:
+        return "mixedUse"
+    return "residential"
+
+
+def _normalize_housing_type(value: Optional[str], use_type: Optional[str]) -> str:
+    text = str(value or "").strip()
+    if text in {"qualifyingAffordable", "affordable"}:
+        return "qualifyingAffordable"
+    if text in {"qualifyingSenior", "senior"}:
+        return "qualifyingSenior"
+    if str(use_type or "").strip().lower() in {"affordable"}:
+        return "qualifyingAffordable"
+    if str(use_type or "").strip().lower() in {"senior"}:
+        return "qualifyingSenior"
+    return "marketRate"
+
+
+def _normalize_rule_variants(rule: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    variants = rule.get("variants")
+    if isinstance(variants, dict) and variants:
+        return {str(k): dict(v or {}) for k, v in variants.items()}
+
+    standard_far = _coerce_float(rule.get("standardFar")) or _coerce_float(rule.get("maxFar")) or _coerce_float(rule.get("qualifyingFar"))
+    qualifying_far = _coerce_float(rule.get("qualifyingFar")) or standard_far
+    source_sections = list(rule.get("sourceSections") or [])
+
+    return {
+        "standardResidential": {
+            "label": "Standard / Market Rate Residential",
+            "far": standard_far,
+            "minimumBaseHeightFt": rule.get("minimumBaseHeightFt"),
+            "maximumBaseHeightFt": rule.get("maximumBaseHeightFt"),
+            "maximumBuildingHeightFt": rule.get("maximumBuildingHeightFt"),
+            "maximumFrontWallHeightFt": rule.get("maximumFrontWallHeightFt"),
+            "perimeterWallHeightFt": rule.get("perimeterWallHeightFt"),
+            "ridgeHeightFt": rule.get("ridgeHeightFt"),
+            "streetSetbackWideFt": rule.get("streetSetbackWideFt"),
+            "streetSetbackNarrowFt": rule.get("streetSetbackNarrowFt"),
+            "sourceSections": source_sections,
+        },
+        "qualifyingAffordableHousing": {
+            "label": "Qualifying Affordable Housing",
+            "far": qualifying_far,
+            "minimumBaseHeightFt": rule.get("minimumBaseHeightFt"),
+            "maximumBaseHeightFt": rule.get("maximumBaseHeightFt"),
+            "maximumBuildingHeightFt": rule.get("maximumBuildingHeightFt"),
+            "maximumFrontWallHeightFt": rule.get("maximumFrontWallHeightFt"),
+            "perimeterWallHeightFt": rule.get("perimeterWallHeightFt"),
+            "ridgeHeightFt": rule.get("ridgeHeightFt"),
+            "streetSetbackWideFt": rule.get("streetSetbackWideFt"),
+            "streetSetbackNarrowFt": rule.get("streetSetbackNarrowFt"),
+            "sourceSections": source_sections,
+        },
+        "qualifyingSeniorHousing": {
+            "label": "Qualifying Senior Housing",
+            "far": qualifying_far,
+            "minimumBaseHeightFt": rule.get("minimumBaseHeightFt"),
+            "maximumBaseHeightFt": rule.get("maximumBaseHeightFt"),
+            "maximumBuildingHeightFt": rule.get("maximumBuildingHeightFt"),
+            "maximumFrontWallHeightFt": rule.get("maximumFrontWallHeightFt"),
+            "perimeterWallHeightFt": rule.get("perimeterWallHeightFt"),
+            "ridgeHeightFt": rule.get("ridgeHeightFt"),
+            "streetSetbackWideFt": rule.get("streetSetbackWideFt"),
+            "streetSetbackNarrowFt": rule.get("streetSetbackNarrowFt"),
+            "sourceSections": source_sections,
+        },
+        "nonResidential": {
+            "label": "Non-Residential / Community Facility",
+            "far": None,
+            "maximumBuildingHeightFt": None,
+            "sourceSections": [],
+        },
+    }
+
+
+def _select_variant_key(building_use_type: str, housing_type: str) -> str:
+    if building_use_type in {"nonResidential", "communityFacility"}:
+        return "nonResidential"
+    if housing_type == "qualifyingAffordable":
+        return "qualifyingAffordableHousing"
+    if housing_type == "qualifyingSenior":
+        return "qualifyingSeniorHousing"
+    return "standardResidential"
+
+
+def _resolve_zr_variant(zone: str, building_use_type: str, housing_type: str, footnote_variant: Optional[str]) -> Tuple[Optional[Dict[str, Any]], List[str]]:
+    warnings: List[str] = []
+    rules = _load_zr_rules_index()
+
+    zone_token = _normalize_zone_token(zone)
+    footnote_token = _normalize_zone_token(footnote_variant)
+    candidates: List[str] = []
+    if footnote_token:
+                candidates.append(footnote_token)
+                if "-2" in footnote_token:
+                        candidates.append(footnote_token.replace("-2", "^2"))
+                        if zone_token:
+                                candidates.append(f"{zone_token}^2")
+    if zone_token:
+                candidates.append(zone_token)
+
+    unique_candidates: List[str] = []
+    for candidate in candidates:
+        if candidate and candidate not in unique_candidates:
+            unique_candidates.append(candidate)
+
+    direct = None
+    matched_zone = None
+    for candidate in unique_candidates:
+        if candidate in rules:
+            matched_zone = candidate
+            direct = rules[candidate]
+            break
+
+    if not direct:
+        return None, [f"Missing zoning controls for {zone_token or '(unknown zone)'}."]
+
+    equivalent = _normalize_zone_token(direct.get("residentialEquivalent"))
+    base = rules.get(equivalent) if equivalent else None
+    merged = dict(base or {})
+    merged.update(direct)
+    merged["zoneCode"] = matched_zone or zone_token
+
+    variants = _normalize_rule_variants(merged)
+    requested_variant = _select_variant_key(building_use_type, housing_type)
+    selected_variant = requested_variant if requested_variant in variants else "standardResidential"
+    if selected_variant not in variants:
+        selected_variant = next(iter(variants.keys()), "standardResidential")
+    if requested_variant not in variants:
+        warnings.append(f"Requested variant '{requested_variant}' not found for {matched_zone}; using '{selected_variant}'.")
+
+    variant = variants.get(selected_variant) or {}
+    source_sections = list(dict.fromkeys([*(merged.get("sourceSections") or []), *(variant.get("sourceSections") or [])]))
+
+    resolved = dict(merged)
+    resolved.update({k: v for k, v in variant.items() if v is not None})
+    resolved["sourceSections"] = source_sections
+    resolved["selectedVariant"] = selected_variant
+    resolved["variantLabel"] = variant.get("label") or selected_variant
+    resolved["variants"] = variants
+    return resolved, warnings
+
+
 @lru_cache(maxsize=1)
 def _load_zr_rules_index() -> Dict[str, Dict[str, Any]]:
     path = Path(ZONING_RULES_PATH)
@@ -267,6 +420,9 @@ def _resolve_zr_rule(zone: str) -> Optional[Dict[str, Any]]:
 
 
 def _rule_far(rule: Dict[str, Any], use_type: str) -> Optional[float]:
+    direct_far = _coerce_float(rule.get("far"))
+    if direct_far and direct_far > 0:
+        return direct_far
     qualifying_far = _coerce_float(rule.get("qualifyingFar"))
     standard_far = _coerce_float(rule.get("standardFar"))
     if use_type == "affordable" and qualifying_far and qualifying_far > 0:
@@ -459,6 +615,9 @@ def _resolve_zoning_analysis(
     lot_coverage: Optional[float] = None,
     lot_area_ft2: Optional[float] = None,
     use_type: str = "market_rate",
+    building_use_type: str = "residential",
+    housing_type: str = "marketRate",
+    footnote_variant: Optional[str] = None,
     upzone: bool = False,
 ) -> Dict[str, Any]:
     candidates = _extract_zone_tokens(zonedist1, zonedist2)
@@ -471,10 +630,22 @@ def _resolve_zoning_analysis(
         warnings.append("MX district detected. Envelope is approximate.")
 
     fallback_rule = _fallback_zone_rule(primary_zone or "")
-    zr_rule = _resolve_zr_rule(primary_zone or "")
-    base_rule: Dict[str, Any] = dict(fallback_rule)
+    normalized_building_use = _normalize_building_use_type(building_use_type)
+    normalized_housing = _normalize_housing_type(housing_type, use_type)
+    zr_rule, variant_warnings = _resolve_zr_variant(
+        primary_zone or "",
+        normalized_building_use,
+        normalized_housing,
+        footnote_variant,
+    )
+    warnings.extend(variant_warnings)
+    base_rule: Dict[str, Any] = {
+        "far": fallback_rule.get("far"),
+        "max_height_ft": None,
+        "coverage": fallback_rule.get("coverage"),
+    }
     if zr_rule:
-        rule_far = _rule_far(zr_rule, use_type)
+        rule_far = _coerce_float(zr_rule.get("far")) or _rule_far(zr_rule, use_type)
         if rule_far and rule_far > 0:
             base_rule["far"] = rule_far
         rule_height = _rule_max_height_ft(zr_rule)
@@ -488,6 +659,8 @@ def _resolve_zoning_analysis(
         if simplified_inset_ft and simplified_inset_ft > 0:
             base_rule["simplified_plan_inset_ft"] = simplified_inset_ft
         base_rule["source_sections"] = zr_rule.get("sourceSections") or []
+    else:
+        warnings.append("Missing full rule data for this condition.")
     overlays = _extract_zone_tokens(overlay1, overlay2)
 
     far_candidates = [base_rule["far"]]
@@ -503,9 +676,13 @@ def _resolve_zoning_analysis(
         scenario_far = max(scenario_far, round(base_far * 1.35, 3))
     scenario_far = max(0.1, scenario_far)
 
-    max_height_ft = requested_height_ft if requested_height_ft is not None else base_rule["max_height_ft"]
+    max_height_ft = requested_height_ft if requested_height_ft is not None else base_rule.get("max_height_ft")
     if upzone:
-        max_height_ft = max(max_height_ft, base_rule["max_height_ft"] * 1.2)
+        if max_height_ft is not None and base_rule.get("max_height_ft") is not None:
+            max_height_ft = max(max_height_ft, base_rule["max_height_ft"] * 1.2)
+
+    if max_height_ft is None:
+        warnings.append("Missing full rule data for this condition.")
 
     requested_coverage_ratio = lot_coverage if lot_coverage is not None else _coverage_fallback(primary_zone or "")
     requested_coverage_ratio = max(0.2, min(1.0, requested_coverage_ratio))
@@ -544,7 +721,7 @@ def _resolve_zoning_analysis(
         "commercial_far": round(comm_far or 0.0, 3),
         "facility_far": round(facil_far or 0.0, 3),
         "scenario_far": round(scenario_far, 3),
-        "max_height_ft": round(max_height_ft, 2),
+        "max_height_ft": round(max_height_ft, 2) if max_height_ft is not None else None,
         "requested_coverage_ratio": round(requested_coverage_ratio, 3),
         "coverage_ratio": round(coverage_ratio, 3),
         "coverage_ratio_limited_by_open_space": bool(osr_coverage_cap is not None and coverage_ratio < requested_coverage_ratio),
@@ -561,6 +738,11 @@ def _resolve_zoning_analysis(
         "street_setback_ft": round(_coerce_float(base_rule.get("street_setback_ft")) or 0.0, 2),
         "simplified_plan_inset_ft": round(_coerce_float(base_rule.get("simplified_plan_inset_ft")) or 0.0, 2),
         "source_sections": base_rule.get("source_sections") or [],
+        "selected_variant": zr_rule.get("selectedVariant") if zr_rule else None,
+        "variant_label": zr_rule.get("variantLabel") if zr_rule else None,
+        "building_use_type": normalized_building_use,
+        "housing_type": normalized_housing,
+        "footnote_variant": _coerce_str(footnote_variant),
         "use_type": use_type,
         "upzone": upzone,
     }
@@ -630,8 +812,8 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
         envelope_height_ft = min(required_height_ft, height_limit_ft)
         full_far_fits = required_height_ft <= height_limit_ft + 1e-6
     else:
-        envelope_height_ft = required_height_ft
-        full_far_fits = True
+        envelope_height_ft = 0.0
+        full_far_fits = False
 
     base_height_ft = max(0.0, min(envelope_height_ft, _coerce_float(zoning.get("base_height_ft")) or 0.0))
 
@@ -650,7 +832,9 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
     }
 
     zoning_features: List[Dict[str, Any]] = []
-    if base_height_ft > 0 and base_height_ft < envelope_height_ft and bulk_regime in stepped_regimes:
+    if envelope_height_ft <= 0:
+        zoning_features = []
+    elif base_height_ft > 0 and base_height_ft < envelope_height_ft and bulk_regime in stepped_regimes:
         zoning_features.extend(
             [
                 {
@@ -754,7 +938,10 @@ def _build_study_geojson(payload: EnvelopeRequest, lot_area_ft2: float, zoning: 
         "envelope_height_ft": round(envelope_height_ft, 2),
         "height_limit_ft": round(height_limit_ft, 2) if height_limit_ft else None,
         "full_far_fits": bool(full_far_fits),
-        "full_far_fit_warning": None if full_far_fits else "Full FAR may not fit inside this envelope under current assumptions.",
+        "full_far_fit_warning": None if full_far_fits else (
+            "Missing full rule data for this condition."
+            if not height_limit_ft else "Full FAR may not fit inside this envelope under current assumptions."
+        ),
     }
 
     return {
@@ -1242,14 +1429,17 @@ def build_envelope(payload: EnvelopeRequest) -> Dict[str, Any]:
         lot_coverage=payload.lot_coverage if payload.far_mode else None,
         lot_area_ft2=payload.lot_area or lot_area_ft2,
         use_type=use_type,
+        building_use_type=payload.building_use_type or "residential",
+        housing_type=payload.housing_type or "marketRate",
+        footnote_variant=payload.footnote_variant,
         upzone=payload.upzone,
     )
     geojson, buildability_study = _build_study_geojson(payload, lot_area_ft2, zoning)
 
     existing_feature = next(feature for feature in geojson["features"] if feature["properties"]["kind"] == "existing_building")
     zoning_features = [feature for feature in geojson["features"] if feature["properties"]["kind"] == "zoning_envelope"]
-    full_envelope_height_ft = max((feature["properties"].get("height_ft") or 0.0) for feature in zoning_features)
-    full_envelope_coverage_ratio = max((feature["properties"].get("coverage_ratio") or 0.0) for feature in zoning_features)
+    full_envelope_height_ft = max((feature["properties"].get("height_ft") or 0.0) for feature in zoning_features) if zoning_features else 0.0
+    full_envelope_coverage_ratio = max((feature["properties"].get("coverage_ratio") or 0.0) for feature in zoning_features) if zoning_features else 0.0
 
     return {
         "inputs": payload.model_dump(),

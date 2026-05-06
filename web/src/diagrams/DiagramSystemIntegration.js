@@ -258,7 +258,7 @@ class DiagramSystemIntegration {
       farFootprintArea: analysis?.farFootprintArea || 0,
       existingHeight: analysis?.existingHeightFt || 10,
       farHeight: analysis?.farHeight || 80,
-      maxHeight: analysis?.maxHeight || 120,
+      maxHeight: analysis?.maxHeight || 0,
       coverage: analysis?.coverage || 80,
     };
   }

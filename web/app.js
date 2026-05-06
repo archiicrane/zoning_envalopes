@@ -4,6 +4,7 @@ import {
   buildRulesIndex as buildRuleIndexModule,
   getControlsForLot,
   extractZoneTokens as extractZoneTokensModule,
+  resolveZoningVariant,
 } from "./zoningRuleEngine.js";
 import { buildFarMassing } from "./src/zoning/farMassing.js";
 import { DiagramSystemIntegration } from "./src/diagrams/DiagramSystemIntegration.js";
@@ -30,7 +31,7 @@ async function resolveMapboxToken() {
 }
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
-const ZONING_RULES_URLS = ["/web/zoningRules.json", "/web/zoning-rules.jsonld"];
+const ZONING_RULES_URLS = ["/web/zoning-rules.jsonld?v=20260507d", "/web/zoningRules.json?v=20260507d"];
 
 const feetToMeters = (ft) => Number(ft || 0) * 0.3048;
 
@@ -83,6 +84,11 @@ let isoCamera = null;
 let isoAnimationFrame = null;
 let analysisModalLots = [];
 let diagramSystem = null; // New: integrated diagram rendering system
+let activeRuleSelection = {
+  buildingUseType: "residential",
+  housingType: "marketRate",
+  footnoteVariant: null,
+};
 let studyState = {
   floorHeight: 10,
   farUsed: 3.0,
@@ -102,6 +108,9 @@ const farVal = document.getElementById("farVal");
 const envelopeOpacitySlider = document.getElementById("envelopeOpacitySlider");
 const envelopeOpacityVal = document.getElementById("envelopeOpacityVal");
 const lotSummary = document.getElementById("lotSummary");
+const useTypeSelect = document.getElementById("useType");
+const housingConditionSelect = document.getElementById("housingCondition");
+const ruleVariantSelect = document.getElementById("ruleVariant");
 const dataStatus = document.getElementById("dataStatus");
 const neighborhoodSelect = document.getElementById("neighborhoodSelect");
 const showBuildingToggle = document.getElementById("showBuildingToggle");
@@ -143,6 +152,50 @@ const sheetPanels = Array.from(document.querySelectorAll(".sheet-panel"));
 const lotZoneBadge = document.getElementById("lotZoneBadge");
 const lotSheetAddress = document.getElementById("lotSheetAddress");
 const lotSheetChips = document.getElementById("lotSheetChips");
+
+function _selectedBuildingUseType() {
+  const value = String(useTypeSelect?.value || "residential");
+  return ["residential", "mixedUse", "communityFacility", "nonResidential"].includes(value)
+    ? value
+    : "residential";
+}
+
+function _selectedHousingType() {
+  const value = String(housingConditionSelect?.value || "marketRate");
+  return ["marketRate", "qualifyingAffordable", "qualifyingSenior"].includes(value)
+    ? value
+    : "marketRate";
+}
+
+function _selectedFootnoteVariant() {
+  const value = String(ruleVariantSelect?.value || "").trim();
+  if (!value || value.toLowerCase() === "auto") return null;
+  return value;
+}
+
+function _syncRuleSelectionFromUi() {
+  activeRuleSelection = {
+    buildingUseType: _selectedBuildingUseType(),
+    housingType: _selectedHousingType(),
+    footnoteVariant: _selectedFootnoteVariant(),
+  };
+  return activeRuleSelection;
+}
+
+function _payloadUseType(selection) {
+  if (selection?.housingType === "qualifyingAffordable") return "affordable";
+  if (selection?.housingType === "qualifyingSenior") return "senior";
+  return "market_rate";
+}
+
+async function _reapplyRuleSelectionAndRegenerate() {
+  if (!activeLotData) return;
+  applySelectedZoneOverride(activeZoneOverride || activeOriginalZone || activeLotData.zonedist1);
+  updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
+  await generateEnvelopes();
+  buildMaxEnvelopeForSelectedLot();
+  buildFarEnvelopeForSelectedLot();
+}
 
 function _setSheetTab(tabName) {
   if (!sheetTabs.length || !sheetPanels.length) return;
@@ -205,6 +258,8 @@ function _updateSheetPeek(data, zoning) {
   }
 }
 
+_syncRuleSelectionFromUi();
+
 coverageInput.addEventListener("input", () => {
   covVal.textContent = `${coverageInput.value}%`;
   if (activeLotPolygon && activeLotData) {
@@ -233,6 +288,27 @@ if (floorHeightBottomSlider) {
     } else if (activeLotPolygon && activeLotData) {
       _rebuildFarEnvelope();
     }
+  });
+}
+
+if (useTypeSelect) {
+  useTypeSelect.addEventListener("change", () => {
+    _syncRuleSelectionFromUi();
+    _reapplyRuleSelectionAndRegenerate().catch((err) => setReport(String(err)));
+  });
+}
+
+if (housingConditionSelect) {
+  housingConditionSelect.addEventListener("change", () => {
+    _syncRuleSelectionFromUi();
+    _reapplyRuleSelectionAndRegenerate().catch((err) => setReport(String(err)));
+  });
+}
+
+if (ruleVariantSelect) {
+  ruleVariantSelect.addEventListener("change", () => {
+    _syncRuleSelectionFromUi();
+    _reapplyRuleSelectionAndRegenerate().catch((err) => setReport(String(err)));
   });
 }
 
@@ -527,7 +603,11 @@ async function loadZoningRules() {
       .filter((rule) => rule && rule.zoneCode)
       .map((rule) => {
         const zoneCode = normalizeZoneToken(rule.zoneCode);
-        const maxFar = coerceNumber(rule.qualifyingFar ?? rule.standardFar);
+        const variantFars = Object.values(rule.variants || {})
+          .map((variant) => coerceNumber(variant?.far))
+          .filter((value) => value != null);
+        const maxFar = coerceNumber(rule.qualifyingFar ?? rule.standardFar)
+          ?? (variantFars.length ? Math.max(...variantFars) : null);
         const districtType = rule.districtType || (
           zoneCode.startsWith("R") ? "residential"
             : zoneCode.startsWith("C") ? "commercial"
@@ -830,19 +910,19 @@ function resolveZoneRule(propsOrZone) {
   if (!zoneToken) {
     return null;
   }
-
-  const direct = zoningRuleIndex.get(zoneToken);
-  if (!direct) {
-    return null;
-  }
-
-  const equivalent = normalizeZoneToken(direct.residentialEquivalent);
-  if (!equivalent) {
-    return direct;
-  }
-
-  const base = zoningRuleIndex.get(equivalent);
-  return base ? { ...base, ...direct, zoneCode: direct.zoneCode } : direct;
+  const selection = _syncRuleSelectionFromUi();
+  const variant = resolveZoningVariant(
+    zoneToken,
+    {
+      buildingUseType: selection.buildingUseType,
+      housingType: selection.housingType,
+      footnoteVariant: selection.footnoteVariant,
+      streetType: propsOrZone?.zoning_analysis?.street_type || propsOrZone?.street_type || "narrow",
+      lotType: propsOrZone?.lot_type || "interior",
+    },
+    zoningRuleIndex
+  );
+  return variant?.resolved || null;
 }
 
 function getAvailableZoningOptions() {
@@ -1823,6 +1903,18 @@ function _buildZoningReqRows(zoning) {
     }
   }
   rows.push(`<div class="summary-row"><span>Bulk Regime</span><strong>${regime || "—"}</strong></div>`);
+  if (rule.selectedVariant || zoning.selected_variant) {
+    const variantKey = rule.selectedVariant || zoning.selected_variant;
+    const variantLabel =
+      variantKey === "qualifyingAffordableHousing"
+        ? "Qualifying Affordable Housing"
+        : variantKey === "qualifyingSeniorHousing"
+          ? "Qualifying Senior Housing"
+          : variantKey === "nonResidential"
+            ? "Non-Residential / Community Facility"
+            : "Market Rate / Standard";
+    rows.push(`<div class="summary-row"><span>Condition</span><strong>${variantLabel}</strong></div>`);
+  }
   if (rule.districtType) {
     rows.push(`<div class="summary-row"><span>District Type</span><strong>${rule.districtType}</strong></div>`);
   }
@@ -1897,7 +1989,7 @@ function _buildBuildabilityStudyRows(zoning, envelopeResults) {
     const defaultRearYardFt = coerceNumber(study.rear_yard_requirement_ft) ?? 20;
     const defaultFrontYardFt = coerceNumber(study.front_yard_requirement_ft) ?? 0;
     const defaultSideYardFt = coerceNumber(study.side_yard_requirement_ft) ?? 0;
-    const defaultMaxHeightFt = coerceNumber(study.height_limit_ft) ?? 120;
+    const defaultMaxHeightFt = coerceNumber(study.height_limit_ft) ?? coerceNumber(zoning?.max_height_ft);
     const baseRearYardFt2 = coerceNumber(study.rear_yard_area_ft2) ?? 0;
     const baseTotalYardFt2 = Math.max(
       0,
@@ -2095,11 +2187,15 @@ function _buildRuleEngineSnapshot(data) {
     data.ZoningDist
   );
 
+  const selection = _syncRuleSelectionFromUi();
   const controlsResult = getControlsForLot(
     {
       ...lotAnalysis,
       zoneTokens: zoneTokens.length ? zoneTokens : lotAnalysis.zoneTokens,
       primaryZone: pickPrimaryZoneToken(data.zonedist1, data.ZoneDist1, data.zonedist2, data.ZoneDist2, data.zone),
+      buildingUseType: selection.buildingUseType,
+      housingType: selection.housingType,
+      footnoteVariant: selection.footnoteVariant,
     },
     zoningRuleIndex
   );
@@ -2132,12 +2228,28 @@ function _buildRuleEngineRows(snapshot) {
     : "";
 
   const zones = controls.map((entry) => entry.zone).join(", ") || lot.primaryZone || "n/a";
+  const primaryVariant = controls[0]?.selectedVariant || "standardResidential";
+  const conditionLabel =
+    primaryVariant === "qualifyingAffordableHousing"
+      ? "Qualifying Affordable Housing"
+      : primaryVariant === "qualifyingSeniorHousing"
+        ? "Qualifying Senior Housing"
+        : primaryVariant === "nonResidential"
+          ? "Non-Residential / Community Facility"
+          : "Market Rate / Standard";
+  const resolvedMaxHeight = primary ? _ft(primary.maxBuildingHeight) : "n/a";
+  const resolvedMaxBase = primary ? _ft(primary.maxBaseHeight) : "n/a";
+  const resolvedFar = primary ? formatNumber(primary.far, 2) : "n/a";
 
   return `
     <div class="summary-section-head">Rule Engine Analysis</div>
     ${warningRows}
     ${mixedNote}
     <div class="summary-row"><span>Zoning District(s)</span><strong>${zones}</strong></div>
+    <div class="summary-row"><span>Resolved Variant</span><strong>${conditionLabel}</strong></div>
+    <div class="summary-row"><span>Resolved FAR</span><strong>${resolvedFar}</strong></div>
+    <div class="summary-row"><span>Resolved Max Base</span><strong>${resolvedMaxBase}</strong></div>
+    <div class="summary-row"><span>Resolved Max Height</span><strong>${resolvedMaxHeight}</strong></div>
     <div class="summary-row"><span>Lot Type</span><strong>${lot.lotType || "n/a"}</strong></div>
     <div class="summary-row"><span>Street Type</span><strong>${String(lot.streetType || "narrow").toUpperCase()}</strong></div>
     <div class="summary-row"><span>Primary Street</span><strong>${lot.primaryStreet?.name || "Unknown"}</strong></div>
@@ -2236,28 +2348,45 @@ function buildClientLotData(feature) {
     map,
     neighborhoodFeatures: activeNeighborhoodData?.features || [],
   });
+  const selection = _syncRuleSelectionFromUi();
   const controlsResult = getControlsForLot(
     {
       ...lotAnalysis,
       primaryZone,
       zoneTokens: extractZoneTokensModule(props.zonedist1, props.zonedist2, props.zone),
+      buildingUseType: selection.buildingUseType,
+      housingType: selection.housingType,
+      footnoteVariant: selection.footnoteVariant,
     },
     zoningRuleIndex
   );
-  const primaryControls = controlsResult.controlsByZone?.[0]?.controls || {};
+  const primaryEntry = controlsResult.controlsByZone?.[0] || {};
+  const primaryControls = primaryEntry.controls || {};
+  console.log("[zoning-rule-resolved]", {
+    zoneCode: primaryEntry.zoneCode || primaryZone || null,
+    selectedVariant: primaryEntry.selectedVariant || null,
+    far: primaryControls.far ?? null,
+    maxBaseHeight: primaryControls.maxBaseHeight ?? null,
+    maxBuildingHeight: primaryControls.maxBuildingHeight ?? null,
+    streetType: primaryControls.streetType ?? lotAnalysis.streetType ?? null,
+    lotType: primaryControls.lotType ?? lotAnalysis.lotType ?? null,
+    sourceSections: primaryControls.sourceSections || [],
+  });
 
   return {
     ...props,
     zone: primaryZone || props.zonedist1 || props.zonedist2 || null,
+    lot_type: lotAnalysis.lotType || "Interior",
     lot_polygon: lotPolygon,
     zoning_analysis: {
       primary_zone: primaryZone || null,
       base_far: primaryControls.far ?? props.resid_far ?? props.comm_far ?? props.facil_far ?? 0,
       scenario_far: primaryControls.far ?? props.resid_far ?? props.comm_far ?? props.facil_far ?? 0,
-      max_height_ft: primaryControls.maxBuildingHeight ?? 120,
+      max_height_ft: primaryControls.maxBuildingHeight ?? null,
       base_height_ft: primaryControls.maxBaseHeight ?? null,
       bulk_regime: primaryControls.bulkRegime ?? null,
       street_type: primaryControls.streetType ?? lotAnalysis.streetType ?? "narrow",
+      selected_variant: primaryEntry.selectedVariant || null,
       coverage_ratio: 0.8,
       warnings: controlsResult.warnings || [],
     },
@@ -3176,7 +3305,7 @@ function _recalcStudy() {
   const frontYardFt = assumptionOverrides.frontYardFtOverride ?? defaultFrontYardFt;
   const sideYardFt = assumptionOverrides.sideYardFtOverride ?? defaultSideYardFt;
   const rearYardFt = assumptionOverrides.rearYardFtOverride ?? defaultRearYardFt;
-  const maxHeightFt = assumptionOverrides.maxHeightFtOverride ?? defaultMaxHeightFt ?? 120;
+  const maxHeightFt = assumptionOverrides.maxHeightFtOverride ?? defaultMaxHeightFt;
 
   const appliedDistrict = normalizeZoneToken(
     zoningStudyDefaults?.residentialEquivalent && zoningStudyDefaults.residentialEquivalent !== "n/a"
@@ -3279,8 +3408,14 @@ function _recalcStudy() {
   if (finalBuildableFootprintFt2 > 0) {
     estimatedFloors = allowableFloorArea / finalBuildableFootprintFt2;
     requiredHeightFt = estimatedFloors * floorHeightFt;
-    envelopeHeightFt = Math.min(requiredHeightFt, maxHeightFt);
-    fullFarFits = requiredHeightFt <= maxHeightFt + 1e-6;
+    if (Number.isFinite(maxHeightFt) && maxHeightFt > 0) {
+      envelopeHeightFt = Math.min(requiredHeightFt, maxHeightFt);
+      fullFarFits = requiredHeightFt <= maxHeightFt + 1e-6;
+    } else {
+      envelopeHeightFt = 0;
+      fullFarFits = false;
+      clampWarning = clampWarning || "Missing full rule data for this condition.";
+    }
   }
 
   console.log("[buildability] required height", requiredHeightFt);
@@ -3745,19 +3880,37 @@ function applySelectedZoneOverride(zoneCode) {
   activeLotData.zonedist1 = zone;
   activeLotData.zone = zone;
 
-  const rule = resolveZoneRule(zone);
-  const standardFar = coerceNumber(rule?.standardFar);
+  const selection = _syncRuleSelectionFromUi();
+  const resolved = resolveZoningVariant(
+    zone,
+    {
+      buildingUseType: selection.buildingUseType,
+      housingType: selection.housingType,
+      footnoteVariant: selection.footnoteVariant,
+      streetType: activeLotData?.zoning_analysis?.street_type || "narrow",
+      lotType: activeLotData?.lot_type || "interior",
+    },
+    zoningRuleIndex
+  );
+  const rule = resolved?.resolved || null;
+  const standardFar = coerceNumber(rule?.far ?? rule?.standardFar);
   const maxHeightFt = ruleMaxHeightFt(rule);
   const baseHeightFt = coerceNumber(rule?.maximumBaseHeightFt);
+  const combinedWarnings = [
+    ...(activeLotData.zoning_analysis?.warnings || []),
+    ...(resolved?.warnings || []),
+  ];
 
   activeLotData.zoning_analysis = {
     ...(activeLotData.zoning_analysis || {}),
     primary_zone: zone,
     base_far: standardFar ?? activeLotData.zoning_analysis?.base_far ?? 0,
     scenario_far: standardFar ?? activeLotData.zoning_analysis?.scenario_far ?? 0,
-    max_height_ft: maxHeightFt ?? activeLotData.zoning_analysis?.max_height_ft ?? 120,
+    max_height_ft: maxHeightFt ?? activeLotData.zoning_analysis?.max_height_ft ?? null,
     base_height_ft: baseHeightFt ?? activeLotData.zoning_analysis?.base_height_ft ?? null,
     bulk_regime: rule?.bulkRegime || activeLotData.zoning_analysis?.bulk_regime || null,
+    selected_variant: resolved?.selectedVariant || activeLotData.zoning_analysis?.selected_variant || null,
+    warnings: combinedWarnings,
   };
 
   if (standardFar && standardFar > 0) {
@@ -3771,15 +3924,33 @@ async function requestEnvelopeForZone(zoneCode) {
     throw new Error("Select a lot inside the active neighborhood first.");
   }
 
+  const selection = _syncRuleSelectionFromUi();
+  const resolved = resolveZoningVariant(
+    zoneCode || activeLotData.zonedist1,
+    {
+      buildingUseType: selection.buildingUseType,
+      housingType: selection.housingType,
+      footnoteVariant: selection.footnoteVariant,
+      streetType: activeLotData?.zoning_analysis?.street_type || "narrow",
+      lotType: activeLotData?.lot_type || "interior",
+    },
+    zoningRuleIndex
+  );
+  const resolvedRule = resolved?.resolved || null;
+  const resolvedMaxHeightFt = coerceNumber(resolvedRule?.maximumBuildingHeightFt);
+
   const zoningDefaults = activeLotData.zoning_analysis || {};
   const payload = {
     lot_polygon: activeLotPolygon,
-    use_type: document.getElementById("useType").value,
+    use_type: _payloadUseType(selection),
+    building_use_type: selection.buildingUseType,
+    housing_type: selection.housingType,
+    footnote_variant: selection.footnoteVariant,
     far_mode: document.getElementById("farMode").checked,
     lot_coverage: Number(document.getElementById("coverage").value) / 100,
     floor_height_ft: Number(document.getElementById("floorHeight").value),
     zoning_far: Number(farInput.value),
-    max_height_ft: Number(zoningDefaults.max_height_ft || 120),
+    max_height_ft: resolvedMaxHeightFt ?? coerceNumber(zoningDefaults.max_height_ft),
     zonedist1: zoneCode || activeLotData.zonedist1,
     zonedist2: activeLotData.zonedist2,
     overlay1: activeLotData.overlay1,
@@ -3809,6 +3980,16 @@ async function requestEnvelopeForZone(zoneCode) {
   const data = await res.json();
   const zoning = data?.results?.zoning_analysis || {};
   const study = data?.results?.zoning_buildability_study || {};
+  console.log("[zoning-rule-resolved]", {
+    zoneCode: zoning?.primary_zone || zoneCode || null,
+    selectedVariant: zoning?.selected_variant || null,
+    far: zoning?.scenario_far ?? null,
+    maxBaseHeight: zoning?.base_height_ft ?? null,
+    maxBuildingHeight: zoning?.max_height_ft ?? null,
+    streetType: zoning?.street_type || null,
+    lotType: zoning?.lot_type || null,
+    sourceSections: zoning?.source_sections || [],
+  });
   console.log("[zoning-study] selected lot", {
     bbl: activeLotData?.bbl || "n/a",
     address: activeLotData?.address || "n/a",
@@ -4131,8 +4312,20 @@ function buildMaxEnvelopeForSelectedLot() {
     const lotGeometry = { type: "Polygon", coordinates: [activeLotPolygon] };
     const lotFeature = { type: "Feature", geometry: lotGeometry, properties: activeLotData };
 
-    const controlsArray = getControlsForLot(lotFeature, zoningRuleIndex);
-    if (!controlsArray?.length) {
+    const selection = _syncRuleSelectionFromUi();
+    const controlsResult = getControlsForLot(
+      {
+        type: "Feature",
+        geometry: lotGeometry,
+        properties: activeLotData,
+        buildingUseType: selection.buildingUseType,
+        housingType: selection.housingType,
+        footnoteVariant: selection.footnoteVariant,
+      },
+      zoningRuleIndex
+    );
+    const controlsArray = controlsResult?.controlsByZone || [];
+    if (!controlsArray.length) {
       map.getSource("selected-max-envelope").setData(EMPTY_FC);
       return;
     }
@@ -4175,15 +4368,27 @@ function buildFarEnvelopeForSelectedLot() {
     const lotGeometry = { type: "Polygon", coordinates: [activeLotPolygon] };
     const lotFeature = { type: "Feature", geometry: lotGeometry, properties: activeLotData };
 
-    const controlsArray = getControlsForLot(lotFeature, zoningRuleIndex);
-    if (!controlsArray?.length) {
+    const selection = _syncRuleSelectionFromUi();
+    const controlsResult = getControlsForLot(
+      {
+        type: "Feature",
+        geometry: lotGeometry,
+        properties: activeLotData,
+        buildingUseType: selection.buildingUseType,
+        housingType: selection.housingType,
+        footnoteVariant: selection.footnoteVariant,
+      },
+      zoningRuleIndex
+    );
+    const controlsArray = controlsResult?.controlsByZone || [];
+    if (!controlsArray.length) {
       map.getSource("selected-far-envelope").setData(EMPTY_FC);
       lastFarEnvelopeGeojson = EMPTY_FC;
       return;
     }
 
     const controls = controlsArray[0].controls;
-    const zoneCode = controlsArray[0].zoneCode;
+    const zoneCode = controlsArray[0].zoneCode || controlsArray[0].zone;
 
     // Get buildable footprint (with yards applied)
     const { buildableFootprintFeature } = generateEnvelopeFromControls({
@@ -4204,7 +4409,7 @@ function buildFarEnvelopeForSelectedLot() {
       || 10
     );
     const coveragePct = Number(coverageInput.value || 80);
-    const maxHeightFt = coerceNumber(controls.maxBuildingHeight) ?? 120;
+    const maxHeightFt = coerceNumber(controls.maxBuildingHeight);
     const rawMassingOption = document.getElementById("massingTypeSelect")?.value || document.getElementById("apMassingSelect")?.value || "fullBlock";
     const massingOption = rawMassingOption === "fullBlock" ? "full-block" : rawMassingOption;
 
@@ -4554,7 +4759,7 @@ function _updateTopPlanDiagram() {
       farFootprintArea: state.farFootprintAreaFt2 || 0,
       existingHeightFt: state.existingHeightFt || 10,
       farHeight: state.farHeightFt || 80,
-      maxHeight: state.maxHeightFt || 120,
+      maxHeight: Number.isFinite(state.maxHeightFt) ? state.maxHeightFt : 0,
       coverage: state.footprintCoveragePct || 80,
       isCapped: state.isCapped || false,
       controls: {
@@ -4765,7 +4970,7 @@ async function _updateIsometricDiagram() {
       farFootprintArea: ctx.farFootprintAreaFt2 || 0,
       existingHeightFt: ctx.existingHeightFt || 10,
       farHeight: ctx.farHeightFt || 80,
-      maxHeight: ctx.maxHeightFt || 120,
+      maxHeight: Number.isFinite(ctx.maxHeightFt) ? ctx.maxHeightFt : 0,
       coverage: ctx.footprintCoveragePct || 80,
       isCapped: ctx.isCapped || false,
     };
@@ -4820,11 +5025,15 @@ function analyzeSelectedLots(selectedLots) {
   });
 
   const primaryZone = pickPrimaryZoneToken(props.zonedist1, props.zonedist2, props.zone);
+  const selection = _syncRuleSelectionFromUi();
   const controlsResult = getControlsForLot(
     {
       ...lotAnalysis,
       primaryZone,
       zoneTokens: extractZoneTokensModule(props.zonedist1, props.zonedist2, props.zone),
+      buildingUseType: selection.buildingUseType,
+      housingType: selection.housingType,
+      footnoteVariant: selection.footnoteVariant,
     },
     zoningRuleIndex
   );
@@ -4893,7 +5102,7 @@ function getApplicableControls(analysis) {
   const c = analysis?.controlsRaw || {};
   const zoning = activeLotData?.zoning_analysis || {};
   return {
-    maximumBuildingHeightFt: coerceNumber(c.maxBuildingHeight) ?? coerceNumber(zoning.max_height_ft) ?? 120,
+    maximumBuildingHeightFt: coerceNumber(c.maxBuildingHeight) ?? coerceNumber(zoning.max_height_ft),
     streetSetbackFt: coerceNumber(c.streetWallInset) ?? coerceNumber(c.streetSetbackFt) ?? (String(zoning.street_type || "narrow").toLowerCase().includes("wide") ? 15 : 10),
     frontYardFt: coerceNumber(c.frontYard) ?? 0,
     rearYardFt: coerceNumber(c.rearYard) ?? 0,
@@ -6141,7 +6350,7 @@ function _renderAnalysisPanelContent(lots) {
             <div id="amLabelExisting">Existing Building</div>
             <div id="amLabelFar">FAR Envelope</div>
             <div id="amLabelMax">Max Zoning Envelope</div>
-            <div id="amHeightMax">120 ft max height</div>
+            <div id="amHeightMax">${coerceNumber(study.envelope_height_ft) != null ? `${Math.round(coerceNumber(study.envelope_height_ft))} ft max height` : "Missing full rule data for this condition"}</div>
             <div id="amHeightFar">90 ft FAR massing</div>
             <div id="amRearLabel">${Math.round(coerceNumber(study.rear_yard_requirement_ft) ?? 20)} ft rear yard</div>
           </div>
@@ -6203,7 +6412,7 @@ function _renderAnalysisPanelContent(lots) {
         </article>
         <article class="metric-card">
           <div class="metric-card__label">Max zoning height</div>
-          <div class="metric-card__value" id="max-zoning-height">${Math.round(coerceNumber(study.envelope_height_ft) ?? 120)} ft</div>
+          <div class="metric-card__value" id="max-zoning-height">${coerceNumber(study.envelope_height_ft) != null ? `${Math.round(coerceNumber(study.envelope_height_ft))} ft` : "Missing full rule data for this condition"}</div>
         </article>
       </section>
       <div class="analysis-sheet__cap-note" id="ap-cap-note" style="display:none;"></div>

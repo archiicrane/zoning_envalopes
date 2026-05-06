@@ -92,8 +92,25 @@
             <div class="sheet-slider-row">
               <span class="sheet-slider-label">Use</span>
               <select id="useType" class="sheet-select">
-                <option value="market_rate">Market Rate</option>
-                <option value="affordable">Affordable</option>
+                <option value="residential">Residential</option>
+                <option value="mixedUse">Mixed Use</option>
+                <option value="communityFacility">Community Facility</option>
+                <option value="nonResidential">Commercial / Non-Residential</option>
+              </select>
+            </div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">Housing</span>
+              <select id="housingCondition" class="sheet-select">
+                <option value="marketRate">Market Rate / Standard</option>
+                <option value="qualifyingAffordable">Qualifying Affordable Housing</option>
+                <option value="qualifyingSenior">Qualifying Senior Housing</option>
+              </select>
+            </div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">Variant</span>
+              <select id="ruleVariant" class="sheet-select">
+                <option value="auto">Auto</option>
+                <option value="R6-2">R6^2</option>
               </select>
             </div>
           </div>
@@ -170,6 +187,6 @@
         document.head.appendChild(s);
       }
     </script>
-    <script type="module" src="/app.js?v=20260507c"></script>
+    <script type="module" src="/app.js?v=20260507d"></script>
   </body>
 </html>

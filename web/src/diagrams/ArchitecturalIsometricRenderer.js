@@ -83,7 +83,7 @@ class ArchitecturalIsometricRenderer {
       {
         name: 'max',
         geometry: geometry.buildable,
-        height: geometry.maxHeight || 120,
+        height: geometry.maxHeight || 0,
         color: this.options.colors.maxEnvelope,
         edgeColor: this.options.colors.maxEnvelopeEdge,
         opacity: 0.4,

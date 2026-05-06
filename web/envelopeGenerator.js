@@ -44,7 +44,8 @@ function yardInsetFromControls(controls) {
 }
 
 function generatePitchedEnvelope(lotGeometry, controls, envelopeColor, zoneCode) {
-  const maxHeight = coerceNumber(controls.maxBuildingHeight) ?? 35;
+  const maxHeight = coerceNumber(controls.maxBuildingHeight) ?? coerceNumber(controls.ridgeHeight);
+  if (maxHeight == null) return [];
   const perimeterHeight = coerceNumber(controls.perimeterWallHeight) ?? Math.max(20, maxHeight - 10);
   const ridgeHeight = coerceNumber(controls.ridgeHeight) ?? maxHeight;
 
@@ -60,8 +61,8 @@ function generatePitchedEnvelope(lotGeometry, controls, envelopeColor, zoneCode)
 
 function generateFlatEnvelope(lotGeometry, controls, envelopeColor, zoneCode) {
   const maxHeight = coerceNumber(controls.maxBuildingHeight)
-    ?? coerceNumber(controls.frontWallHeight)
-    ?? 45;
+    ?? coerceNumber(controls.frontWallHeight);
+  if (maxHeight == null) return [];
   const yardInset = yardInsetFromControls(controls);
   const geometry = bufferInward(lotGeometry, yardInset);
   return [makeEnvelopeFeature(geometry, 0, maxHeight, envelopeColor, zoneCode, controls, "flat")];
@@ -69,8 +70,8 @@ function generateFlatEnvelope(lotGeometry, controls, envelopeColor, zoneCode) {
 
 function generateBaseAndSetbackEnvelope(lotGeometry, controls, envelopeColor, zoneCode) {
   const maxHeight = coerceNumber(controls.maxBuildingHeight)
-    ?? coerceNumber(controls.frontWallHeight)
-    ?? 75;
+    ?? coerceNumber(controls.frontWallHeight);
+  if (maxHeight == null) return [];
   const baseHeight = coerceNumber(controls.maxBaseHeight)
     ?? coerceNumber(controls.frontWallHeight)
     ?? Math.max(35, maxHeight - 20);
@@ -90,7 +91,13 @@ function generateSkyExposureEnvelope(lotGeometry, controls, envelopeColor, zoneC
     ?? coerceNumber(controls.maxBaseHeight)
     ?? 60;
   const maxHeight = coerceNumber(controls.maxBuildingHeight)
-    ?? Math.max(frontWall + 20, 85);
+    ?? coerceNumber(controls.ridgeHeight);
+  if (maxHeight == null) {
+    return {
+      features: [],
+      warnings: ["Missing full rule data for this condition."],
+    };
+  }
   const yardInset = yardInsetFromControls(controls);
 
   const baseGeometry = bufferInward(lotGeometry, yardInset);
@@ -114,6 +121,24 @@ function generateSkyExposureEnvelope(lotGeometry, controls, envelopeColor, zoneC
 export function generateEnvelopeFromControls({ lotGeometry, controls, envelopeColor = "#7DB7FF", zoneCode = "" }) {
   const regime = String(controls?.bulkRegime || "flat-roof").toLowerCase();
   const warnings = [];
+  const maxHeight = coerceNumber(controls?.maxBuildingHeight) ?? coerceNumber(controls?.ridgeHeight) ?? coerceNumber(controls?.frontWallHeight);
+  if (maxHeight == null) {
+    warnings.push("Missing full rule data for this condition.");
+    const yardInset = yardInsetFromControls(controls || {});
+    const buildableGeometry = bufferInward(lotGeometry, yardInset);
+    return {
+      envelopeFeatures: [],
+      buildableFootprintFeature: {
+        type: "Feature",
+        geometry: buildableGeometry,
+        properties: {
+          kind: "buildable_footprint_engine",
+          zoneCode,
+        },
+      },
+      warnings,
+    };
+  }
   let features = [];
 
   if (regime === "pitched-envelope") {

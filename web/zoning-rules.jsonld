@@ -280,7 +280,92 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 2.2,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 3.9,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 3.9,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "maximumBuildingHeightFt": null,
+          "sourceSections": []
+        }
+      }
+    },
+    {
+      "zoneCode": "R6^2",
+      "zoneType": "residential",
+      "bulkRegime": "contextual",
+      "standardFar": 2.2,
+      "qualifyingFar": 3.0,
+      "openSpaceRatio": 16,
+      "minimumBaseHeightFt": 30,
+      "maximumBaseHeightFt": 45,
+      "maximumBuildingHeightFt": 55,
+      "streetSetbackWideFt": 10,
+      "streetSetbackNarrowFt": 15,
+      "simplifiedPlanInsetFt": 10,
+      "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential (R6^2)",
+          "far": 2.2,
+          "minimumBaseHeightFt": 30,
+          "maximumBaseHeightFt": 45,
+          "maximumBuildingHeightFt": 55,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing (R6^2)",
+          "far": 3.0,
+          "minimumBaseHeightFt": 30,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 85,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing (R6^2)",
+          "far": 3.0,
+          "minimumBaseHeightFt": 30,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 85,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "maximumBuildingHeightFt": null,
+          "sourceSections": []
+        }
+      }
     },
     {
       "zoneCode": "R6A",
@@ -295,7 +380,45 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 3.0,
+          "minimumBaseHeightFt": 40,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 75,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 3.9,
+          "minimumBaseHeightFt": 40,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 95,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 3.9,
+          "minimumBaseHeightFt": 40,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 95,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "maximumBuildingHeightFt": null,
+          "sourceSections": []
+        }
+      }
     },
     {
       "zoneCode": "R6B",
