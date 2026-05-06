@@ -5053,7 +5053,8 @@ function _buildEnvelopesForMultiSelectedLots() {
         { type: "FeatureCollection", features: farBuilt.features || [] },
         lotGeometry
       );
-      farFeatures.push(...(boundedFar.features || []));
+      const ensuredFar = _ensureFarVolumeFeatures(boundedFar, farBuilt.buildingHeightFt, "#22c55e");
+      farFeatures.push(...(ensuredFar.features || []));
 
       areaFeatures.push({
         type: "Feature",
@@ -5236,6 +5237,42 @@ function _ensureFarVisibleAndRebuild() {
   syncLayerVisibility();
 }
 
+function _ensureFarVolumeFeatures(featureCollection, fallbackHeightFt, fallbackColor = "#22c55e") {
+  const source = featureCollection || EMPTY_FC;
+  const features = Array.isArray(source.features) ? [...source.features] : [];
+  const hasVolume = features.some((feature) => String(feature?.properties?.kind || "") === "far_volume");
+  if (hasVolume) return { type: "FeatureCollection", features };
+
+  const safeHeightFt = Number.isFinite(Number(fallbackHeightFt)) && Number(fallbackHeightFt) > 0
+    ? Number(fallbackHeightFt)
+    : 12;
+  const footprintFeatures = features.filter((feature) => String(feature?.properties?.kind || "") === "far_footprint");
+  if (!footprintFeatures.length) return { type: "FeatureCollection", features };
+
+  const syntheticVolumes = footprintFeatures
+    .filter((feature) => feature?.geometry && (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon"))
+    .map((feature) => ({
+      type: "Feature",
+      geometry: feature.geometry,
+      properties: {
+        kind: "far_volume",
+        envelopeBase: 0,
+        envelopeHeight: safeHeightFt,
+        base_ft: 0,
+        height_ft: safeHeightFt,
+        render_height: safeHeightFt,
+        envelopeColor: feature?.properties?.envelopeColor || fallbackColor,
+        massingOption: feature?.properties?.massingOption || "fallback",
+        label: "fallback-volume",
+      },
+    }));
+
+  return {
+    type: "FeatureCollection",
+    features: [...syntheticVolumes, ...features],
+  };
+}
+
 function _computeFrontageOrientationDeg(lotAnalysis) {
   const edges = Array.isArray(lotAnalysis?.edges) ? lotAnalysis.edges : [];
   const frontIdx = Array.isArray(lotAnalysis?.frontEdgeIndices) ? lotAnalysis.frontEdgeIndices : [];
@@ -5415,10 +5452,11 @@ function buildFarEnvelopeForSelectedLot() {
       type: "FeatureCollection",
       features,
     }, lotGeometry);
-    map.getSource("selected-far-envelope").setData(boundedFar);
+    const ensuredFar = _ensureFarVolumeFeatures(boundedFar, buildingHeightFt, "#22c55e");
+    map.getSource("selected-far-envelope").setData(ensuredFar);
     lastFarEnvelopeGeojson = {
-      type: boundedFar.type,
-      features: boundedFar.features,
+      type: ensuredFar.type,
+      features: ensuredFar.features,
     };
 
     // Sync analysis panel live stats if open
