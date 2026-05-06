@@ -655,6 +655,7 @@ async function loadZoningRules() {
 }
 
 function coerceNumber(value) {
+  if (value == null) return null;
   const num = Number(value);
   return Number.isFinite(num) ? num : null;
 }
