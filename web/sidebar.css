@@ -1,24 +1,32 @@
 .bottom-ui {
-  position: absolute;
-  top: calc(var(--toolbar-h) + var(--space-4));
-  left: var(--space-4);
+  position: fixed;
+  top: var(--toolbar-h);
+  left: 0;
   width: var(--left-sidebar-w);
-  max-height: calc(100vh - var(--toolbar-h) - (var(--space-4) * 2));
+  height: calc(100vh - var(--toolbar-h));
   overflow: auto;
   z-index: var(--z-sidebar);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-3);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(4px);
-  box-shadow: var(--shadow-soft);
+  padding: var(--space-4);
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: #fcfbf7;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
-.bottom-ui::before {
-  content: "Envelope Controls";
+.panel-section {
+  border: 1px solid #dde2e8;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: var(--space-3);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.panel-section__title {
+  margin-bottom: var(--space-3);
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -72,19 +80,19 @@
 }
 
 .info-card {
-  position: absolute;
-  top: calc(var(--toolbar-h) + var(--space-4));
-  right: var(--space-4);
+  position: fixed;
+  top: var(--toolbar-h);
+  right: 0;
   width: var(--right-panel-w);
-  max-height: calc(100vh - var(--toolbar-h) - (var(--space-4) * 2));
+  height: calc(100vh - var(--toolbar-h));
   overflow: auto;
   z-index: var(--z-sidebar);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(4px);
-  box-shadow: var(--shadow-soft);
-  padding: var(--space-3);
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: #fcfbf7;
+  backdrop-filter: none;
+  box-shadow: none;
+  padding: var(--space-4);
 }
 
 .lookup-grid {
@@ -159,16 +167,14 @@
 }
 
 .map-legend {
-  position: absolute;
-  left: calc(var(--left-sidebar-w) + (var(--space-4) * 2));
-  bottom: var(--space-4);
-  z-index: var(--z-map-overlay);
-  border: 1px solid #d8dde4;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.93);
-  backdrop-filter: blur(4px);
-  padding: var(--space-2) var(--space-3);
-  pointer-events: none;
+  position: static;
+  z-index: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  padding: 0;
+  pointer-events: auto;
 }
 
 .map-legend__title {
@@ -221,26 +227,33 @@ body.presentation-mode #map {
 }
 
 @media (max-width: 1100px) {
-  .map-legend {
-    left: calc(var(--left-sidebar-w) + var(--space-4) + var(--space-3));
+  .bottom-ui {
+    width: 280px;
+  }
+
+  .info-card {
+    width: 320px;
   }
 }
 
 @media (max-width: 900px) {
   .bottom-ui,
   .info-card {
-    position: absolute;
+    position: fixed;
     top: auto;
     bottom: var(--space-2);
     width: calc(100vw - (var(--space-2) * 2));
     max-height: 34vh;
     border-radius: 12px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-soft);
   }
 
   .bottom-ui {
     left: var(--space-2);
     right: var(--space-2);
     max-height: 28vh;
+    height: auto;
   }
 
   .info-card {
@@ -248,10 +261,6 @@ body.presentation-mode #map {
     right: var(--space-2);
     bottom: calc(30vh + var(--space-3));
     max-height: 26vh;
-  }
-
-  .map-legend {
-    left: var(--space-2);
-    bottom: calc(56vh + var(--space-3));
+    height: auto;
   }
 }

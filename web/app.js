@@ -116,6 +116,8 @@ const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const toggleMaxEnvelopeBtn = document.getElementById("toggleMaxEnvelopeBtn");
 const toggleFarEnvelopeBtn = document.getElementById("toggleFarEnvelopeBtn");
 const uploadProposalBtn = document.getElementById("uploadProposalBtn");
+const toolbarMoreBtn = document.getElementById("toolbarMoreBtn");
+const toolbarMoreMenu = document.getElementById("toolbarMoreMenu");
 const analysisPanel = document.getElementById("analysisModalOverlay");
 const closePanelBtn = document.getElementById("closePanelBtn");
 const exportDiagramBtn = document.getElementById("exportDiagramBtn");
@@ -220,6 +222,22 @@ if (showEnvelopeBtn) {
   showEnvelopeBtn.addEventListener("click", () => {
     showEnvelopeToggle.checked = !showEnvelopeToggle.checked;
     syncLayerVisibility();
+  });
+}
+
+if (toolbarMoreBtn && toolbarMoreMenu) {
+  toolbarMoreBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const expanded = toolbarMoreBtn.getAttribute("aria-expanded") === "true";
+    toolbarMoreBtn.setAttribute("aria-expanded", expanded ? "false" : "true");
+    toolbarMoreMenu.hidden = expanded;
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!toolbarMoreMenu.hidden && !toolbarMoreMenu.contains(event.target) && event.target !== toolbarMoreBtn) {
+      toolbarMoreMenu.hidden = true;
+      toolbarMoreBtn.setAttribute("aria-expanded", "false");
+    }
   });
 }
 

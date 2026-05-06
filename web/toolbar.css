@@ -1,14 +1,18 @@
 .top-ui {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: var(--z-toolbar);
   height: var(--toolbar-h);
   padding: var(--space-2) var(--space-4);
   display: grid;
-  grid-template-columns: 250px minmax(220px, 320px) 1fr;
+  grid-template-columns: 260px minmax(220px, 320px) 1fr;
   align-items: center;
   gap: var(--space-3);
   background: var(--surface-2);
   border-bottom: 1px solid #cbc8bf;
+  overflow: hidden;
 }
 
 .title-row {
@@ -36,8 +40,47 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--space-2);
+  min-width: 0;
+}
+
+.top-actions-primary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.toolbar-more {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.toolbar-more__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid #d2d7de;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+}
+
+.toolbar-more__menu[hidden] {
+  display: none;
+}
+
+.toolbar-more__menu .bar-btn {
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .bar-btn {
@@ -104,7 +147,7 @@
 
 @media (max-width: 1300px) {
   .top-ui {
-    grid-template-columns: 200px minmax(200px, 280px) 1fr;
+    grid-template-columns: 210px minmax(180px, 260px) 1fr;
   }
 
   .title-row {
@@ -114,18 +157,27 @@
 
 @media (max-width: 980px) {
   .top-ui {
-    height: auto;
-    min-height: var(--toolbar-h);
-    grid-template-columns: 1fr;
-    align-items: start;
+    height: var(--toolbar-h);
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title title"
+      "select actions";
     padding: var(--space-2) var(--space-3);
   }
 
+  .title-row { grid-area: title; }
+  #neighborhoodSelect { grid-area: select; }
+  .top-actions { grid-area: actions; }
+
   .title-row {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .top-actions {
-    justify-content: flex-start;
+    justify-content: flex-end;
+  }
+
+  .top-actions-primary {
+    display: none;
   }
 }

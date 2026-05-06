@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260505g" />
+    <link rel="stylesheet" href="/styles.css?v=20260506b" />
   </head>
   <body>
     <div class="app-shell">
@@ -17,48 +17,27 @@
           <option value="">Loading neighborhoods...</option>
         </select>
         <div class="top-actions">
-          <button id="showBuildingsBtn" type="button" class="bar-btn active">Existing Buildings</button>
-          <button id="showEnvelopeBtn" type="button" class="bar-btn active">Zoning Envelope</button>
-          <button id="toggleMaxEnvelopeBtn" type="button" class="bar-btn active bar-btn--max-env" title="Toggle Max Zoning Envelope (blue)">Max Envelope</button>
-          <button id="toggleFarEnvelopeBtn" type="button" class="bar-btn active bar-btn--far-env" title="Toggle FAR Buildable Envelope (green)">FAR Envelope</button>
-          <button id="analyzeSelectionBtn" type="button" class="bar-btn bar-btn--analyze" disabled title="Click a lot or shift+click multiple lots, then analyze">Analyze Selection</button>
-          <button id="clearSelectionBtn" type="button" class="bar-btn bar-btn--secondary" disabled title="Clear multi-lot selection">Clear Selection</button>
-          <button id="diagramModeBtn" type="button" class="bar-btn bar-btn--diagram">Diagram Mode</button>
-          <button id="presentationModeBtn" type="button" class="bar-btn bar-btn--presentation">Presentation</button>
-          <button id="uploadProposalBtn" type="button" class="bar-btn bar-btn--upload" title="Upload a proposed building model">Upload Proposal</button>
+          <div class="top-actions-primary">
+            <button id="showBuildingsBtn" type="button" class="bar-btn active">Existing Buildings</button>
+            <button id="showEnvelopeBtn" type="button" class="bar-btn active">Zoning Envelope</button>
+            <button id="toggleMaxEnvelopeBtn" type="button" class="bar-btn active bar-btn--max-env" title="Toggle Max Zoning Envelope (blue)">Max Envelope</button>
+            <button id="toggleFarEnvelopeBtn" type="button" class="bar-btn active bar-btn--far-env" title="Toggle FAR Buildable Envelope (green)">FAR Envelope</button>
+            <button id="analyzeSelectionBtn" type="button" class="bar-btn bar-btn--analyze" disabled title="Click a lot or shift+click multiple lots, then analyze">Analyze Selection</button>
+            <button id="clearSelectionBtn" type="button" class="bar-btn bar-btn--secondary" disabled title="Clear multi-lot selection">Clear Selection</button>
+          </div>
+          <div class="toolbar-more">
+            <button id="toolbarMoreBtn" type="button" class="bar-btn bar-btn--secondary toolbar-more__trigger" aria-haspopup="true" aria-expanded="false">More</button>
+            <div id="toolbarMoreMenu" class="toolbar-more__menu" hidden>
+              <button id="diagramModeBtn" type="button" class="bar-btn bar-btn--diagram">Diagram Mode</button>
+              <button id="presentationModeBtn" type="button" class="bar-btn bar-btn--presentation">Presentation</button>
+              <button id="uploadProposalBtn" type="button" class="bar-btn bar-btn--upload" title="Upload a proposed building model">Upload Proposal</button>
+            </div>
+          </div>
         </div>
       </header>
 
       <main class="map-wrap">
         <div id="map"></div>
-        <div class="map-legend" id="mapLegend">
-          <div class="map-legend__title">Legend</div>
-          <div class="map-legend__item">
-            <span class="map-legend__swatch map-legend__swatch--building"></span>
-            <span>Existing building</span>
-          </div>
-          <div class="map-legend__item">
-            <span class="map-legend__swatch" style="background:rgba(59,130,246,0.18);border:1.5px solid #1d4ed8;"></span>
-            <span>Max zoning envelope</span>
-          </div>
-          <div class="map-legend__item">
-            <span class="map-legend__swatch" style="background:rgba(34,197,94,0.35);border:1.5px solid #15803d;"></span>
-            <span>FAR buildable envelope</span>
-          </div>
-          <div class="map-legend__item">
-            <span class="map-legend__swatch" style="background:rgba(59,130,246,0.18);border:1.5px solid #1E5AA8;"></span>
-            <span>Neighborhood envelope</span>
-          </div>
-          <div class="map-legend__item">
-            <span class="map-legend__swatch map-legend__swatch--selected"></span>
-            <span>Selected lot</span>
-          </div>
-          <div class="map-legend__item">
-            <span class="map-legend__swatch" style="background:rgba(245,158,11,0.2);border:1.5px solid #d97706;"></span>
-            <span>Multi-selected lots</span>
-          </div>
-          <div class="map-legend__hint">Shift+click to multi-select lots</div>
-        </div>
 
         <!-- Analysis Modal (centered architectural sheet) -->
         <div class="analysis-modal-overlay" id="analysisModalOverlay" aria-hidden="true">
@@ -83,48 +62,89 @@
       </main>
 
       <section class="bottom-ui">
-        <div class="control-row">
-          <label for="farSlider">Density (Floor Area Ratio)</label>
-          <input id="farSlider" type="range" min="0.1" max="15" step="0.01" value="3" />
-          <span id="farVal" class="value-pill">3.00</span>
-        </div>
+        <section class="panel-section">
+          <div class="panel-section__title">Envelope Controls</div>
+          <div class="control-row">
+            <label for="farSlider">Density (Floor Area Ratio)</label>
+            <input id="farSlider" type="range" min="0.1" max="15" step="0.01" value="3" />
+            <span id="farVal" class="value-pill">3.00</span>
+          </div>
 
-        <div class="control-row">
-          <label for="envelopeOpacitySlider">Envelope Transparency</label>
-          <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="75" />
-          <span id="envelopeOpacityVal" class="value-pill">75%</span>
-        </div>
+          <div class="control-row">
+            <label for="envelopeOpacitySlider">Envelope Transparency</label>
+            <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="75" />
+            <span id="envelopeOpacityVal" class="value-pill">75%</span>
+          </div>
 
-        <div class="control-row compact">
-          <label for="useType">Housing Type:</label>
-          <select id="useType">
-            <option value="market_rate">Market Rate</option>
-            <option value="affordable">Affordable</option>
-          </select>
-        </div>
-        <div class="control-row">
-          <label for="floorHeightBottomSlider">Floor Height</label>
-          <input id="floorHeightBottomSlider" type="range" min="8" max="20" step="0.5" value="10" title="Floor height in feet" />
-          <span id="floorHeightBottomVal" class="value-pill">10 ft</span>
-        </div>
+          <div class="control-row compact">
+            <label for="useType">Housing Type</label>
+            <select id="useType">
+              <option value="market_rate">Market Rate</option>
+              <option value="affordable">Affordable</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <label for="floorHeightBottomSlider">Floor Height</label>
+            <input id="floorHeightBottomSlider" type="range" min="8" max="20" step="0.5" value="10" title="Floor height in feet" />
+            <span id="floorHeightBottomVal" class="value-pill">10 ft</span>
+          </div>
+        </section>
+
+        <section class="panel-section panel-section--legend">
+          <div class="panel-section__title">Legend</div>
+          <div class="map-legend" id="mapLegend">
+            <div class="map-legend__item">
+              <span class="map-legend__swatch map-legend__swatch--building"></span>
+              <span>Existing building</span>
+            </div>
+            <div class="map-legend__item">
+              <span class="map-legend__swatch" style="background:rgba(59,130,246,0.18);border:1.5px solid #1d4ed8;"></span>
+              <span>Max zoning envelope</span>
+            </div>
+            <div class="map-legend__item">
+              <span class="map-legend__swatch" style="background:rgba(34,197,94,0.35);border:1.5px solid #15803d;"></span>
+              <span>FAR buildable envelope</span>
+            </div>
+            <div class="map-legend__item">
+              <span class="map-legend__swatch" style="background:rgba(59,130,246,0.18);border:1.5px solid #1E5AA8;"></span>
+              <span>Neighborhood envelope</span>
+            </div>
+            <div class="map-legend__item">
+              <span class="map-legend__swatch map-legend__swatch--selected"></span>
+              <span>Selected lot</span>
+            </div>
+            <div class="map-legend__item">
+              <span class="map-legend__swatch" style="background:rgba(245,158,11,0.2);border:1.5px solid #d97706;"></span>
+              <span>Multi-selected lots</span>
+            </div>
+            <div class="map-legend__hint">Shift+click to multi-select lots</div>
+          </div>
+        </section>
       </section>
 
       <aside class="info-card">
-        <div class="lookup-grid">
-          <select id="borough">
-            <option value="1">Manhattan</option>
-            <option value="2">Bronx</option>
-            <option value="3" selected>Brooklyn</option>
-            <option value="4">Queens</option>
-            <option value="5">Staten Island</option>
-          </select>
-          <input id="block" type="number" value="981" min="1" placeholder="Block" />
-          <input id="lot" type="number" value="1" min="1" placeholder="Lot" />
-          <button id="lookupBtn" type="button" class="small-btn">Find Lot</button>
-        </div>
-        <div id="dataStatus" class="small"></div>
-        <div id="lotSummary" class="lot-summary empty">Choose a neighborhood and click a lot.</div>
-        <pre id="report"></pre>
+        <section class="panel-section">
+          <div class="panel-section__title">Find Lot</div>
+          <div class="lookup-grid">
+            <select id="borough">
+              <option value="1">Manhattan</option>
+              <option value="2">Bronx</option>
+              <option value="3" selected>Brooklyn</option>
+              <option value="4">Queens</option>
+              <option value="5">Staten Island</option>
+            </select>
+            <input id="block" type="number" value="981" min="1" placeholder="Block" />
+            <input id="lot" type="number" value="1" min="1" placeholder="Lot" />
+            <button id="lookupBtn" type="button" class="small-btn">Find Lot</button>
+          </div>
+          <div id="dataStatus" class="small"></div>
+        </section>
+        <section class="panel-section">
+          <div class="panel-section__title">Lot Data</div>
+          <div id="lotSummary" class="lot-summary empty">Choose a neighborhood and click a lot.</div>
+          <pre id="report"></pre>
+        </section>
       </aside>
 
       <div class="hidden-controls" aria-hidden="true">
@@ -148,6 +168,6 @@
         document.head.appendChild(s);
       }
     </script>
-    <script type="module" src="/app.js?v=20260505f"></script>
+    <script type="module" src="/app.js?v=20260506b"></script>
   </body>
 </html>
