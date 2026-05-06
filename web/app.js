@@ -4654,8 +4654,13 @@ function buildFarEnvelopeForSelectedLot() {
       lotAnalysis,
     });
 
-    const lotAreaFt2 = activeLotData?.lotarea ? Number(activeLotData.lotarea) : 0;
-    const far = Number(farInput.value) || controls.far || 1;
+    const lotAreaFt2 =
+      coerceNumber(activeLotData?.lot_area)
+      ?? coerceNumber(activeLotData?.lotarea)
+      ?? coerceNumber(activeLotData?.LotArea)
+      ?? coerceNumber(lotAnalysis?.lotAreaFt2)
+      ?? _areaFt2FromGeometry(lotGeometry);
+    const far = coerceNumber(farInput.value) ?? coerceNumber(controls.far) ?? 1;
     const allowedFarFloorArea = lotAreaFt2 * far;
 
     const floorHeightFt = Number(
@@ -4668,12 +4673,19 @@ function buildFarEnvelopeForSelectedLot() {
     const maxHeightFt = coerceNumber(controls.maxBuildingHeight);
     const rawMassingOption = document.getElementById("massingTypeSelect")?.value || document.getElementById("apMassingSelect")?.value || "fullBlock";
     const massingOption = rawMassingOption === "fullBlock" ? "full-block" : rawMassingOption;
+    const effectiveCoveragePct = massingOption === "full-block" ? 100 : coveragePct;
+
+    const controlsFootprintGeometry = buildableFootprintFeature?.geometry || lotGeometry;
+    const controlsFootprintAreaFt2 = _areaFt2FromGeometry(controlsFootprintGeometry);
+    if (!buildableFootprintFeature?.geometry || controlsFootprintAreaFt2 <= 0) {
+      console.warn("[far-envelope] controls footprint unavailable; falling back to lot geometry.");
+    }
 
     const { features, warnings, numFloors, buildingHeightFt } = buildFarMassing({
-      buildableFootprintGeometry: buildableFootprintFeature?.geometry || lotGeometry,
+      buildableFootprintGeometry: controlsFootprintGeometry,
       allowedFarFloorArea,
       floorHeightFt,
-      coveragePct,
+      coveragePct: effectiveCoveragePct,
       maxHeightFt,
       massingOption,
       color: "#22c55e",
