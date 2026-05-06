@@ -115,6 +115,48 @@ function _rotateGeometry(geometry, angleDeg, pivot) {
   return geometry;
 }
 
+function _isPointInside(pointCoord, geometry) {
+  if (!Array.isArray(pointCoord) || !geometry) return false;
+  try {
+    return turf.booleanPointInPolygon(turf.point(pointCoord), _asFeature(geometry));
+  } catch (_err) {
+    return false;
+  }
+}
+
+function _isWithin(innerGeom, outerGeom) {
+  if (!innerGeom || !outerGeom) return false;
+  try {
+    return turf.booleanWithin(_asFeature(innerGeom), _asFeature(outerGeom));
+  } catch (_err) {
+    return false;
+  }
+}
+
+function _scaleFromCentroid(geometry, factor) {
+  if (!geometry || !(factor > 0)) return geometry;
+  try {
+    const scaled = turf.transformScale(_asFeature(geometry), factor, {
+      origin: "centroid",
+      mutate: false,
+    });
+    if (scaled?.geometry?.coordinates?.length) return scaled.geometry;
+  } catch (_err) {
+    // keep original
+  }
+  return geometry;
+}
+
+function _fitRectInsideBuildable(rectGeom, buildableGeom) {
+  if (!rectGeom || !buildableGeom) return null;
+  let candidate = rectGeom;
+  for (let i = 0; i < 16; i += 1) {
+    if (_isWithin(candidate, buildableGeom)) return candidate;
+    candidate = _scaleFromCentroid(candidate, 0.9);
+  }
+  return _isWithin(candidate, buildableGeom) ? candidate : null;
+}
+
 function _intersection(aGeom, bGeom) {
   if (!aGeom || !bGeom) return null;
   try {
@@ -168,8 +210,16 @@ function _rectInsideBuildableAxis(buildableGeom, widthFrac, depthFrac, anchor = 
   if (anchor === "east") cx = box.maxX - (w / 2);
   if (anchor === "west") cx = box.minX + (w / 2);
 
+  if (!_isPointInside([cx, cy], buildableGeom)) {
+    const centroid = _centroidCoord(buildableGeom);
+    if (centroid) {
+      cx = centroid[0];
+      cy = centroid[1];
+    }
+  }
+
   const rect = _rectGeometry(cx - (w / 2), cy - (d / 2), cx + (w / 2), cy + (d / 2));
-  return _intersection(buildableGeom, rect);
+  return _fitRectInsideBuildable(rect, buildableGeom);
 }
 
 function _rectInsideBuildable(buildableGeom, widthFrac, depthFrac, anchor = "center", orientationDeg = null) {
@@ -186,7 +236,17 @@ function _rectInsideBuildable(buildableGeom, widthFrac, depthFrac, anchor = "cen
   const localRect = _rectInsideBuildableAxis(localGeom, widthFrac, depthFrac, anchor);
   if (!localRect) return null;
   const worldRect = _rotateGeometry(localRect, orientationDeg, pivot);
-  return _intersection(buildableGeom, worldRect) || worldRect;
+  return _fitRectInsideBuildable(worldRect, buildableGeom);
+}
+
+function _clipToBuildable(feature, buildableGeom) {
+  if (!feature?.geometry || !buildableGeom) return null;
+  const clipped = _intersection(buildableGeom, feature.geometry);
+  if (!clipped || _areaFt2(clipped) <= 1) return null;
+  return {
+    ...feature,
+    geometry: clipped,
+  };
 }
 
 function _scorePlan({
@@ -288,11 +348,8 @@ function _floorplateFromTypology(buildableGeom, typology, coverageTarget, orient
   }
 
   if (typology === "courtyard" || typology === "perimeter") {
-    const shell = _safeBufferInward(buildableGeom, 2);
-    const courtyardInset = Math.max(16, Math.sqrt(_areaFt2(shell)) * 0.16);
-    const court = _safeBufferInward(shell, courtyardInset);
-    const ring = _difference(shell, court) || shell;
-    return { ring, courtyard: court };
+    const depthFrac = Math.max(0.3, Math.min(0.56, coverage * 0.78));
+    return _rectInsideBuildable(buildableGeom, 0.96, depthFrac, "center", orientationDeg);
   }
 
   if (typology === "tower-podium") {
@@ -315,11 +372,11 @@ function _autoTypology({ requested, shape, farIntensity, coverageTarget, distric
   const nonRes = /commercial|industrial|manufacturing|nonresidential/i.test(String(districtType || ""));
 
   if (highFar && lowCoverage) return "tower-podium";
-  if (highFar && deep) return "courtyard";
+  if (highFar && deep) return "tower-podium";
   if (narrow) return "bar";
-  if (medFar && deep) return "perimeter";
+  if (medFar && deep) return "slab";
   if (nonRes) return "slab";
-  if (medFar) return "courtyard";
+  if (medFar) return "slab";
   return "bar";
 }
 
@@ -554,8 +611,13 @@ export function buildFarMassing({
     warnings.push(`Open space shortfall: ${Math.round(Number(openSpaceTargetFt2) - computedOpenAreaFt2)} sf below target.`);
   }
 
+  const clippedFeatures = features
+    .filter(Boolean)
+    .map((feature) => _clipToBuildable(feature, simplifiedBuildable))
+    .filter(Boolean);
+
   return {
-    features: features.filter(Boolean),
+    features: clippedFeatures,
     warnings,
     numFloors,
     buildingHeightFt,
