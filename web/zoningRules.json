@@ -68,7 +68,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 20,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R2",
@@ -83,7 +89,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R2X",
@@ -96,7 +108,12 @@
       "rearYardFt": 20,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342"
+      ]
     },
     {
       "zoneCode": "R3-1",
@@ -111,7 +128,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R3-2",
@@ -124,7 +147,13 @@
       "rearYardFt": 20,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R3A",
@@ -139,7 +168,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R3X",
@@ -154,7 +189,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R4",
@@ -167,7 +208,13 @@
       "rearYardFt": 20,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R4-1",
@@ -182,7 +229,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R4A",
@@ -197,7 +250,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R4B",
@@ -210,7 +269,13 @@
       "rearYardFt": 30,
       "maximumBuildingHeightFt": 25,
       "simplifiedPlanInsetFt": 5,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R5",
@@ -226,7 +291,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422", "zr-23-423"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422",
+        "zr-23-423"
+      ]
     },
     {
       "zoneCode": "R5A",
@@ -241,7 +313,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R5B",
@@ -254,7 +332,13 @@
       "rearYardFt": 30,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 5,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R5D",
@@ -267,7 +351,13 @@
       "rearYardFt": 30,
       "maximumBuildingHeightFt": 45,
       "simplifiedPlanInsetFt": 5,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R6",
@@ -280,7 +370,13 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736"
+      ]
     },
     {
       "zoneCode": "R6A",
@@ -295,7 +391,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R6B",
@@ -310,7 +413,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R7-1",
@@ -323,7 +433,13 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736"
+      ]
     },
     {
       "zoneCode": "R7-2",
@@ -336,7 +452,13 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736"
+      ]
     },
     {
       "zoneCode": "R7A",
@@ -351,7 +473,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R7B",
@@ -366,7 +495,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R7D",
@@ -381,7 +517,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R8",
@@ -393,7 +536,13 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736"
+      ]
     },
     {
       "zoneCode": "R8A",
@@ -408,7 +557,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R8B",
@@ -423,7 +579,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R9",
@@ -435,7 +598,14 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736", "zr-23-737"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736",
+        "zr-23-737"
+      ]
     },
     {
       "zoneCode": "R9A",
@@ -446,7 +616,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R10",
@@ -459,7 +636,15 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-733", "zr-23-736", "zr-23-737"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-733",
+        "zr-23-736",
+        "zr-23-737"
+      ]
     },
     {
       "zoneCode": "R10A",
@@ -471,133 +656,174 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "C3",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R3-2",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C4-1",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R5",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C4-2",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R6",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C4-4",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R7-2",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C4-4D",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R8A",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C4-5",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R7-2",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C4-6",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C4-7",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C5-1",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10A",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C5-2",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10A",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C5-3",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C5-5",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C6-1",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R7-2",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C6-2",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R8",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C6-3",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R9",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C6-4",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C6-5",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "C6-9",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ]
     },
     {
       "zoneCode": "M1-1",
@@ -609,7 +835,12 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ]
     },
     {
       "zoneCode": "M1-2",
@@ -621,7 +852,12 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ]
     },
     {
       "zoneCode": "M1-3",
@@ -633,7 +869,12 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ]
     },
     {
       "zoneCode": "M1-4",
@@ -645,7 +886,12 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ]
     },
     {
       "zoneCode": "M2-1",
@@ -657,7 +903,12 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ]
     },
     {
       "zoneCode": "M2-2",
@@ -669,7 +920,12 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ]
     },
     {
       "zoneCode": "M3-1",
@@ -681,7 +937,12 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ]
     }
   ]
 }

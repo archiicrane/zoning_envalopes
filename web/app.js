@@ -32,10 +32,10 @@ async function resolveMapboxToken() {
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
 const ZONING_RULES_URLS = [
-  "/zoning-rules.jsonld?v=20260507f",
-  "/zoningRules.json?v=20260507f",
-  "/web/zoning-rules.jsonld?v=20260507f",
-  "/web/zoningRules.json?v=20260507f",
+  "/zoning-rules.jsonld?v=20260507g",
+  "/zoningRules.json?v=20260507g",
+  "/web/zoning-rules.jsonld?v=20260507g",
+  "/web/zoningRules.json?v=20260507g",
 ];
 
 const feetToMeters = (ft) => Number(ft || 0) * 0.3048;
@@ -167,7 +167,7 @@ function _selectedBuildingUseType() {
 
 function _selectedHousingType() {
   const value = String(housingConditionSelect?.value || "marketRate");
-  return ["marketRate", "qualifyingAffordable", "qualifyingSenior"].includes(value)
+  return ["marketRate", "qualifyingAffordableOrSenior"].includes(value)
     ? value
     : "marketRate";
 }
@@ -188,8 +188,7 @@ function _syncRuleSelectionFromUi() {
 }
 
 function _payloadUseType(selection) {
-  if (selection?.housingType === "qualifyingAffordable") return "affordable";
-  if (selection?.housingType === "qualifyingSenior") return "senior";
+  if (selection?.housingType === "qualifyingAffordableOrSenior") return "affordable_or_senior";
   return "market_rate";
 }
 
@@ -1911,13 +1910,11 @@ function _buildZoningReqRows(zoning) {
   if (rule.selectedVariant || zoning.selected_variant) {
     const variantKey = rule.selectedVariant || zoning.selected_variant;
     const variantLabel =
-      variantKey === "qualifyingAffordableHousing"
-        ? "Qualifying Affordable Housing"
-        : variantKey === "qualifyingSeniorHousing"
-          ? "Qualifying Senior Housing"
-          : variantKey === "nonResidential"
-            ? "Non-Residential / Community Facility"
-            : "Market Rate / Standard";
+      variantKey === "qualifyingAffordableOrSenior"
+        ? "Qualifying Affordable or Senior Housing"
+        : variantKey === "buildingsOrOtherStructures"
+          ? "Buildings or Other Structures"
+          : "Market Rate / Standard Residential";
     rows.push(`<div class="summary-row"><span>Condition</span><strong>${variantLabel}</strong></div>`);
   }
   if (rule.districtType) {
@@ -2235,13 +2232,11 @@ function _buildRuleEngineRows(snapshot) {
   const zones = controls.map((entry) => entry.zone).join(", ") || lot.primaryZone || "n/a";
   const primaryVariant = controls[0]?.selectedVariant || "standardResidential";
   const conditionLabel =
-    primaryVariant === "qualifyingAffordableHousing"
-      ? "Qualifying Affordable Housing"
-      : primaryVariant === "qualifyingSeniorHousing"
-        ? "Qualifying Senior Housing"
-        : primaryVariant === "nonResidential"
-          ? "Non-Residential / Community Facility"
-          : "Market Rate / Standard";
+    primaryVariant === "qualifyingAffordableOrSenior"
+      ? "Qualifying Affordable or Senior Housing"
+      : primaryVariant === "buildingsOrOtherStructures"
+        ? "Buildings or Other Structures"
+        : "Market Rate / Standard Residential";
   const resolvedMaxHeight = primary ? _ft(primary.maxBuildingHeight) : "n/a";
   const resolvedMaxBase = primary ? _ft(primary.maxBaseHeight) : "n/a";
   const resolvedFar = primary ? formatNumber(primary.far, 2) : "n/a";

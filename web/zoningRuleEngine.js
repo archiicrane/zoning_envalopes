@@ -61,16 +61,20 @@ function _normalizeVariantKey(value) {
   const key = String(value || "").trim();
   if (!key) return "standardResidential";
   if (key === "standardResidential") return key;
-  if (key === "qualifyingAffordableHousing") return key;
-  if (key === "qualifyingSeniorHousing") return key;
-  if (key === "nonResidential") return key;
+  if (["qualifyingAffordableHousing", "qualifyingSeniorHousing", "qualifyingAffordableOrSenior"].includes(key)) {
+    return "qualifyingAffordableOrSenior";
+  }
+  if (["nonResidential", "buildingsOrOtherStructures", "otherStructures"].includes(key)) {
+    return "buildingsOrOtherStructures";
+  }
   return key;
 }
 
 function _normalizeHousingType(value) {
   const text = String(value || "marketRate").trim();
-  if (["qualifyingAffordable", "affordable", "inclusionary"].includes(text)) return "qualifyingAffordable";
-  if (["qualifyingSenior", "senior"].includes(text)) return "qualifyingSenior";
+  if (["qualifyingAffordable", "affordable", "inclusionary", "qualifyingSenior", "senior", "qualifyingAffordableOrSenior", "affordableOrSenior", "affordable_or_senior"].includes(text)) {
+    return "qualifyingAffordableOrSenior";
+  }
   return "marketRate";
 }
 
@@ -90,68 +94,103 @@ function _coalesceNumber(...values) {
   return null;
 }
 
+function _mergeVariantSources(...sources) {
+  return Object.assign({}, ...sources.filter((source) => source && typeof source === "object"));
+}
+
+function _mergeSourceSections(...values) {
+  return Array.from(
+    new Set(
+      values.flatMap((value) => Array.isArray(value) ? value : [])
+    )
+  );
+}
+
+function _buildResolvedVariant(label, farValue, variant, fallback) {
+  const merged = _mergeVariantSources(fallback, variant);
+  return {
+    label,
+    far: _coalesceNumber(variant?.far, farValue),
+    minimumBaseHeightFt: _coalesceNumber(variant?.minimumBaseHeightFt, fallback?.minimumBaseHeightFt),
+    maximumBaseHeightFt: _coalesceNumber(variant?.maximumBaseHeightFt, fallback?.maximumBaseHeightFt),
+    maximumBuildingHeightFt: _coalesceNumber(variant?.maximumBuildingHeightFt, fallback?.maximumBuildingHeightFt),
+    maximumFrontWallHeightFt: _coalesceNumber(variant?.maximumFrontWallHeightFt, fallback?.maximumFrontWallHeightFt),
+    perimeterWallHeightFt: _coalesceNumber(variant?.perimeterWallHeightFt, fallback?.perimeterWallHeightFt),
+    ridgeHeightFt: _coalesceNumber(variant?.ridgeHeightFt, fallback?.ridgeHeightFt),
+    streetSetbackWideFt: _coalesceNumber(variant?.streetSetbackWideFt, fallback?.streetSetbackWideFt),
+    streetSetbackNarrowFt: _coalesceNumber(variant?.streetSetbackNarrowFt, fallback?.streetSetbackNarrowFt),
+    openSpaceRatio: _coalesceNumber(variant?.openSpaceRatio, fallback?.openSpaceRatio),
+    usesOpenSpaceRatio:
+      typeof merged.usesOpenSpaceRatio === "boolean"
+        ? merged.usesOpenSpaceRatio
+        : null,
+    frontYardFt: _coalesceNumber(variant?.frontYardFt, fallback?.frontYardFt),
+    sideYardEachFt: _coalesceNumber(variant?.sideYardEachFt, fallback?.sideYardEachFt),
+    rearYardFt: _coalesceNumber(variant?.rearYardFt, fallback?.rearYardFt),
+    bulkRegime: variant?.bulkRegime || fallback?.bulkRegime || null,
+    sourceSections: _mergeSourceSections(fallback?.sourceSections, variant?.sourceSections),
+    notes: variant?.notes || fallback?.notes || null,
+  };
+}
+
 function _normalizeRuleVariants(rule) {
   const base = rule || {};
-  const existing = base.variants && typeof base.variants === "object" ? base.variants : null;
-  if (existing) {
-    const normalized = {};
-    for (const [k, v] of Object.entries(existing)) {
-      normalized[_normalizeVariantKey(k)] = { ...(v || {}) };
-    }
-    return normalized;
-  }
-
   const standardFar = _coalesceNumber(base.standardFar, base.maxFar, base.qualifyingFar);
   const qualifyingFar = _coalesceNumber(base.qualifyingFar, standardFar);
+  const baseVariant = {
+    minimumBaseHeightFt: _coalesceNumber(base.minimumBaseHeightFt),
+    maximumBaseHeightFt: _coalesceNumber(base.maximumBaseHeightFt),
+    maximumBuildingHeightFt: _coalesceNumber(base.maximumBuildingHeightFt),
+    maximumFrontWallHeightFt: _coalesceNumber(base.maximumFrontWallHeightFt),
+    perimeterWallHeightFt: _coalesceNumber(base.perimeterWallHeightFt),
+    ridgeHeightFt: _coalesceNumber(base.ridgeHeightFt),
+    streetSetbackWideFt: _coalesceNumber(base.streetSetbackWideFt),
+    streetSetbackNarrowFt: _coalesceNumber(base.streetSetbackNarrowFt),
+    openSpaceRatio: _coalesceNumber(base.openSpaceRatio),
+    usesOpenSpaceRatio: typeof base.usesOpenSpaceRatio === "boolean" ? base.usesOpenSpaceRatio : null,
+    frontYardFt: _coalesceNumber(base.frontYardFt),
+    sideYardEachFt: _coalesceNumber(base.sideYardEachFt),
+    rearYardFt: _coalesceNumber(base.rearYardFt),
+    bulkRegime: base.bulkRegime || null,
+    sourceSections: Array.isArray(base.sourceSections) ? base.sourceSections : [],
+    notes: base.notes || null,
+  };
+
+  const existing = base.variants && typeof base.variants === "object" ? base.variants : {};
+  const standardSource = existing.standardResidential || {};
+  const qualifyingSource = _mergeVariantSources(
+    existing.qualifyingAffordableOrSenior,
+    existing.qualifyingAffordableHousing,
+    existing.qualifyingSeniorHousing
+  );
+  const buildingsSource = _mergeVariantSources(
+    existing.buildingsOrOtherStructures,
+    existing.nonResidential
+  );
+
+  const standardVariant = _buildResolvedVariant(
+    "Market Rate / Standard Residential",
+    standardFar,
+    standardSource,
+    baseVariant
+  );
+  const qualifyingVariant = _buildResolvedVariant(
+    "Qualifying Affordable or Senior Housing",
+    qualifyingFar,
+    qualifyingSource,
+    standardVariant
+  );
+  const buildingsVariant = _buildResolvedVariant(
+    "Buildings or Other Structures",
+    _coalesceNumber(buildingsSource?.far),
+    buildingsSource,
+    standardVariant
+  );
 
   return {
-    standardResidential: {
-      label: "Standard / Market Rate Residential",
-      far: standardFar,
-      minimumBaseHeightFt: _coalesceNumber(base.minimumBaseHeightFt),
-      maximumBaseHeightFt: _coalesceNumber(base.maximumBaseHeightFt),
-      maximumBuildingHeightFt: _coalesceNumber(base.maximumBuildingHeightFt),
-      maximumFrontWallHeightFt: _coalesceNumber(base.maximumFrontWallHeightFt),
-      perimeterWallHeightFt: _coalesceNumber(base.perimeterWallHeightFt),
-      ridgeHeightFt: _coalesceNumber(base.ridgeHeightFt),
-      streetSetbackWideFt: _coalesceNumber(base.streetSetbackWideFt),
-      streetSetbackNarrowFt: _coalesceNumber(base.streetSetbackNarrowFt),
-      sourceSections: Array.isArray(base.sourceSections) ? base.sourceSections : [],
-    },
-    qualifyingAffordableHousing: {
-      label: "Qualifying Affordable Housing",
-      far: qualifyingFar,
-      minimumBaseHeightFt: _coalesceNumber(base.minimumBaseHeightFt),
-      maximumBaseHeightFt: _coalesceNumber(base.maximumBaseHeightFt),
-      maximumBuildingHeightFt: _coalesceNumber(base.maximumBuildingHeightFt),
-      maximumFrontWallHeightFt: _coalesceNumber(base.maximumFrontWallHeightFt),
-      perimeterWallHeightFt: _coalesceNumber(base.perimeterWallHeightFt),
-      ridgeHeightFt: _coalesceNumber(base.ridgeHeightFt),
-      streetSetbackWideFt: _coalesceNumber(base.streetSetbackWideFt),
-      streetSetbackNarrowFt: _coalesceNumber(base.streetSetbackNarrowFt),
-      sourceSections: Array.isArray(base.sourceSections) ? base.sourceSections : [],
-    },
-    qualifyingSeniorHousing: {
-      label: "Qualifying Senior Housing",
-      far: qualifyingFar,
-      minimumBaseHeightFt: _coalesceNumber(base.minimumBaseHeightFt),
-      maximumBaseHeightFt: _coalesceNumber(base.maximumBaseHeightFt),
-      maximumBuildingHeightFt: _coalesceNumber(base.maximumBuildingHeightFt),
-      maximumFrontWallHeightFt: _coalesceNumber(base.maximumFrontWallHeightFt),
-      perimeterWallHeightFt: _coalesceNumber(base.perimeterWallHeightFt),
-      ridgeHeightFt: _coalesceNumber(base.ridgeHeightFt),
-      streetSetbackWideFt: _coalesceNumber(base.streetSetbackWideFt),
-      streetSetbackNarrowFt: _coalesceNumber(base.streetSetbackNarrowFt),
-      sourceSections: Array.isArray(base.sourceSections) ? base.sourceSections : [],
-    },
-    nonResidential: {
-      label: "Non-Residential / Community Facility",
-      far: null,
-      minimumBaseHeightFt: null,
-      maximumBaseHeightFt: null,
-      maximumBuildingHeightFt: null,
-      sourceSections: Array.isArray(base.sourceSections) ? base.sourceSections : [],
-    },
+    standardResidential: standardVariant,
+    qualifyingAffordableOrSenior: qualifyingVariant,
+    buildingsOrOtherStructures: buildingsVariant,
   };
 }
 
@@ -180,12 +219,11 @@ function _variantKeyFromOptions(options) {
 
   const buildingUseType = _normalizeBuildingUseType(options?.buildingUseType);
   if (buildingUseType === "communityFacility" || buildingUseType === "nonResidential") {
-    return "nonResidential";
+    return "buildingsOrOtherStructures";
   }
 
   const housingType = _normalizeHousingType(options?.housingType);
-  if (housingType === "qualifyingAffordable") return "qualifyingAffordableHousing";
-  if (housingType === "qualifyingSenior") return "qualifyingSeniorHousing";
+  if (housingType === "qualifyingAffordableOrSenior") return "qualifyingAffordableOrSenior";
   return "standardResidential";
 }
 
@@ -274,7 +312,7 @@ export function resolveZoningVariant(zoneCode, options = {}, rulesIndex) {
     variants,
   };
 
-  if (resolved.far == null && selectedVariant !== "nonResidential") {
+  if (resolved.far == null && selectedVariant !== "buildingsOrOtherStructures") {
     warnings.push("Missing FAR for resolved variant.");
   }
   if (resolved.maximumBuildingHeightFt == null) {

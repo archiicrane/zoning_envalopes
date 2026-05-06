@@ -238,82 +238,102 @@ def _normalize_building_use_type(value: Optional[str]) -> str:
 
 def _normalize_housing_type(value: Optional[str], use_type: Optional[str]) -> str:
     text = str(value or "").strip()
-    if text in {"qualifyingAffordable", "affordable"}:
-        return "qualifyingAffordable"
-    if text in {"qualifyingSenior", "senior"}:
-        return "qualifyingSenior"
-    if str(use_type or "").strip().lower() in {"affordable"}:
-        return "qualifyingAffordable"
-    if str(use_type or "").strip().lower() in {"senior"}:
-        return "qualifyingSenior"
+    if text in {"qualifyingAffordable", "affordable", "qualifyingSenior", "senior", "qualifyingAffordableOrSenior", "affordableOrSenior", "affordable_or_senior"}:
+        return "qualifyingAffordableOrSenior"
+    if str(use_type or "").strip().lower() in {"affordable", "senior", "affordable_or_senior"}:
+        return "qualifyingAffordableOrSenior"
     return "marketRate"
 
 
 def _normalize_rule_variants(rule: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-    variants = rule.get("variants")
-    if isinstance(variants, dict) and variants:
-        return {str(k): dict(v or {}) for k, v in variants.items()}
-
     standard_far = _coerce_float(rule.get("standardFar")) or _coerce_float(rule.get("maxFar")) or _coerce_float(rule.get("qualifyingFar"))
     qualifying_far = _coerce_float(rule.get("qualifyingFar")) or standard_far
-    source_sections = list(rule.get("sourceSections") or [])
+    base_variant = {
+        "minimumBaseHeightFt": rule.get("minimumBaseHeightFt"),
+        "maximumBaseHeightFt": rule.get("maximumBaseHeightFt"),
+        "maximumBuildingHeightFt": rule.get("maximumBuildingHeightFt"),
+        "maximumFrontWallHeightFt": rule.get("maximumFrontWallHeightFt"),
+        "perimeterWallHeightFt": rule.get("perimeterWallHeightFt"),
+        "ridgeHeightFt": rule.get("ridgeHeightFt"),
+        "streetSetbackWideFt": rule.get("streetSetbackWideFt"),
+        "streetSetbackNarrowFt": rule.get("streetSetbackNarrowFt"),
+        "openSpaceRatio": rule.get("openSpaceRatio"),
+        "usesOpenSpaceRatio": rule.get("usesOpenSpaceRatio"),
+        "frontYardFt": rule.get("frontYardFt"),
+        "sideYardEachFt": rule.get("sideYardEachFt"),
+        "rearYardFt": rule.get("rearYardFt"),
+        "bulkRegime": rule.get("bulkRegime"),
+        "sourceSections": list(rule.get("sourceSections") or []),
+        "notes": rule.get("notes"),
+    }
+
+    def _merge_variant_sources(*sources: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        merged: Dict[str, Any] = {}
+        for source in sources:
+            if isinstance(source, dict):
+                merged.update(source)
+        return merged
+
+    def _merge_source_sections(*sources: Any) -> List[str]:
+        merged: List[str] = []
+        for source in sources:
+            if isinstance(source, list):
+                for value in source:
+                    if value not in merged:
+                        merged.append(value)
+        return merged
+
+    def _build_variant(label: str, far_value: Optional[float], variant: Dict[str, Any], fallback: Dict[str, Any]) -> Dict[str, Any]:
+        merged = _merge_variant_sources(fallback, variant)
+        return {
+            "label": label,
+            "far": _coerce_float(variant.get("far")) if variant.get("far") is not None else far_value,
+            "minimumBaseHeightFt": _coerce_float(variant.get("minimumBaseHeightFt")) or _coerce_float(fallback.get("minimumBaseHeightFt")),
+            "maximumBaseHeightFt": _coerce_float(variant.get("maximumBaseHeightFt")) or _coerce_float(fallback.get("maximumBaseHeightFt")),
+            "maximumBuildingHeightFt": _coerce_float(variant.get("maximumBuildingHeightFt")) or _coerce_float(fallback.get("maximumBuildingHeightFt")),
+            "maximumFrontWallHeightFt": _coerce_float(variant.get("maximumFrontWallHeightFt")) or _coerce_float(fallback.get("maximumFrontWallHeightFt")),
+            "perimeterWallHeightFt": _coerce_float(variant.get("perimeterWallHeightFt")) or _coerce_float(fallback.get("perimeterWallHeightFt")),
+            "ridgeHeightFt": _coerce_float(variant.get("ridgeHeightFt")) or _coerce_float(fallback.get("ridgeHeightFt")),
+            "streetSetbackWideFt": _coerce_float(variant.get("streetSetbackWideFt")) or _coerce_float(fallback.get("streetSetbackWideFt")),
+            "streetSetbackNarrowFt": _coerce_float(variant.get("streetSetbackNarrowFt")) or _coerce_float(fallback.get("streetSetbackNarrowFt")),
+            "openSpaceRatio": _coerce_float(variant.get("openSpaceRatio")) or _coerce_float(fallback.get("openSpaceRatio")),
+            "usesOpenSpaceRatio": merged.get("usesOpenSpaceRatio"),
+            "frontYardFt": _coerce_float(variant.get("frontYardFt")) or _coerce_float(fallback.get("frontYardFt")),
+            "sideYardEachFt": _coerce_float(variant.get("sideYardEachFt")) or _coerce_float(fallback.get("sideYardEachFt")),
+            "rearYardFt": _coerce_float(variant.get("rearYardFt")) or _coerce_float(fallback.get("rearYardFt")),
+            "bulkRegime": variant.get("bulkRegime") or fallback.get("bulkRegime"),
+            "sourceSections": _merge_source_sections(fallback.get("sourceSections"), variant.get("sourceSections")),
+            "notes": variant.get("notes") or fallback.get("notes"),
+        }
+
+    variants = rule.get("variants") if isinstance(rule.get("variants"), dict) else {}
+    standard_source = dict(variants.get("standardResidential") or {})
+    qualifying_source = _merge_variant_sources(
+        variants.get("qualifyingAffordableOrSenior"),
+        variants.get("qualifyingAffordableHousing"),
+        variants.get("qualifyingSeniorHousing"),
+    )
+    structures_source = _merge_variant_sources(
+        variants.get("buildingsOrOtherStructures"),
+        variants.get("nonResidential"),
+    )
+
+    standard_variant = _build_variant("Market Rate / Standard Residential", standard_far, standard_source, base_variant)
+    qualifying_variant = _build_variant("Qualifying Affordable or Senior Housing", qualifying_far, qualifying_source, standard_variant)
+    structures_variant = _build_variant("Buildings or Other Structures", _coerce_float(structures_source.get("far")), structures_source, standard_variant)
 
     return {
-        "standardResidential": {
-            "label": "Standard / Market Rate Residential",
-            "far": standard_far,
-            "minimumBaseHeightFt": rule.get("minimumBaseHeightFt"),
-            "maximumBaseHeightFt": rule.get("maximumBaseHeightFt"),
-            "maximumBuildingHeightFt": rule.get("maximumBuildingHeightFt"),
-            "maximumFrontWallHeightFt": rule.get("maximumFrontWallHeightFt"),
-            "perimeterWallHeightFt": rule.get("perimeterWallHeightFt"),
-            "ridgeHeightFt": rule.get("ridgeHeightFt"),
-            "streetSetbackWideFt": rule.get("streetSetbackWideFt"),
-            "streetSetbackNarrowFt": rule.get("streetSetbackNarrowFt"),
-            "sourceSections": source_sections,
-        },
-        "qualifyingAffordableHousing": {
-            "label": "Qualifying Affordable Housing",
-            "far": qualifying_far,
-            "minimumBaseHeightFt": rule.get("minimumBaseHeightFt"),
-            "maximumBaseHeightFt": rule.get("maximumBaseHeightFt"),
-            "maximumBuildingHeightFt": rule.get("maximumBuildingHeightFt"),
-            "maximumFrontWallHeightFt": rule.get("maximumFrontWallHeightFt"),
-            "perimeterWallHeightFt": rule.get("perimeterWallHeightFt"),
-            "ridgeHeightFt": rule.get("ridgeHeightFt"),
-            "streetSetbackWideFt": rule.get("streetSetbackWideFt"),
-            "streetSetbackNarrowFt": rule.get("streetSetbackNarrowFt"),
-            "sourceSections": source_sections,
-        },
-        "qualifyingSeniorHousing": {
-            "label": "Qualifying Senior Housing",
-            "far": qualifying_far,
-            "minimumBaseHeightFt": rule.get("minimumBaseHeightFt"),
-            "maximumBaseHeightFt": rule.get("maximumBaseHeightFt"),
-            "maximumBuildingHeightFt": rule.get("maximumBuildingHeightFt"),
-            "maximumFrontWallHeightFt": rule.get("maximumFrontWallHeightFt"),
-            "perimeterWallHeightFt": rule.get("perimeterWallHeightFt"),
-            "ridgeHeightFt": rule.get("ridgeHeightFt"),
-            "streetSetbackWideFt": rule.get("streetSetbackWideFt"),
-            "streetSetbackNarrowFt": rule.get("streetSetbackNarrowFt"),
-            "sourceSections": source_sections,
-        },
-        "nonResidential": {
-            "label": "Non-Residential / Community Facility",
-            "far": None,
-            "maximumBuildingHeightFt": None,
-            "sourceSections": [],
-        },
+        "standardResidential": standard_variant,
+        "qualifyingAffordableOrSenior": qualifying_variant,
+        "buildingsOrOtherStructures": structures_variant,
     }
 
 
 def _select_variant_key(building_use_type: str, housing_type: str) -> str:
     if building_use_type in {"nonResidential", "communityFacility"}:
-        return "nonResidential"
-    if housing_type == "qualifyingAffordable":
-        return "qualifyingAffordableHousing"
-    if housing_type == "qualifyingSenior":
-        return "qualifyingSeniorHousing"
+        return "buildingsOrOtherStructures"
+    if housing_type == "qualifyingAffordableOrSenior":
+        return "qualifyingAffordableOrSenior"
     return "standardResidential"
 
 
