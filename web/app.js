@@ -1900,12 +1900,15 @@ function ensureSourcesAndLayers() {
       id: "selected-far-envelope-fill",
       type: "fill-extrusion",
       source: "selected-far-envelope",
-      filter: ["==", ["get", "kind"], "far_volume"],
       paint: {
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], STYLE_PRESET.farEnvelope.fillColor],
         "fill-extrusion-opacity": STYLE_PRESET.farEnvelope.fillOpacityDefault,
-        "fill-extrusion-base": ["*", ["coalesce", ["get", "envelopeBase"], 0], 0.3048],
-        "fill-extrusion-height": ["*", ["coalesce", ["get", "envelopeHeight"], 0], 0.3048],
+        "fill-extrusion-base": ["*", ["coalesce", ["get", "envelopeBase"], ["get", "base_ft"], 0], 0.3048],
+        "fill-extrusion-height": [
+          "*",
+          ["coalesce", ["get", "envelopeHeight"], ["get", "height_ft"], ["get", "render_height"], 0],
+          0.3048
+        ],
         "fill-extrusion-vertical-gradient": true,
       },
     });
