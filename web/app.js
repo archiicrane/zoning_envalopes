@@ -1717,31 +1717,24 @@ function applyFocusModeVisuals() {
   }
 }
 
-function syncLayerVisibility() {
-  if (!map) {
-    return;
-  }
-  const existingBuildingsLayerExists = !!map.getLayer("existing-buildings-mapbox");
-  if (existingBuildingsLayerExists) {
-    map.setLayoutProperty(
-      "existing-buildings-mapbox",
-      "visibility",
-      showBuildingToggle.checked ? "visible" : "none"
-    );
-  }
-  const envelopeLayerExists = !!map.getLayer("zoning-envelope-layer");
-  if (envelopeLayerExists) {
-    map.setLayoutProperty("zoning-envelope-layer", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
-  }
-  if (map.getLayer("zoning-envelope-layer")) {
-    map.setLayoutProperty("zoning-envelope-layer", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
-  }
-  if (map.getLayer("zoning-envelope-outline")) {
-    map.setLayoutProperty("zoning-envelope-outline", "visibility", showEnvelopeToggle.checked ? "visible" : "none");
-  }
-  const studyLayerIds = [
+const LAYER_GROUPS = {
+  existingBuildings: [
+    "existing-buildings-mapbox",
+    "neighborhood-building-fill",
+  ],
+  maxEnvelope: [
+    "zoning-envelope-layer",
+    "zoning-envelope-outline",
     "zoning-envelope-fill-baseline",
     "zoning-envelope-fill",
+    "selected-max-envelope-fill",
+    "selected-max-envelope-outline",
+  ],
+  farEnvelope: [
+    "selected-far-envelope-fill",
+    "selected-far-envelope-outline",
+  ],
+  buildableArea: [
     "front-yard-zone-fill",
     "side-yard-zone-fill",
     "rear-yard-zone-fill",
@@ -1749,51 +1742,75 @@ function syncLayerVisibility() {
     "buildable-footprint-fill",
     "buildable-footprint-outline",
     "study-outline",
+    "yard-edge-corner-line",
+    "yard-edge-labels",
+    "buildable-label",
     "yard-edge-front-line",
     "yard-edge-rear-line",
     "yard-edge-side-line",
     "edge-to-road-links",
-    "yard-edge-corner-line",
-    "yard-edge-labels",
-    "buildable-label",
-  ];
-  for (const layerId of studyLayerIds) {
-    if (map.getLayer(layerId)) {
-      const isOptionalDebugLine = ["yard-edge-front-line", "yard-edge-rear-line", "yard-edge-side-line"].includes(layerId);
-      const isRoadLinkLayer = layerId === "edge-to-road-links";
-      const visible = showEnvelopeToggle.checked
-        && (!isOptionalDebugLine || showYardEdgeTypes)
-        && (!isRoadLinkLayer || showRoadCenterlines);
-      map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
-    }
+  ],
+  debug: [
+    "road-centerlines-debug-line",
+  ],
+};
+
+function _setLayerVisibility(layerId, visible) {
+  if (!map?.getLayer(layerId)) return;
+  map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
+}
+
+function _setLayerGroupVisibility(layerIds, visible) {
+  for (const layerId of layerIds) {
+    _setLayerVisibility(layerId, visible);
   }
-  if (map.getLayer("road-centerlines-debug-line")) {
-    map.setLayoutProperty("road-centerlines-debug-line", "visibility", showRoadCenterlines ? "visible" : "none");
+}
+
+function syncLayerVisibility() {
+  if (!map) {
+    return;
   }
-  // MAX envelope (selected lot only — toggled by showMaxEnvelope)
-  for (const id of ["selected-max-envelope-fill", "selected-max-envelope-outline"]) {
-    if (map.getLayer(id)) {
-      map.setLayoutProperty(id, "visibility", showMaxEnvelope && showEnvelopeToggle.checked ? "visible" : "none");
-    }
+  const showBuildings = !!showBuildingToggle?.checked;
+  const showArea = !!showEnvelopeToggle?.checked;
+  const showMax = !!showMaxEnvelope;
+  const showFar = !!showFarEnvelope;
+
+  // Independent category visibility.
+  _setLayerGroupVisibility(LAYER_GROUPS.existingBuildings, showBuildings);
+  _setLayerGroupVisibility(LAYER_GROUPS.maxEnvelope, showMax);
+  _setLayerGroupVisibility(LAYER_GROUPS.farEnvelope, showFar);
+  _setLayerGroupVisibility(LAYER_GROUPS.buildableArea, showArea);
+
+  // Area sub-controls: optional yard edge lines and road-link diagnostics.
+  for (const id of ["yard-edge-front-line", "yard-edge-rear-line", "yard-edge-side-line"]) {
+    _setLayerVisibility(id, showArea && showYardEdgeTypes);
   }
-  // FAR envelope (selected lot only — toggled by showFarEnvelope)
-  for (const id of ["selected-far-envelope-fill", "selected-far-envelope-outline"]) {
-    if (map.getLayer(id)) {
-      map.setLayoutProperty(id, "visibility", showFarEnvelope && showEnvelopeToggle.checked ? "visible" : "none");
-    }
-  }
+  _setLayerVisibility("edge-to-road-links", showArea && showRoadCenterlines);
+
+  // Debug group remains independent from Area.
+  _setLayerGroupVisibility(LAYER_GROUPS.debug, showRoadCenterlines);
+
   // Multi-selected lots always visible
   for (const id of ["multi-selected-lots-fill", "multi-selected-lots-outline"]) {
-    if (map.getLayer(id)) {
-      map.setLayoutProperty(id, "visibility", "visible");
-    }
+    _setLayerVisibility(id, true);
   }
+
   applyFocusModeVisuals();
   if (showBuildingsBtn) {
-    showBuildingsBtn.classList.toggle("active", showBuildingToggle.checked);
+    showBuildingsBtn.classList.toggle("active", showBuildings);
+    showBuildingsBtn.classList.toggle("pill--on", showBuildings);
   }
   if (showEnvelopeBtn) {
-    showEnvelopeBtn.classList.toggle("active", showEnvelopeToggle.checked);
+    showEnvelopeBtn.classList.toggle("active", showArea);
+    showEnvelopeBtn.classList.toggle("pill--on", showArea);
+  }
+  if (toggleMaxEnvelopeBtn) {
+    toggleMaxEnvelopeBtn.classList.toggle("active", showMax);
+    toggleMaxEnvelopeBtn.classList.toggle("pill--on", showMax);
+  }
+  if (toggleFarEnvelopeBtn) {
+    toggleFarEnvelopeBtn.classList.toggle("active", showFar);
+    toggleFarEnvelopeBtn.classList.toggle("pill--on", showFar);
   }
 }
 
