@@ -81,8 +81,8 @@
             </div>
             <div class="sheet-slider-row">
               <span class="sheet-slider-label">OSR</span>
-              <div style="flex:1"></div>
-              <span id="osrVal" class="sheet-slider-val">--</span>
+              <input id="osrSlider" type="range" min="0" max="40" step="0.1" value="0" />
+              <span id="osrVal" class="sheet-slider-val">0.0%</span>
             </div>
             <div class="sheet-slider-row">
               <span class="sheet-slider-label">Opacity</span>
@@ -116,6 +116,10 @@
                 <option value="auto">Auto</option>
                 <option value="R6-2">R6^2</option>
               </select>
+            </div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">Zoning</span>
+              <select id="controlsZoneOverrideSelect" class="sheet-select"></select>
             </div>
           </div>
 
@@ -191,6 +195,6 @@
         document.head.appendChild(s);
       }
     </script>
-    <script type="module" src="/app.js?v=20260507p"></script>
+    <script type="module" src="/app.js?v=20260507q"></script>
   </body>
 </html>

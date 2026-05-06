@@ -142,6 +142,7 @@ const coverageInput = document.getElementById("coverage");
 const covVal = document.getElementById("covVal");
 const farInput = document.getElementById("farSlider");
 const farVal = document.getElementById("farVal");
+const osrSlider = document.getElementById("osrSlider");
 const osrVal = document.getElementById("osrVal");
 const envelopeOpacitySlider = document.getElementById("envelopeOpacitySlider");
 const envelopeOpacityVal = document.getElementById("envelopeOpacityVal");
@@ -162,6 +163,7 @@ const analyzeSelectionBtn = document.getElementById("analyzeSelectionBtn");
 const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const toggleMaxEnvelopeBtn = document.getElementById("toggleMaxEnvelopeBtn");
 const toggleFarEnvelopeBtn = document.getElementById("toggleFarEnvelopeBtn");
+const controlsZoneOverrideSelect = document.getElementById("controlsZoneOverrideSelect");
 const uploadProposalBtn = document.getElementById("uploadProposalBtn");
 const layersMenuBtn = document.getElementById("layersMenuBtn");
 const layersMenu = document.getElementById("layersMenu");
@@ -366,6 +368,15 @@ farInput.addEventListener("input", () => {
     _rebuildFarEnvelope();
   }
 });
+
+if (osrSlider) {
+  osrSlider.addEventListener("input", () => {
+    if (osrVal) osrVal.textContent = `${formatNumber(osrSlider.value, 1)}%`;
+    if (activeLotPolygon && activeLotData) {
+      _rebuildFarEnvelope();
+    }
+  });
+}
 
 function _envelopeOpacityValues() {
   const transparencyPercent = Number(envelopeOpacitySlider.value);
@@ -1971,17 +1982,28 @@ function updateBblInputsFromLotData(data) {
 
 function syncControlsFromLotData(data) {
   const zoning = data && data.zoning_analysis ? data.zoning_analysis : null;
+  if (controlsZoneOverrideSelect) {
+    const zoneOptions = getAvailableZoningOptions();
+    controlsZoneOverrideSelect.innerHTML = zoneOptions
+      .map((zone) => `<option value="${zone}">${zone}</option>`)
+      .join("");
+    const selectedZone = normalizeZoneToken(activeZoneOverride || zoning?.primary_zone || data?.zonedist1 || data?.zone || "");
+    if (selectedZone) {
+      controlsZoneOverrideSelect.value = selectedZone;
+    }
+  }
   if (!zoning) {
-    if (osrVal) osrVal.textContent = "--";
+    if (osrSlider) osrSlider.value = "0";
+    if (osrVal) osrVal.textContent = "0.0%";
     return;
   }
   farInput.value = zoning.base_far || farInput.value;
   farInput.max = Math.max(15, Math.ceil((zoning.base_far || 3) * 1.5));
   farVal.textContent = Number(farInput.value).toFixed(2);
   const osr = coerceNumber(zoning.open_space_ratio_required ?? zoning.openSpaceRatio);
-  if (osrVal) {
-    osrVal.textContent = osr == null ? "--" : formatNumber(osr, 2);
-  }
+  const effectiveOsr = osr == null ? 0 : osr;
+  if (osrSlider) osrSlider.value = String(effectiveOsr);
+  if (osrVal) osrVal.textContent = `${formatNumber(effectiveOsr, 1)}%`;
   coverageInput.value = Math.round((zoning.coverage_ratio || 0.8) * 100);
   covVal.textContent = `${coverageInput.value}%`;
 }
@@ -4084,6 +4106,9 @@ function applySelectedZoneOverride(zoneCode) {
     base_height_ft: baseHeightFt ?? activeLotData.zoning_analysis?.base_height_ft ?? null,
     bulk_regime: rule?.bulkRegime || activeLotData.zoning_analysis?.bulk_regime || null,
     selected_variant: resolved?.selectedVariant || activeLotData.zoning_analysis?.selected_variant || null,
+    open_space_ratio_required: coerceNumber(rule?.openSpaceRatio)
+      ?? activeLotData.zoning_analysis?.open_space_ratio_required
+      ?? null,
     warnings: combinedWarnings,
   };
 
@@ -4689,7 +4714,7 @@ function buildFarEnvelopeForSelectedLot() {
     }
 
     let effectiveCoveragePct = baseCoveragePct;
-    const osr = coerceNumber(controls.openSpaceRatio);
+    const osr = coerceNumber(osrSlider?.value) ?? coerceNumber(controls.openSpaceRatio);
     if (
       Number.isFinite(osr)
       && osr > 0
@@ -6788,12 +6813,30 @@ lotSummary.addEventListener("change", async (event) => {
 
   try {
     applySelectedZoneOverride(target.value);
+    syncControlsFromLotData(activeLotData);
     updateLotSummary(activeLotData);
     await generateEnvelopes();
+    buildMaxEnvelopeForSelectedLot();
+    buildFarEnvelopeForSelectedLot();
   } catch (err) {
     setReport(String(err));
   }
 });
+
+if (controlsZoneOverrideSelect) {
+  controlsZoneOverrideSelect.addEventListener("change", async () => {
+    try {
+      applySelectedZoneOverride(controlsZoneOverrideSelect.value);
+      syncControlsFromLotData(activeLotData);
+      updateLotSummary(activeLotData);
+      await generateEnvelopes();
+      buildMaxEnvelopeForSelectedLot();
+      buildFarEnvelopeForSelectedLot();
+    } catch (err) {
+      setReport(String(err));
+    }
+  });
+}
 
 document.getElementById("lookupBtn").addEventListener("click", async () => {
   try {
