@@ -142,6 +142,7 @@ const coverageInput = document.getElementById("coverage");
 const covVal = document.getElementById("covVal");
 const farInput = document.getElementById("farSlider");
 const farVal = document.getElementById("farVal");
+const osrVal = document.getElementById("osrVal");
 const envelopeOpacitySlider = document.getElementById("envelopeOpacitySlider");
 const envelopeOpacityVal = document.getElementById("envelopeOpacityVal");
 const lotSummary = document.getElementById("lotSummary");
@@ -1971,11 +1972,16 @@ function updateBblInputsFromLotData(data) {
 function syncControlsFromLotData(data) {
   const zoning = data && data.zoning_analysis ? data.zoning_analysis : null;
   if (!zoning) {
+    if (osrVal) osrVal.textContent = "--";
     return;
   }
   farInput.value = zoning.base_far || farInput.value;
   farInput.max = Math.max(15, Math.ceil((zoning.base_far || 3) * 1.5));
   farVal.textContent = Number(farInput.value).toFixed(2);
+  const osr = coerceNumber(zoning.open_space_ratio_required ?? zoning.openSpaceRatio);
+  if (osrVal) {
+    osrVal.textContent = osr == null ? "--" : formatNumber(osr, 2);
+  }
   coverageInput.value = Math.round((zoning.coverage_ratio || 0.8) * 100);
   covVal.textContent = `${coverageInput.value}%`;
 }
@@ -2549,6 +2555,7 @@ function buildClientLotData(feature) {
       bulk_regime: primaryControls.bulkRegime ?? null,
       street_type: primaryControls.streetType ?? lotAnalysis.streetType ?? "narrow",
       selected_variant: primaryEntry.selectedVariant || null,
+      open_space_ratio_required: coerceNumber(primaryControls.openSpaceRatio),
       coverage_ratio: 0.8,
       warnings: [
         ...(controlsResult.warnings || []),
