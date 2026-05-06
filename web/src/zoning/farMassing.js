@@ -551,7 +551,20 @@ export function buildFarMassing({
     courtyardGeom = null;
   }
 
-  const primaryAreaFt2 = _areaFt2(primaryFootprint);
+  let primaryAreaFt2 = _areaFt2(primaryFootprint);
+  if (primaryAreaFt2 <= 0) {
+    warnings.push("No valid FAR footprint could be generated from typology; using buildable geometry as fallback footprint.");
+    primaryFootprint = _safeBufferInward(simplifiedBuildable, 1);
+    primaryAreaFt2 = _areaFt2(primaryFootprint);
+    if (primaryAreaFt2 <= 0) {
+      primaryFootprint = simplifiedBuildable;
+      primaryAreaFt2 = _areaFt2(primaryFootprint);
+    }
+    podiumGeom = null;
+    towerGeom = null;
+    courtyardGeom = null;
+  }
+
   if (primaryAreaFt2 <= 0) {
     return {
       features,
@@ -641,7 +654,16 @@ export function buildFarMassing({
     warnings.push(`Open space shortfall: ${Math.round(Number(openSpaceTargetFt2) - computedOpenAreaFt2)} sf below target.`);
   }
 
-  const rawFeatures = features.filter(Boolean);
+  let rawFeatures = features.filter(Boolean);
+
+  // Last-resort guard: never return zero FAR features when buildable geometry exists.
+  if (!rawFeatures.length && _areaFt2(simplifiedBuildable) > 1) {
+    const fallbackHeightFt = Math.max(safeFloorHeight, Number(buildingHeightFt) || safeFloorHeight);
+    const fallbackMass = _makeMassFeature(simplifiedBuildable, 0, fallbackHeightFt, color, typology || "fallback", Math.max(1, numFloors || 1), "fallback");
+    const fallbackFootprint = _makePlanFeature(simplifiedBuildable, "far_footprint", "#1a7f54", typology || "fallback", "fallback-footprint", _areaFt2(simplifiedBuildable));
+    rawFeatures = [fallbackMass, fallbackFootprint].filter(Boolean);
+    warnings.push("FAR last-resort fallback applied: generated volume/footprint from buildable geometry.");
+  }
 
   const clippedFeatures = rawFeatures
     .filter(Boolean)
