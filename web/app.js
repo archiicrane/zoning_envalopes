@@ -296,9 +296,20 @@ if (focusModeBtn) {
     const next = !document.body.classList.contains("focus-mode");
     document.body.classList.toggle("focus-mode", next);
     focusModeBtn.classList.toggle("active", next);
+    focusModeBtn.title = next ? "Exit focus mode" : "Focus mode";
     if (next) _setSheetOpen(false);
   });
 }
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.body.classList.contains("focus-mode")) {
+    document.body.classList.remove("focus-mode");
+    if (focusModeBtn) {
+      focusModeBtn.classList.remove("active");
+      focusModeBtn.title = "Focus mode";
+    }
+  }
+});
 
 if (toolbarMoreBtn && toolbarMoreMenu) {
   toolbarMoreBtn.addEventListener("click", (event) => {
@@ -6424,21 +6435,6 @@ if (exportReportBtn) {
     URL.revokeObjectURL(url);
   });
 }
-
-if (focusModeBtn) {
-  focusModeBtn.addEventListener("click", () => {
-    const isOn = document.body.classList.toggle("focus-mode");
-    focusModeBtn.classList.toggle("pill--on", isOn);
-    focusModeBtn.title = isOn ? "Exit focus mode" : "Focus mode";
-  });
-}
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && document.body.classList.contains("focus-mode")) {
-    document.body.classList.remove("focus-mode");
-    if (focusModeBtn) { focusModeBtn.classList.remove("pill--on"); focusModeBtn.title = "Focus mode"; }
-  }
-});
 
 if (openFullAnalysisBtn) {
   openFullAnalysisBtn.addEventListener("click", () => {
