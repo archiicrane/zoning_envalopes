@@ -56,11 +56,12 @@ html, body {
   font-size: 13px;
 }
 
-/* Map fills everything — it is the hero */
+/* Map fills everything but leaves room for right sidebar */
 #map {
   position: fixed;
   inset: 0;
   z-index: var(--z-map);
+  right: 320px;
 }
 
 .hidden-controls {

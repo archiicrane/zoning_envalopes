@@ -129,7 +129,7 @@
 .layer-pills {
   position: fixed;
   top: calc(var(--topbar-h) + var(--space-3));
-  right: var(--space-4);
+  right: calc(320px + var(--space-4));
   z-index: var(--z-pills);
   display: flex;
   flex-direction: column;
@@ -178,18 +178,13 @@
 /* ---- Floating action buttons ---- */
 .map-fabs {
   position: fixed;
-  bottom: calc(var(--sheet-peek-h) + var(--space-4));
-  right: var(--space-4);
+  bottom: var(--space-4);
+  right: calc(320px + var(--space-4));
   z-index: 35; /* above sheet (20) and topbar (30) */
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  transition: bottom 280ms cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-body.sheet-open .map-fabs {
-  bottom: calc(min(286px, 38vh) + var(--sheet-peek-h) + var(--space-3));
 }
 
 .map-fab {
@@ -311,13 +306,13 @@ body.sheet-open .map-fabs {
   .layer-pills {
     flex-direction: row;
     top: auto;
-    bottom: calc(var(--sheet-peek-h) + var(--space-3));
+    bottom: var(--space-3);
     right: auto;
     left: var(--space-3);
   }
 
   .map-fabs {
-    bottom: calc(var(--sheet-peek-h) + var(--space-3));
+    bottom: var(--space-3);
     right: var(--space-3);
   }
 
@@ -326,5 +321,19 @@ body.sheet-open .map-fabs {
     top: calc(var(--topbar-h) + 6px);
     width: calc(100vw - 24px);
     max-width: 100%;
+  }
+
+  #map {
+    right: 0;
+  }
+
+  .lot-sheet {
+    width: 100%;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    border-left: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.09);
+    max-height: 50vh;
   }
 }
