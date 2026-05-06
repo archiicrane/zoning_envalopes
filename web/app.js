@@ -1903,10 +1903,20 @@ function ensureSourcesAndLayers() {
       paint: {
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], STYLE_PRESET.farEnvelope.fillColor],
         "fill-extrusion-opacity": STYLE_PRESET.farEnvelope.fillOpacityDefault,
-        "fill-extrusion-base": ["*", ["coalesce", ["get", "envelopeBase"], ["get", "base_ft"], 0], 0.3048],
+        "fill-extrusion-base": [
+          "*",
+          ["coalesce", ["to-number", ["get", "envelopeBase"]], ["to-number", ["get", "base_ft"]], 0],
+          0.3048
+        ],
         "fill-extrusion-height": [
           "*",
-          ["coalesce", ["get", "envelopeHeight"], ["get", "height_ft"], ["get", "render_height"], 0],
+          [
+            "coalesce",
+            ["to-number", ["get", "envelopeHeight"]],
+            ["to-number", ["get", "height_ft"]],
+            ["to-number", ["get", "render_height"]],
+            0
+          ],
           0.3048
         ],
         "fill-extrusion-vertical-gradient": true,
@@ -5470,10 +5480,10 @@ function buildFarEnvelopeForSelectedLot() {
       console.warn("[far-envelope][warnings]", buildWarnings);
     }
 
-    const boundedFar = _clampFeatureCollectionToLotBounds({
+    const boundedFar = {
       type: "FeatureCollection",
       features,
-    }, lotGeometry);
+    };
     console.log(`[FAR-DEBUG] After clamping: ${boundedFar.features.length} features. Volume features: ${boundedFar.features.filter(f => f.properties?.kind === "far_volume").length}`);
 
     const ensuredFar = _ensureFarVolumeFeatures(boundedFar, buildingHeightFt, "#22c55e");
@@ -5490,6 +5500,23 @@ function buildFarEnvelopeForSelectedLot() {
 
     map.getSource("selected-far-envelope").setData(ensuredFar);
     console.log(`[FAR-DEBUG] Data set to map source.`);
+    
+    // DEBUG: Update on-screen debug panel
+    const debugPanel = document.getElementById("farDebugPanel");
+    const debugContent = document.getElementById("farDebugContent");
+    if (debugPanel && debugContent) {
+      debugPanel.style.display = "block";
+      const volCount = ensuredFar.features.filter(f => f.properties?.kind === "far_volume").length;
+      const maxHeight = Math.max(...ensuredFar.features.map(f => f.properties?.envelopeHeight || 0), 0);
+      const layerVis = map.getLayoutProperty("selected-far-envelope-fill", "visibility");
+      debugContent.innerHTML = `
+        Total features: ${ensuredFar.features.length}<br/>
+        Volume features: ${volCount}<br/>
+        Max height (ft): ${maxHeight}<br/>
+        Layer visibility: ${layerVis || "default"}<br/>
+        BuildingHeightFt: ${buildingHeightFt}
+      `;
+    }
     
     lastFarEnvelopeGeojson = {
       type: ensuredFar.type,
