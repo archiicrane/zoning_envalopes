@@ -112,7 +112,7 @@ let multiSelectMode = false;
 let showMaxEnvelope = true;        // toggle: MAX zoning envelope (blue)
 let showFarEnvelope = true;        // toggle: FAR buildable envelope (green)
 let analysisPanelOpen = false;     // whether the analysis modal is open
-let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, warnings }
+let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, footprintAreaFt2, selectedTypology, scoreBreakdown, warnings }
 let lastMaxEnvelopeGeojson = EMPTY_FC;
 let lastFarEnvelopeGeojson = EMPTY_FC;
 let isoRenderer = null;
@@ -194,6 +194,55 @@ const sheetPanels = Array.from(document.querySelectorAll(".sheet-panel"));
 const lotZoneBadge = document.getElementById("lotZoneBadge");
 const lotSheetAddress = document.getElementById("lotSheetAddress");
 const lotSheetChips = document.getElementById("lotSheetChips");
+const typologyHud = document.getElementById("typologyHud");
+const typologyHudLabel = document.getElementById("typologyHudLabel");
+const typologyHudScore = document.getElementById("typologyHudScore");
+const typologyHudBreakdown = document.getElementById("typologyHudBreakdown");
+
+function _humanizeTypology(value) {
+  const token = String(value || "").trim();
+  if (!token) return "—";
+  return token
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (s) => s.toUpperCase());
+}
+
+function _scorePercent(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return `${Math.round(Math.max(0, Math.min(1, n)) * 100)}%`;
+}
+
+function _penaltyPercent(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return `${Math.round(Math.max(0, n) * 100)}%`;
+}
+
+function _updateTypologyHud() {
+  if (!typologyHud || !typologyHudLabel || !typologyHudScore || !typologyHudBreakdown) return;
+  const data = lastFarEnvelopeData;
+  if (!data || !data.selectedTypology) {
+    typologyHud.hidden = true;
+    typologyHudBreakdown.innerHTML = "";
+    return;
+  }
+
+  const score = data.scoreBreakdown || {};
+  typologyHud.hidden = false;
+  typologyHudLabel.textContent = _humanizeTypology(data.selectedTypology);
+  typologyHudScore.textContent = `Score ${Number.isFinite(Number(score.total)) ? Number(score.total).toFixed(2) : "—"}`;
+
+  typologyHudBreakdown.innerHTML = [
+    `<div class="typology-hud__item"><span>Compactness</span><strong>${_scorePercent(score.compactness)}</strong></div>`,
+    `<div class="typology-hud__item"><span>Coverage</span><strong>${_scorePercent(score.coverage)}</strong></div>`,
+    `<div class="typology-hud__item"><span>Frontage Fit</span><strong>${_scorePercent(score.frontageBonus)}</strong></div>`,
+    `<div class="typology-hud__item"><span>Front Axis</span><strong>${Number.isFinite(Number(score.frontageOrientationDeg)) ? `${Math.round(Number(score.frontageOrientationDeg))} deg` : "Auto"}</strong></div>`,
+    `<div class="typology-hud__item"><span>Open Delta</span><strong>${Number.isFinite(Number(score.openAreaFt2)) && Number.isFinite(Number(score.targetOpenSpaceFt2)) ? `${Math.round(Number(score.openAreaFt2) - Number(score.targetOpenSpaceFt2)).toLocaleString()} sf` : "—"}</strong></div>`,
+    `<div class="typology-hud__item"><span>Depth Penalty</span><strong>${_penaltyPercent(score.depthPenalty)}</strong></div>`,
+    `<div class="typology-hud__item"><span>Awkwardness</span><strong>${_penaltyPercent(score.awkwardnessPenalty)}</strong></div>`,
+  ].join("");
+}
 
 function _selectedBuildingUseType() {
   const value = String(useTypeSelect?.value || "residential");
@@ -437,6 +486,12 @@ function applyEnvelopeOpacityToLayers() {
   }
   if (map.getLayer("selected-far-envelope-fill")) {
     map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", farEnvelopeFillOpacity);
+  }
+  if (map.getLayer("selected-far-open-space-fill")) {
+    map.setPaintProperty("selected-far-open-space-fill", "fill-opacity", Math.max(0.12, farEnvelopeFillOpacity * 0.58));
+  }
+  if (map.getLayer("selected-far-footprint-fill")) {
+    map.setPaintProperty("selected-far-footprint-fill", "fill-opacity", Math.max(0.08, farEnvelopeFillOpacity * 0.36));
   }
   if (map.getLayer("selected-max-envelope-outline")) {
     map.setPaintProperty("selected-max-envelope-outline", "line-opacity", STYLE_PRESET.maxEnvelope.outlineOpacity);
@@ -1729,6 +1784,7 @@ function ensureSourcesAndLayers() {
       id: "selected-far-envelope-fill",
       type: "fill-extrusion",
       source: "selected-far-envelope",
+      filter: ["==", ["get", "kind"], "far_volume"],
       paint: {
         "fill-extrusion-color": ["coalesce", ["get", "envelopeColor"], STYLE_PRESET.farEnvelope.fillColor],
         "fill-extrusion-opacity": STYLE_PRESET.farEnvelope.fillOpacityDefault,
@@ -1742,12 +1798,35 @@ function ensureSourcesAndLayers() {
       id: "selected-far-envelope-outline",
       type: "line",
       source: "selected-far-envelope",
+      filter: ["==", ["get", "kind"], "far_footprint"],
       minzoom: 14,
       paint: {
         "line-color": STYLE_PRESET.farEnvelope.outlineColor,
         "line-width": STYLE_PRESET.farEnvelope.outlineWidth,
         "line-opacity": STYLE_PRESET.farEnvelope.outlineOpacity,
         "line-dasharray": [2, 2],
+      },
+    });
+
+    map.addLayer({
+      id: "selected-far-open-space-fill",
+      type: "fill",
+      source: "selected-far-envelope",
+      filter: ["==", ["get", "kind"], "far_open_space"],
+      paint: {
+        "fill-color": "#a6dcc5",
+        "fill-opacity": 0.28,
+      },
+    });
+
+    map.addLayer({
+      id: "selected-far-footprint-fill",
+      type: "fill",
+      source: "selected-far-envelope",
+      filter: ["==", ["get", "kind"], "far_footprint"],
+      paint: {
+        "fill-color": "#3f8f67",
+        "fill-opacity": 0.16,
       },
     });
   }
@@ -1812,6 +1891,8 @@ const LAYER_GROUPS = {
   farEnvelope: [
     "selected-far-envelope-fill",
     "selected-far-envelope-outline",
+    "selected-far-open-space-fill",
+    "selected-far-footprint-fill",
   ],
   buildableArea: [
     "front-yard-zone-fill",
@@ -4046,6 +4127,7 @@ function clearActiveEnvelope() {
   lastAssumptionChanged = null;
   lastStudyResult = null;
   lastFarEnvelopeData = null;
+  _updateTypologyHud();
   updateSelectionVisual(null, false);
   refreshSelectedLotComparisonModel();
   if (map?.getSource("road-centerlines-debug")) {
@@ -4650,6 +4732,41 @@ function _rebuildFarEnvelope() {
   buildFarEnvelopeForSelectedLot();
 }
 
+function _computeFrontageOrientationDeg(lotAnalysis) {
+  const edges = Array.isArray(lotAnalysis?.edges) ? lotAnalysis.edges : [];
+  const frontIdx = Array.isArray(lotAnalysis?.frontEdgeIndices) ? lotAnalysis.frontEdgeIndices : [];
+  const frontEdges = frontIdx
+    .map((idx) => edges.find((edge) => edge?.idx === idx))
+    .filter(Boolean);
+
+  if (!frontEdges.length) return null;
+
+  // Circular weighted mean so opposite edge directions don't cancel due to angle wrap.
+  let sumX = 0;
+  let sumY = 0;
+  let weightTotal = 0;
+  for (const edge of frontEdges) {
+    const a = edge?.a;
+    const b = edge?.b;
+    if (!Array.isArray(a) || !Array.isArray(b)) continue;
+    const dx = Number(b[0]) - Number(a[0]);
+    const dy = Number(b[1]) - Number(a[1]);
+    const length = Math.hypot(dx, dy);
+    if (!(length > 0)) continue;
+    const ux = dx / length;
+    const uy = dy / length;
+    const w = Number(edge.lengthFt) > 0 ? Number(edge.lengthFt) : 1;
+    sumX += ux * w;
+    sumY += uy * w;
+    weightTotal += w;
+  }
+
+  if (!(weightTotal > 0)) return null;
+  const angleRad = Math.atan2(sumY, sumX);
+  const angleDeg = angleRad * (180 / Math.PI);
+  return Number.isFinite(angleDeg) ? angleDeg : null;
+}
+
 function buildFarEnvelopeForSelectedLot() {
   if (!activeLotPolygon || !activeLotData) return;
   if (!map?.getSource("selected-far-envelope")) return;
@@ -4687,6 +4804,8 @@ function buildFarEnvelopeForSelectedLot() {
     if (!controlsArray.length) {
       map.getSource("selected-far-envelope").setData(EMPTY_FC);
       lastFarEnvelopeGeojson = EMPTY_FC;
+      lastFarEnvelopeData = null;
+      _updateTypologyHud();
       return;
     }
 
@@ -4725,6 +4844,7 @@ function buildFarEnvelopeForSelectedLot() {
 
     const controlsFootprintGeometry = buildableFootprintFeature?.geometry || lotGeometry;
     const controlsFootprintAreaFt2 = _areaFt2FromGeometry(controlsFootprintGeometry);
+    const frontageOrientationDeg = _computeFrontageOrientationDeg(lotAnalysis);
     if (!buildableFootprintFeature?.geometry || controlsFootprintAreaFt2 <= 0) {
       console.warn("[far-envelope] controls footprint unavailable; falling back to lot geometry.");
     }
@@ -4750,7 +4870,16 @@ function buildFarEnvelopeForSelectedLot() {
       }
     }
 
-    const { features, warnings, numFloors, buildingHeightFt } = buildFarMassing({
+    const requiredOpenSpaceFt2 = (
+      Number.isFinite(osr)
+      && osr > 0
+      && lotAreaFt2 > 0
+      && far > 0
+    )
+      ? (lotAreaFt2 * far * (osr / 100))
+      : 0;
+
+    const { features, warnings, numFloors, buildingHeightFt, footprintAreaFt2, selectedTypology, scoreBreakdown } = buildFarMassing({
       buildableFootprintGeometry: controlsFootprintGeometry,
       allowedFarFloorArea,
       floorHeightFt,
@@ -4759,9 +4888,21 @@ function buildFarEnvelopeForSelectedLot() {
       enforceMaxHeight: false,
       massingOption,
       color: "#22c55e",
+      openSpaceTargetFt2: requiredOpenSpaceFt2,
+      districtType: controls.districtType || controls.bulkRegime || "",
+      frontageOrientationDeg,
     });
 
-    lastFarEnvelopeData = { numFloors, buildingHeightFt, warnings };
+    lastFarEnvelopeData = {
+      numFloors,
+      buildingHeightFt,
+      footprintAreaFt2,
+      selectedTypology,
+      scoreBreakdown,
+      frontageOrientationDeg,
+      warnings,
+    };
+    _updateTypologyHud();
     if (Array.isArray(buildWarnings) && buildWarnings.length) {
       console.warn("[far-envelope][warnings]", buildWarnings);
     }
@@ -4781,6 +4922,8 @@ function buildFarEnvelopeForSelectedLot() {
     }
   } catch (err) {
     console.warn("[far-envelope] build error:", err);
+    lastFarEnvelopeData = null;
+    _updateTypologyHud();
   }
 }
 
@@ -6772,7 +6915,7 @@ function _updateAnalysisPanelFarStats() {
   if (!analysisPanelOpen) return;
   const state = window.__studySheetState || _analysisPlanContext();
   const totalAreaFt2 = Number(state.allowedFloorArea || 0);
-  const footprintAreaFt2 = Number(state.footprintArea || state.farFootprintAreaFt2 || 0);
+  const footprintAreaFt2 = Number(state.footprintArea || state.farFootprintAreaFt2 || lastFarEnvelopeData?.footprintAreaFt2 || 0);
   const floorCount = Number(state.roundedFloorCount || lastFarEnvelopeData?.numFloors || 1);
   const farEnvelopeHeight = Number(state.farEnvelopeHeight || lastFarEnvelopeData?.buildingHeightFt || 0);
 

@@ -14,12 +14,26 @@
     <!-- Full-bleed map canvas -->
     <div id="map"></div>
 
-    <!-- Minimal top bar -->
+    <div class="viewport-frame" aria-hidden="true"></div>
+
+    <!-- Research board header -->
     <header class="topbar">
-      <span class="topbar__brand">NYC Zoning</span>
+      <div class="topbar__titleblock">
+        <span class="topbar__brand">Zoning Envelope Visualizer</span>
+        <span class="topbar__subtitle">Translating NYC zoning rules into interactive spatial form</span>
+      </div>
       <select id="neighborhoodSelect" class="topbar__select">
         <option value="">Select neighborhood…</option>
       </select>
+      <div class="topbar__status" aria-label="Process status">
+        <span class="status-step is-active">DATA</span>
+        <span class="status-sep">→</span>
+        <span class="status-step is-active">RULES</span>
+        <span class="status-sep">→</span>
+        <span class="status-step is-active">GEOMETRY</span>
+        <span class="status-sep">→</span>
+        <span class="status-step is-active">ENVELOPE</span>
+      </div>
       <div class="topbar__more">
         <button id="toolbarMoreBtn" class="topbar__more-btn" type="button" aria-haspopup="true" aria-expanded="false" title="More options">···</button>
         <div id="toolbarMoreMenu" class="topbar__more-menu" hidden>
@@ -43,6 +57,17 @@
       <button id="toggleFarEnvelopeBtn" class="pill pill--on pill--green" type="button" title="Show FAR-based buildable massing">FAR</button>
       <button id="showEnvelopeBtn" class="pill pill--on" type="button" title="Show buildable footprint and setback area">Area</button>
     </div>
+
+    <aside id="typologyHud" class="typology-hud" hidden aria-live="polite">
+      <div class="typology-hud__head">
+        <span class="typology-hud__kicker">FAR Morphology</span>
+        <span id="typologyHudLabel" class="typology-hud__label">—</span>
+      </div>
+      <div class="typology-hud__meta">
+        <span id="typologyHudScore" class="typology-hud__score">Score —</span>
+      </div>
+      <div id="typologyHudBreakdown" class="typology-hud__grid"></div>
+    </aside>
 
     <!-- Floating map action buttons (bottom-right) -->
     <div class="map-fabs">
@@ -75,6 +100,13 @@
 
         <section class="sheet-panel" data-sheet-panel="controls" role="tabpanel" aria-labelledby="sheetTabControls">
           <div class="sheet-sliders">
+            <div class="sheet-step-head">01 LOT SELECTION</div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">Zoning</span>
+              <select id="controlsZoneOverrideSelect" class="sheet-select"></select>
+            </div>
+
+            <div class="sheet-step-head">02 ZONING RULES</div>
             <div class="sheet-slider-row">
               <span class="sheet-slider-label">FAR</span>
               <input id="farSlider" type="range" min="0.1" max="15" step="0.01" value="3" />
@@ -85,6 +117,8 @@
               <input id="osrSlider" type="range" min="0" max="40" step="0.1" value="0" />
               <span id="osrVal" class="sheet-slider-val">0.0%</span>
             </div>
+
+            <div class="sheet-step-head">03 ENVELOPE OUTPUT</div>
             <div class="sheet-slider-row">
               <span class="sheet-slider-label">Opacity</span>
               <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="55" />
@@ -95,6 +129,8 @@
               <input id="floorHeightBottomSlider" type="range" min="8" max="20" step="0.5" value="10" />
               <span id="floorHeightBottomVal" class="sheet-slider-val">10 ft</span>
             </div>
+
+            <div class="sheet-step-head">04 COMPARISON</div>
             <div class="sheet-slider-row">
               <span class="sheet-slider-label">Use</span>
               <select id="useType" class="sheet-select">
@@ -117,10 +153,6 @@
                 <option value="auto">Auto</option>
                 <option value="R6-2">R6^2</option>
               </select>
-            </div>
-            <div class="sheet-slider-row">
-              <span class="sheet-slider-label">Zoning</span>
-              <select id="controlsZoneOverrideSelect" class="sheet-select"></select>
             </div>
           </div>
 
@@ -168,6 +200,18 @@
       </div>
     </div>
 
+    <div class="process-strip" aria-label="Workflow">
+      <span class="process-step">ZR TEXT</span>
+      <span class="process-arrow">→</span>
+      <span class="process-step">STRUCTURED DATA</span>
+      <span class="process-arrow">→</span>
+      <span class="process-step">RULE LOGIC</span>
+      <span class="process-arrow">→</span>
+      <span class="process-step">GEOMETRY</span>
+      <span class="process-arrow">→</span>
+      <span class="process-step process-step--accent">VISUAL ENVELOPE</span>
+    </div>
+
     <!-- Hidden functional inputs preserved for JS compatibility -->
     <div class="hidden-controls" aria-hidden="true">
       <input id="coverage" type="range" min="20" max="100" step="1" value="80" />
@@ -196,6 +240,6 @@
         document.head.appendChild(s);
       }
     </script>
-    <script type="module" src="/app.js?v=20260507r"></script>
+    <script type="module" src="/app.js?v=20260507v"></script>
   </body>
 </html>
