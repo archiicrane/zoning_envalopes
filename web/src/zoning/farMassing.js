@@ -172,6 +172,22 @@ function _fallbackRectInsideBuildable(buildableGeom, orientationDeg = null) {
   return null;
 }
 
+function _guaranteedInBoundsFootprint(buildableGeom, orientationDeg = null) {
+  if (!buildableGeom || _areaFt2(buildableGeom) <= 1) return null;
+
+  const candidates = [0.72, 0.64, 0.56, 0.48, 0.4, 0.32];
+  for (const frac of candidates) {
+    const rect = _rectInsideBuildable(buildableGeom, frac, frac, "center", orientationDeg);
+    if (rect && _areaFt2(rect) > 20) return rect;
+  }
+
+  const fallbackRect = _fallbackRectInsideBuildable(buildableGeom, orientationDeg);
+  if (fallbackRect && _areaFt2(fallbackRect) > 20) return fallbackRect;
+
+  // Absolute fallback: use buildable geometry directly so FAR never disappears.
+  return buildableGeom;
+}
+
 function _intersection(aGeom, bGeom) {
   if (!aGeom || !bGeom) return null;
   try {
@@ -536,13 +552,7 @@ export function buildFarMassing({
 
   if (!primaryFootprint || _areaFt2(primaryFootprint) < 80) {
     warnings.push("FAR morphology fallback used due to constrained lot geometry.");
-    primaryFootprint = _rectInsideBuildable(
-      simplifiedBuildable,
-      0.7,
-      0.7,
-      "center",
-      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
-    ) || _fallbackRectInsideBuildable(
+    primaryFootprint = _guaranteedInBoundsFootprint(
       simplifiedBuildable,
       Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
     );
@@ -554,13 +564,7 @@ export function buildFarMassing({
   let primaryAreaFt2 = _areaFt2(primaryFootprint);
   if (primaryAreaFt2 <= 0) {
     warnings.push("No valid FAR footprint could be generated from typology; using compact box fallback footprint.");
-    primaryFootprint = _rectInsideBuildable(
-      simplifiedBuildable,
-      0.58,
-      0.58,
-      "center",
-      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
-    ) || _fallbackRectInsideBuildable(
+    primaryFootprint = _guaranteedInBoundsFootprint(
       simplifiedBuildable,
       Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
     );
@@ -663,13 +667,7 @@ export function buildFarMassing({
 
   // Last-resort guard: never return zero FAR features when buildable geometry exists.
   if (!rawFeatures.length && _areaFt2(simplifiedBuildable) > 1) {
-    const strictFallbackFootprint = _rectInsideBuildable(
-      simplifiedBuildable,
-      0.5,
-      0.5,
-      "center",
-      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
-    ) || _fallbackRectInsideBuildable(
+    const strictFallbackFootprint = _guaranteedInBoundsFootprint(
       simplifiedBuildable,
       Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
     );
@@ -688,13 +686,7 @@ export function buildFarMassing({
   // Keep output strictly in-bounds. If clipping fails, synthesize a compact in-bounds box.
   let finalFeatures = clippedFeatures;
   if (!finalFeatures.length && _areaFt2(simplifiedBuildable) > 1) {
-    const inBoundsFootprint = _rectInsideBuildable(
-      simplifiedBuildable,
-      0.45,
-      0.45,
-      "center",
-      Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
-    ) || _fallbackRectInsideBuildable(
+    const inBoundsFootprint = _guaranteedInBoundsFootprint(
       simplifiedBuildable,
       Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null
     );
