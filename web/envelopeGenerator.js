@@ -136,7 +136,6 @@ function makeEnvelopeFeature(geometry, envelopeBase, envelopeHeight, envelopeCol
   };
 }
 
-function resolveYardValueFt(name, value, warnings) {
 // Returns: number (including 0) for a valid rule, null for an absent rule.
 // 0 = district explicitly requires no setback (valid — do NOT warn).
 // null = rule is genuinely absent from the zoning data (callers should warn).
@@ -170,36 +169,35 @@ function resolveHeightValueFt(name, value, warnings) {
   return numeric;
 }
 
-function edgeRoleMapFromLotAnalysis(lotAnalysis) {
-  // Compute open space ratio compliance.
-  // openSpaceRatio is a percentage (e.g. 20 = 20% of residential floor area must remain open).
-  function computeOpenSpaceCheck(lotAreaFt2, controls, buildableFootprintFt2) {
-    const osr = coerceNumber(controls?.openSpaceRatio);
-    const far = coerceNumber(controls?.far);
-    if (osr == null || osr <= 0 || far == null || lotAreaFt2 == null) {
-      return { applicable: false };
-    }
-    const residentialFloorAreaFt2 = lotAreaFt2 * far;
-    const requiredOpenSpaceFt2 = residentialFloorAreaFt2 * (osr / 100);
-    const maxCoverageFt2 = Math.max(0, lotAreaFt2 - requiredOpenSpaceFt2);
-    const actualBuildableFt2 = buildableFootprintFt2 ?? 0;
-    const providedOpenSpaceFt2 = Math.max(0, lotAreaFt2 - actualBuildableFt2);
-    const pass = providedOpenSpaceFt2 >= requiredOpenSpaceFt2;
-    return {
-      applicable: true,
-      openSpaceRatio: osr,
-      far,
-      lotAreaFt2: Math.round(lotAreaFt2),
-      residentialFloorAreaFt2: Math.round(residentialFloorAreaFt2),
-      requiredOpenSpaceFt2: Math.round(requiredOpenSpaceFt2),
-      maxCoverageFt2: Math.round(maxCoverageFt2),
-      buildableFootprintFt2: Math.round(actualBuildableFt2),
-      providedOpenSpaceFt2: Math.round(providedOpenSpaceFt2),
-      pass,
-    };
+// Compute open space ratio compliance.
+// openSpaceRatio is a percentage (e.g. 20 = 20% of residential floor area must remain open).
+function computeOpenSpaceCheck(lotAreaFt2, controls, buildableFootprintFt2) {
+  const osr = coerceNumber(controls?.openSpaceRatio);
+  const far = coerceNumber(controls?.far);
+  if (osr == null || osr <= 0 || far == null || lotAreaFt2 == null) {
+    return { applicable: false };
   }
+  const residentialFloorAreaFt2 = lotAreaFt2 * far;
+  const requiredOpenSpaceFt2 = residentialFloorAreaFt2 * (osr / 100);
+  const maxCoverageFt2 = Math.max(0, lotAreaFt2 - requiredOpenSpaceFt2);
+  const actualBuildableFt2 = buildableFootprintFt2 ?? 0;
+  const providedOpenSpaceFt2 = Math.max(0, lotAreaFt2 - actualBuildableFt2);
+  const pass = providedOpenSpaceFt2 >= requiredOpenSpaceFt2;
+  return {
+    applicable: true,
+    openSpaceRatio: osr,
+    far,
+    lotAreaFt2: Math.round(lotAreaFt2),
+    residentialFloorAreaFt2: Math.round(residentialFloorAreaFt2),
+    requiredOpenSpaceFt2: Math.round(requiredOpenSpaceFt2),
+    maxCoverageFt2: Math.round(maxCoverageFt2),
+    buildableFootprintFt2: Math.round(actualBuildableFt2),
+    providedOpenSpaceFt2: Math.round(providedOpenSpaceFt2),
+    pass,
+  };
+}
 
-  function edgeRoleMapFromLotAnalysis(lotAnalysis) {
+function edgeRoleMapFromLotAnalysis(lotAnalysis) {
   const roles = new Map();
   const frontIndices = Array.isArray(lotAnalysis?.frontEdgeIndices) ? lotAnalysis.frontEdgeIndices : [];
   for (const idx of frontIndices) roles.set(idx, "front");
