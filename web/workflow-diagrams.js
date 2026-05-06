@@ -1,16 +1,25 @@
 ﻿(function () {
+  const HTML2CANVAS_LOCAL = "/vendor/html2canvas.min.js";
   const HTML2CANVAS_CDN = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
 
   async function ensureHtml2Canvas() {
     if (window.html2canvas) return window.html2canvas;
-    await new Promise((resolve, reject) => {
+
+    const loadScript = (src) => new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = HTML2CANVAS_CDN;
+      script.src = src;
       script.async = true;
       script.onload = resolve;
-      script.onerror = () => reject(new Error("Failed to load html2canvas"));
+      script.onerror = () => reject(new Error(`Failed to load html2canvas from ${src}`));
       document.head.appendChild(script);
     });
+
+    try {
+      await loadScript(HTML2CANVAS_LOCAL);
+    } catch (_err) {
+      await loadScript(HTML2CANVAS_CDN);
+    }
+
     return window.html2canvas;
   }
 
