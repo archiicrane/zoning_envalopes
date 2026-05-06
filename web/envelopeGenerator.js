@@ -12,15 +12,33 @@ function closeRing(ring) {
   return out;
 }
 
-function bufferInward(geometry, insetFt) {
+// Straight-line polygon inset using Sutherland-Hodgman half-plane clipping.
+// Does NOT use turf.buffer — that produces rounded/arc corners which are wrong
+// for zoning diagrams that require strict architectural straight lines.
+function uniformInsetGeometry(geometry, insetFt) {
   if (!geometry || !Number.isFinite(insetFt) || insetFt <= 0) return geometry;
-  try {
-    const buffered = turf.buffer({ type: "Feature", geometry, properties: {} }, -(insetFt * FT_TO_M), { units: "meters" });
-    if (buffered?.geometry?.coordinates?.length) return buffered.geometry;
-  } catch (_err) {
-    // fallback to original geometry
+  const polygon = largestPolygonGeometry(geometry);
+  if (!polygon) return geometry;
+  let ring = closeRing(polygon.coordinates?.[0] || []);
+  if (ring.length < 4) return geometry;
+  const isCcw = signedRingArea(ring) > 0;
+  const insetM = insetFt * FT_TO_M;
+  for (let i = 0; i < ring.length - 1; i += 1) {
+    const workRing = closeRing(ring);
+    const a = workRing[i];
+    const b = workRing[i + 1];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy);
+    if (len <= EPSILON) continue;
+    const nx = isCcw ? (-dy / len) : (dy / len);
+    const ny = isCcw ? (dx / len) : (-dx / len);
+    const lineA = [a[0] + nx * insetM, a[1] + ny * insetM];
+    const lineB = [b[0] + nx * insetM, b[1] + ny * insetM];
+    const clipped = clipRingByDirectedLine(ring, lineA, lineB, isCcw);
+    if (clipped.length >= 4) ring = clipped;
   }
-  return geometry;
+  return { type: "Polygon", coordinates: [closeRing(ring)] };
 }
 
 function largestPolygonGeometry(geometry) {
@@ -119,14 +137,17 @@ function makeEnvelopeFeature(geometry, envelopeBase, envelopeHeight, envelopeCol
 }
 
 function resolveYardValueFt(name, value, warnings) {
+// Returns: number (including 0) for a valid rule, null for an absent rule.
+// 0 = district explicitly requires no setback (valid — do NOT warn).
+// null = rule is genuinely absent from the zoning data (callers should warn).
+function resolveYardValueFt(name, value, warnings) {
   if (value === undefined || value === null) {
-    warnings.push(`Missing ${name} rule; defaulting to 0 ft.`);
-    return 0;
+    return null;   // absent rule — caller decides the warning
   }
   const numeric = coerceNumber(value);
   if (!Number.isFinite(numeric)) {
-    warnings.push(`Invalid ${name} rule '${value}'; defaulting to 0 ft.`);
-    return 0;
+    warnings.push(`Invalid ${name} rule '${value}'; treating as no setback.`);
+    return null;
   }
   if (numeric < 0) {
     warnings.push(`${name} rule is negative (${numeric} ft); clamping to 0 ft.`);
@@ -150,6 +171,35 @@ function resolveHeightValueFt(name, value, warnings) {
 }
 
 function edgeRoleMapFromLotAnalysis(lotAnalysis) {
+  // Compute open space ratio compliance.
+  // openSpaceRatio is a percentage (e.g. 20 = 20% of residential floor area must remain open).
+  function computeOpenSpaceCheck(lotAreaFt2, controls, buildableFootprintFt2) {
+    const osr = coerceNumber(controls?.openSpaceRatio);
+    const far = coerceNumber(controls?.far);
+    if (osr == null || osr <= 0 || far == null || lotAreaFt2 == null) {
+      return { applicable: false };
+    }
+    const residentialFloorAreaFt2 = lotAreaFt2 * far;
+    const requiredOpenSpaceFt2 = residentialFloorAreaFt2 * (osr / 100);
+    const maxCoverageFt2 = Math.max(0, lotAreaFt2 - requiredOpenSpaceFt2);
+    const actualBuildableFt2 = buildableFootprintFt2 ?? 0;
+    const providedOpenSpaceFt2 = Math.max(0, lotAreaFt2 - actualBuildableFt2);
+    const pass = providedOpenSpaceFt2 >= requiredOpenSpaceFt2;
+    return {
+      applicable: true,
+      openSpaceRatio: osr,
+      far,
+      lotAreaFt2: Math.round(lotAreaFt2),
+      residentialFloorAreaFt2: Math.round(residentialFloorAreaFt2),
+      requiredOpenSpaceFt2: Math.round(requiredOpenSpaceFt2),
+      maxCoverageFt2: Math.round(maxCoverageFt2),
+      buildableFootprintFt2: Math.round(actualBuildableFt2),
+      providedOpenSpaceFt2: Math.round(providedOpenSpaceFt2),
+      pass,
+    };
+  }
+
+  function edgeRoleMapFromLotAnalysis(lotAnalysis) {
   const roles = new Map();
   const frontIndices = Array.isArray(lotAnalysis?.frontEdgeIndices) ? lotAnalysis.frontEdgeIndices : [];
   for (const idx of frontIndices) roles.set(idx, "front");
@@ -166,12 +216,19 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
   const sideYardEachFt = resolveYardValueFt("side yard", controls?.sideYard, warnings);
   const rearYardFt = resolveYardValueFt("rear yard", controls?.rearYard, warnings);
 
+  // Distinguish missing rules (null) from explicit zero (no yard required)
+  if (frontYardFt === null) warnings.push("Front yard rule missing from zoning data; no front setback applied.");
+  if (rearYardFt === null) warnings.push("Rear yard rule missing from zoning data; no rear setback applied.");
+  const effectiveFrontYard = frontYardFt ?? 0;
+  const effectiveSideYard = sideYardEachFt ?? 0;
+  const effectiveRearYard = rearYardFt ?? 0;
+
   const polygon = largestPolygonGeometry(lotGeometry);
   if (!polygon) {
     warnings.push("Lot geometry missing polygon; using original geometry for envelope.");
     return {
       geometry: lotGeometry,
-      yards: { frontYardFt, sideYardEachFt, rearYardFt },
+      yards: { frontYardFt: effectiveFrontYard, sideYardEachFt: effectiveSideYard, rearYardFt: effectiveRearYard, frontYardMissing: frontYardFt === null, rearYardMissing: rearYardFt === null },
       edgeRoles: {},
     };
   }
@@ -181,7 +238,7 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
     warnings.push("Lot geometry ring invalid; using original geometry for envelope.");
     return {
       geometry: polygon,
-      yards: { frontYardFt, sideYardEachFt, rearYardFt },
+      yards: { frontYardFt: effectiveFrontYard, sideYardEachFt: effectiveSideYard, rearYardFt: effectiveRearYard, frontYardMissing: frontYardFt === null, rearYardMissing: rearYardFt === null },
       edgeRoles: {},
     };
   }
@@ -192,7 +249,7 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
     warnings.push("Missing lot edge classification; applying no directional yard offsets.");
     return {
       geometry: polygon,
-      yards: { frontYardFt, sideYardEachFt, rearYardFt },
+      yards: { frontYardFt: effectiveFrontYard, sideYardEachFt: effectiveSideYard, rearYardFt: effectiveRearYard, frontYardMissing: frontYardFt === null, rearYardMissing: rearYardFt === null },
       edgeRoles: {},
     };
   }
@@ -203,9 +260,9 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
     const role = roleMap.get(i) || "side";
     edgeRoles[i] = role;
     let insetFt = 0;
-    if (role === "front") insetFt = frontYardFt;
-    else if (role === "rear") insetFt = rearYardFt;
-    else insetFt = sideYardEachFt;
+    if (role === "front") insetFt = effectiveFrontYard;
+    else if (role === "rear") insetFt = effectiveRearYard;
+    else insetFt = effectiveSideYard;
     if (!Number.isFinite(insetFt) || insetFt <= 0) continue;
 
     const a = workingEdges[i];
@@ -234,7 +291,13 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
       type: "Polygon",
       coordinates: [closeRing(ring)],
     },
-    yards: { frontYardFt, sideYardEachFt, rearYardFt },
+    yards: {
+      frontYardFt: effectiveFrontYard,
+      sideYardEachFt: effectiveSideYard,
+      rearYardFt: effectiveRearYard,
+      frontYardMissing: frontYardFt === null,
+      rearYardMissing: rearYardFt === null,
+    },
     edgeRoles,
   };
 }
@@ -246,7 +309,7 @@ function generatePitchedEnvelope(baseGeometry, controls, envelopeColor, zoneCode
   const perimeterHeight = resolveHeightValueFt("perimeter wall height", controls.perimeterWallHeight, warnings) ?? Math.max(20, maxHeight - 10);
   const ridgeHeight = resolveHeightValueFt("ridge height", controls.ridgeHeight, warnings) ?? maxHeight;
 
-  const roofGeometry = bufferInward(baseGeometry, Math.max(2, controls.streetSetback / 2));
+  const roofGeometry = uniformInsetGeometry(baseGeometry, Math.max(2, controls.streetSetback / 2));
 
   return [
     makeEnvelopeFeature(baseGeometry, 0, perimeterHeight, envelopeColor, zoneCode, controls, "perimeter"),
@@ -269,7 +332,7 @@ function generateBaseAndSetbackEnvelope(baseGeometry, controls, envelopeColor, z
     ?? resolveHeightValueFt("maximum front wall height", controls.frontWallHeight, warnings)
     ?? Math.max(35, maxHeight - 20);
 
-  const upperGeometry = bufferInward(baseGeometry, controls.streetSetback || 0);
+  const upperGeometry = uniformInsetGeometry(baseGeometry, controls.streetSetback || 0);
 
   return [
     makeEnvelopeFeature(baseGeometry, 0, baseHeight, envelopeColor, zoneCode, controls, "base"),
@@ -294,7 +357,7 @@ function generateSkyExposureEnvelope(baseGeometry, controls, envelopeColor, zone
 
   // Simplified sky exposure plane proxy: additional inset for upper segment.
   const skyPlaneInset = Math.max(controls.streetSetback || 0, 8);
-  const upperGeometry = bufferInward(baseGeometry, skyPlaneInset);
+  const upperGeometry = uniformInsetGeometry(baseGeometry, skyPlaneInset);
   warnings.push("Envelope simplified: sky exposure plane rendered as stepped setback proxy.");
 
   return {
@@ -346,6 +409,21 @@ export function generateEnvelopeFromControls({ lotGeometry, controls, envelopeCo
     warnings.push("Envelope could not be generated: no usable height controls resolved from zoning rules.");
   }
 
+  // Compute buildable footprint area for open space ratio compliance check
+  let buildableFootprintFt2 = null;
+  try {
+    buildableFootprintFt2 = turf.area({ type: "Feature", geometry: baseGeometry, properties: {} }) * 10.7639;
+  } catch (_err) { /* ignore */ }
+
+  const openSpaceCheck = computeOpenSpaceCheck(lotAnalysis?.lotAreaFt2, controls, buildableFootprintFt2);
+  if (openSpaceCheck.applicable && !openSpaceCheck.pass) {
+    warnings.push(
+      `Open space ratio violation: required ${openSpaceCheck.requiredOpenSpaceFt2} sf open space, ` +
+      `provided ${openSpaceCheck.providedOpenSpaceFt2} sf. ` +
+      `Reduce buildable footprint to ≤ ${openSpaceCheck.maxCoverageFt2} sf.`
+    );
+  }
+
   return {
     envelopeFeatures: features,
     buildableFootprintFeature: {
@@ -357,16 +435,23 @@ export function generateEnvelopeFromControls({ lotGeometry, controls, envelopeCo
       },
     },
     warnings,
+    openSpaceCheck,
     debug: {
       zoneCode,
       bulkRegime: regime,
       lotType: lotAnalysis?.lotType || controls?.lotType || null,
-      streetEdges: Array.isArray(lotAnalysis?.frontEdgeIndices)
-        ? lotAnalysis.frontEdgeIndices
-        : [],
+      isIslandLot: lotAnalysis?.isIslandLot || false,
+      streetEdgesCount: lotAnalysis?.frontEdgeIndices?.length ?? 0,
+      frontEdgeIndices: Array.isArray(lotAnalysis?.frontEdgeIndices) ? lotAnalysis.frontEdgeIndices : [],
+      sideEdgeIndices: Array.isArray(lotAnalysis?.sideEdgeIndices) ? lotAnalysis.sideEdgeIndices : [],
+      rearEdgeIndex: lotAnalysis?.rearEdgeIndex ?? null,
       frontYardFt: directional.yards.frontYardFt,
+      frontYardMissing: directional.yards.frontYardMissing || false,
       sideYardEachFt: directional.yards.sideYardEachFt,
       rearYardFt: directional.yards.rearYardFt,
+      rearYardMissing: directional.yards.rearYardMissing || false,
+      openSpaceRatio: controls?.openSpaceRatio ?? null,
+      openSpaceCheck,
       maximumBuildingHeightFt: maxBuildingHeight,
       maximumFrontWallHeightFt: frontWallHeight,
       maximumBaseHeightFt: maxBaseHeight,

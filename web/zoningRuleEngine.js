@@ -408,8 +408,10 @@ export function getSideYardRequirement(zoneRule, lotAnalysis) {
 }
 
 export function getRearYardRequirement(zoneRule, lotAnalysis) {
-  if (lotAnalysis?.isThroughLot) return 0;
-  return coerceNumber(zoneRule?.rearYardFt) ?? 0;
+  // Through lots and island lots have no rear yard requirement
+  if (lotAnalysis?.isThroughLot || lotAnalysis?.isIslandLot) return 0;
+  // Return null when the rule is absent — callers distinguish null (missing) from 0 (explicit)
+  return coerceNumber(zoneRule?.rearYardFt) ?? null;
 }
 
 export function getApplicableControls(lotAnalysis, zoneRule) {
@@ -443,6 +445,7 @@ export function getApplicableControls(lotAnalysis, zoneRule) {
     sourceSections: Array.isArray(zoneRule?.sourceSections) ? zoneRule.sourceSections : [],
     far,
     frontYard: coerceNumber(zoneRule?.frontYardFt) ?? 0,
+      frontYard: coerceNumber(zoneRule?.frontYardFt) ?? null,
     sideYard: sideYardReq.eachFt,
     sideYardSidesRequired: sideYardReq.sidesRequired,
     totalSideYardRequiredFt: sideYardReq.totalFt,

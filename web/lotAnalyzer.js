@@ -148,31 +148,46 @@ function classifyLotEdges(edges, roads, neighborLines) {
 
   edgesByRoadDistance.sort((a, b) => a.minRoadDistM - b.minRoadDistM);
 
+  // Classify every edge as street-facing (FRONT) if its midpoint is within the road's
+  // effective right-of-way.  Threshold = half the road width + ~18 ft for sidewalk/buffer.
+  // We always include at least the closest edge; then include any other edge that passes.
   const frontEdgeIndices = [];
-  const primaryFront = edgesByRoadDistance[0] || edges[0] || null;
-  if (primaryFront) frontEdgeIndices.push(primaryFront.idx);
 
   for (const edge of edgesByRoadDistance) {
-    if (frontEdgeIndices.includes(edge.idx)) continue;
-    const thresholdFt = Math.max(35, (edge.streetWidthFt / 2) + 18);
+    // Threshold: half road width + 18 ft sidewalk allowance, minimum 30 ft
+    const thresholdFt = Math.max(30, (edge.streetWidthFt / 2) + 18);
     if (Number.isFinite(edge.minRoadDistM) && edge.minRoadDistM <= thresholdFt * FT_TO_M) {
       frontEdgeIndices.push(edge.idx);
     }
   }
 
+  // Always have at least one front edge (the closest road edge)
+  if (!frontEdgeIndices.length) {
+    const primaryFront = edgesByRoadDistance[0] || edges[0] || null;
+    if (primaryFront) frontEdgeIndices.push(primaryFront.idx);
+  }
+
   const all = edges.map((e) => e.idx);
+  const nonFront = all.filter((idx) => !frontEdgeIndices.includes(idx));
+
+  // Determine lot type from how many and which edges are street-facing
   let lotType = "Interior";
-  if (frontEdgeIndices.length > 1) {
+  if (frontEdgeIndices.length >= all.length) {
+    lotType = "Island";                          // all edges face streets
+  } else if (frontEdgeIndices.length > 1) {
     const sorted = [...frontEdgeIndices].sort((a, b) => a - b);
     const first = sorted[0];
     const second = sorted[1];
-    const adjacent = Math.abs(first - second) === 1 || Math.abs(first - second) === edges.length - 1;
+    const adjacent =
+      Math.abs(first - second) === 1 ||
+      Math.abs(first - second) === edges.length - 1;
     lotType = adjacent ? "Corner" : "Through";
   }
 
-  // Rear edge: farthest from primary front midpoint among non-front edges
+  // Rear edge: among non-front edges, the one whose midpoint is farthest from
+  // the primary front edge midpoint (only for non-island, non-through lots).
   let rearEdgeIndex = null;
-  if (lotType !== "Through") {
+  if (lotType !== "Through" && lotType !== "Island") {
     const frontEdge = edges.find((e) => e.idx === (primaryFront?.idx ?? frontEdgeIndices[0] ?? 0)) || edges[0];
     let bestDist = -1;
     for (const edge of edges) {
@@ -185,7 +200,7 @@ function classifyLotEdges(edges, roads, neighborLines) {
     }
   }
 
-  const sideEdgeIndices = all.filter((idx) => !frontEdgeIndices.includes(idx) && idx !== rearEdgeIndex);
+  const sideEdgeIndices = nonFront.filter((idx) => idx !== rearEdgeIndex);
   const frontStreetNames = frontEdgeIndices
     .map((idx) => edges.find((e) => e.idx === idx)?.nearestRoadName)
     .filter(Boolean);
@@ -201,7 +216,8 @@ function classifyLotEdges(edges, roads, neighborLines) {
     sideEdgeIndices,
     lotType,
     isCornerLot: lotType === "Corner",
-    isThroughLot: lotType === "Through",
+    isThroughLot: lotType === "Through" || lotType === "Island",
+    isIslandLot: lotType === "Island",
     frontStreetNames,
     primaryStreetWidthFt: primaryStreetWidth,
   };
@@ -267,6 +283,7 @@ export function analyzeLot({ lotFeature, lotRing, map, neighborhoodFeatures = []
     lotType: edgeClass.lotType,
     isCornerLot: edgeClass.isCornerLot,
     isThroughLot: edgeClass.isThroughLot,
+      isIslandLot: edgeClass.isIslandLot || false,
     primaryStreet: {
       name: adjacentStreets[0] || "Unknown road",
       widthFt: edgeClass.primaryStreetWidthFt,
