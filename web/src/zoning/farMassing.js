@@ -101,6 +101,16 @@ function _centroidCoord(geometry) {
   }
 }
 
+function _interiorPointCoord(geometry) {
+  if (!geometry) return null;
+  try {
+    const point = turf.pointOnFeature(_asFeature(geometry));
+    return point?.geometry?.coordinates || _centroidCoord(geometry);
+  } catch (_err) {
+    return _centroidCoord(geometry);
+  }
+}
+
 function _rotateGeometry(geometry, angleDeg, pivot) {
   if (!geometry || !Number.isFinite(angleDeg) || Math.abs(angleDeg) < 1e-6) return geometry;
   try {
@@ -172,6 +182,29 @@ function _fallbackRectInsideBuildable(buildableGeom, orientationDeg = null) {
   return null;
 }
 
+function _squareAtCenter(center, sideM) {
+  if (!Array.isArray(center) || center.length < 2 || !(sideM > 0)) return null;
+  const half = sideM / 2;
+  return _rectGeometry(center[0] - half, center[1] - half, center[0] + half, center[1] + half);
+}
+
+function _fallbackSquareInsideBuildable(buildableGeom) {
+  if (!buildableGeom) return null;
+  const center = _interiorPointCoord(buildableGeom);
+  if (!center) return null;
+
+  const box = _bboxMetrics(buildableGeom);
+  const minDimM = Math.max(2 * FT_TO_M, Math.min(box.maxX - box.minX, box.maxY - box.minY));
+  const sideFactors = [0.7, 0.58, 0.48, 0.38, 0.3, 0.22, 0.16, 0.12, 0.08, 0.05, 0.03, 0.02];
+
+  for (const factor of sideFactors) {
+    const square = _squareAtCenter(center, minDimM * factor);
+    if (square && _isWithin(square, buildableGeom) && _areaFt2(square) > 20) return square;
+  }
+
+  return null;
+}
+
 function _guaranteedInBoundsFootprint(buildableGeom, orientationDeg = null) {
   if (!buildableGeom || _areaFt2(buildableGeom) <= 1) return null;
 
@@ -184,8 +217,8 @@ function _guaranteedInBoundsFootprint(buildableGeom, orientationDeg = null) {
   const fallbackRect = _fallbackRectInsideBuildable(buildableGeom, orientationDeg);
   if (fallbackRect && _areaFt2(fallbackRect) > 20) return fallbackRect;
 
-  // Absolute fallback: use buildable geometry directly so FAR never disappears.
-  return buildableGeom;
+  // Absolute fallback: tiny square centered on an interior point.
+  return _fallbackSquareInsideBuildable(buildableGeom);
 }
 
 function _intersection(aGeom, bGeom) {
