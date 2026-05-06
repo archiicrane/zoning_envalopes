@@ -466,7 +466,7 @@ _syncRuleSelectionFromUi();
 coverageInput.addEventListener("input", () => {
   covVal.textContent = `${coverageInput.value}%`;
   if (activeLotPolygon && activeLotData) {
-    _rebuildFarEnvelope();
+    _ensureFarVisibleAndRebuild();
   }
 });
 
@@ -489,7 +489,7 @@ if (floorHeightBottomSlider) {
     if (analysisPanelOpen) {
       updateStudySheetGeometry();
     } else if (activeLotPolygon && activeLotData) {
-      _rebuildFarEnvelope();
+      _ensureFarVisibleAndRebuild();
     }
   });
 }
@@ -518,7 +518,7 @@ if (ruleVariantSelect) {
 farInput.addEventListener("input", () => {
   farVal.textContent = Number(farInput.value).toFixed(2);
   if (activeLotPolygon && activeLotData) {
-    _rebuildFarEnvelope();
+    _ensureFarVisibleAndRebuild();
   }
 });
 
@@ -526,7 +526,7 @@ if (osrSlider) {
   osrSlider.addEventListener("input", () => {
     if (osrVal) osrVal.textContent = `${formatNumber(osrSlider.value, 1)}%`;
     if (activeLotPolygon && activeLotData) {
-      _rebuildFarEnvelope();
+      _ensureFarVisibleAndRebuild();
     }
   });
 }
@@ -5222,6 +5222,15 @@ function _rebuildFarEnvelope() {
     return;
   }
   buildFarEnvelopeForSelectedLot();
+}
+
+function _ensureFarVisibleAndRebuild() {
+  showFarEnvelope = true;
+  if (toggleFarEnvelopeBtn) {
+    toggleFarEnvelopeBtn.classList.add("pill--on", "active");
+  }
+  _rebuildFarEnvelope();
+  syncLayerVisibility();
 }
 
 function _computeFrontageOrientationDeg(lotAnalysis) {
