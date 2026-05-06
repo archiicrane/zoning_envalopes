@@ -108,6 +108,7 @@ let diagramMode = false;
 let presentationMode = false;
 // Multi-lot selection state
 let multiSelectedLots = [];       // array of lot GeoJSON features
+let multiSelectMode = false;
 let showMaxEnvelope = true;        // toggle: MAX zoning envelope (blue)
 let showFarEnvelope = true;        // toggle: FAR buildable envelope (green)
 let analysisPanelOpen = false;     // whether the analysis modal is open
@@ -174,6 +175,7 @@ const quickExportDiagramBtn = document.getElementById("quickExportDiagramBtn");
 const quickExportReportBtn = document.getElementById("quickExportReportBtn");
 const chooseLotBtn = document.getElementById("chooseLotBtn");
 const focusModeBtn = document.getElementById("focusModeBtn");
+const toggleMultiSelectBtn = document.getElementById("toggleMultiSelectBtn");
 const compactFullAnalysisBtn = document.getElementById("compactFullAnalysisBtn");
 const controlsPanelTabBtn = document.getElementById("controlsPanelTabBtn");
 const infoPanelTabBtn = document.getElementById("infoPanelTabBtn");
@@ -4443,14 +4445,21 @@ async function handleMapClick(ev) {
   }
 
   const isShiftClick = ev.originalEvent && ev.originalEvent.shiftKey;
+  const isMultiPick = isShiftClick || multiSelectMode;
 
-  if (isShiftClick) {
-    // Shift+click: add/remove from multi-selection
+  if (isMultiPick) {
+    // Multi-pick mode: add/remove clicked lot from multi-selection set.
     const feature = features[0];
-    const bbl = feature?.properties?.bbl || feature?.properties?.BBL || "";
-    const existingIdx = multiSelectedLots.findIndex(
-      (f) => (f?.properties?.bbl || f?.properties?.BBL || "") === bbl && bbl !== ""
-    );
+    const keyOf = (f) => {
+      const p = f?.properties || {};
+      return String(
+        p.bbl
+        || p.BBL
+        || `${p.borough || p.Borough || ""}-${p.block || p.Block || ""}-${p.lot || p.Lot || ""}`
+      );
+    };
+    const featureKey = keyOf(feature);
+    const existingIdx = multiSelectedLots.findIndex((f) => keyOf(f) === featureKey && featureKey !== "");
     if (existingIdx >= 0) {
       multiSelectedLots.splice(existingIdx, 1);
     } else {
@@ -4462,6 +4471,9 @@ async function handleMapClick(ev) {
   }
 
   try {
+    if (multiSelectedLots.length) {
+      _clearMultiSelection();
+    }
     selectLotFeature(features[0]);
   } catch (err) {
     setReport(String(err));
@@ -4493,6 +4505,10 @@ function _updateSelectionButtonStates() {
   }
   if (clearSelectionBtn) {
     clearSelectionBtn.disabled = !hasMulti;
+  }
+  if (toggleMultiSelectBtn) {
+    toggleMultiSelectBtn.classList.toggle("active", multiSelectMode);
+    toggleMultiSelectBtn.setAttribute("aria-pressed", multiSelectMode ? "true" : "false");
   }
   document.body.classList.toggle("has-lot", hasLot);
   // Open sheet on first selection
@@ -6913,6 +6929,16 @@ if (analyzeSelectionBtn) {
 if (clearSelectionBtn) {
   clearSelectionBtn.addEventListener("click", () => {
     _clearMultiSelection();
+  });
+}
+
+if (toggleMultiSelectBtn) {
+  toggleMultiSelectBtn.addEventListener("click", () => {
+    multiSelectMode = !multiSelectMode;
+    _updateSelectionButtonStates();
+    setReport(multiSelectMode
+      ? "Multi-select mode enabled. Click lots to add/remove; use Analyze for batch analysis."
+      : "Single-select mode enabled. Click a lot to inspect one lot.");
   });
 }
 
