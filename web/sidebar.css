@@ -1,9 +1,9 @@
 .bottom-ui {
   position: fixed;
-  top: var(--toolbar-h);
+  top: var(--toolbar-current-h, var(--toolbar-h));
   left: 0;
   width: var(--left-sidebar-w);
-  height: calc(100vh - var(--toolbar-h));
+  height: calc(100vh - var(--toolbar-current-h, var(--toolbar-h)));
   overflow: auto;
   z-index: var(--z-sidebar);
   display: flex;
@@ -22,10 +22,10 @@ body.controls-open .bottom-ui {
 
 .info-card {
   position: fixed;
-  top: var(--toolbar-h);
+  top: var(--toolbar-current-h, var(--toolbar-h));
   right: 0;
   width: var(--right-panel-w);
-  height: calc(100vh - var(--toolbar-h));
+  height: calc(100vh - var(--toolbar-current-h, var(--toolbar-h)));
   overflow: auto;
   z-index: var(--z-sidebar);
   padding: var(--space-4);
@@ -44,6 +44,22 @@ body.info-open .info-card {
   border-radius: 12px;
   background: #ffffff;
   padding: var(--space-3);
+}
+
+.panel-help {
+  font-size: 12px;
+  color: #5f6975;
+  line-height: 1.45;
+  margin-bottom: var(--space-2);
+}
+
+.panel-help-list {
+  margin-top: var(--space-2);
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #4f5a68;
+  line-height: 1.4;
 }
 
 .panel-section__title {
@@ -118,8 +134,8 @@ body.info-open .info-card {
 }
 
 .panel-accordion summary::-webkit-details-marker { display: none; }
-.panel-accordion summary::after { content: "?"; float: right; color: #7a8491; }
-.panel-accordion[open] summary::after { content: "?"; }
+.panel-accordion summary::after { content: "▾"; float: right; color: #7a8491; }
+.panel-accordion[open] summary::after { content: "▴"; }
 
 .lookup-grid {
   display: grid;
@@ -233,6 +249,46 @@ body.info-open .info-card {
   color: #6b7280;
 }
 
+.map-guide-card {
+  position: fixed;
+  top: calc(var(--toolbar-current-h, var(--toolbar-h)) + var(--space-5));
+  left: max(18px, calc(var(--left-docked) + var(--space-4)));
+  z-index: var(--z-map-overlay);
+  width: min(430px, calc(100vw - var(--left-docked) - var(--right-docked) - (var(--space-5) * 2)));
+  border: 1px solid #d9dee6;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 14px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+}
+
+.map-guide-card__title {
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  color: #243140;
+}
+
+.map-guide-card__text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #4f5a68;
+  margin-bottom: 10px;
+}
+
+.map-guide-card__steps {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #2f3a49;
+  font-weight: 600;
+}
+
+body.has-lot .map-guide-card,
+body.focus-mode .map-guide-card {
+  display: none;
+}
+
 .map-legend__swatch {
   width: 12px;
   height: 12px;
@@ -248,7 +304,7 @@ body.presentation-mode #map { filter: saturate(0.08) contrast(1.15) brightness(1
 
 .panel-tab {
   position: fixed;
-  top: calc(var(--toolbar-h) + var(--space-4));
+  top: calc(var(--toolbar-current-h, var(--toolbar-h)) + var(--space-4));
   z-index: var(--z-sidebar);
   writing-mode: vertical-rl;
   transform: rotate(180deg);
@@ -325,4 +381,13 @@ body.focus-mode .panel-section--legend {
 
   .panel-tab--left { left: 8px; }
   .panel-tab--right { right: 8px; }
+
+  .map-guide-card {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    top: calc(var(--toolbar-current-h, var(--toolbar-h)) + 10px);
+    max-height: 34vh;
+    overflow: auto;
+  }
 }

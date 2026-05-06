@@ -7,12 +7,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260506c" />
+    <link rel="stylesheet" href="/styles.css?v=20260506d" />
   </head>
   <body>
     <div class="app-shell">
       <header class="top-ui">
-        <div class="title-row">NYC Zoning Envelope Explorer</div>
+        <div class="title-wrap">
+          <div class="title-row">NYC Zoning Envelope Explorer</div>
+          <div class="title-subtitle">Select a NYC lot to see how zoning rules become a 3D buildable envelope.</div>
+        </div>
         <select id="neighborhoodSelect">
           <option value="">Loading neighborhoods...</option>
         </select>
@@ -21,19 +24,22 @@
             <div class="toolbar-layers">
               <button id="layersMenuBtn" type="button" class="bar-btn bar-btn--secondary toolbar-layers__trigger" aria-haspopup="true" aria-expanded="false">Layers</button>
               <div id="layersMenu" class="toolbar-layers__menu" hidden>
-                <button id="showBuildingsBtn" type="button" class="bar-btn active">Existing Buildings</button>
-                <button id="showEnvelopeBtn" type="button" class="bar-btn active">Zoning Envelope</button>
-                <button id="toggleMaxEnvelopeBtn" type="button" class="bar-btn active bar-btn--max-env" title="Toggle Max Zoning Envelope (blue)">Max Envelope</button>
-                <button id="toggleFarEnvelopeBtn" type="button" class="bar-btn active bar-btn--far-env" title="Toggle FAR Buildable Envelope (green)">FAR Envelope</button>
+                <button id="showBuildingsBtn" type="button" class="bar-btn active">Existing Building</button>
+                <button id="showEnvelopeBtn" type="button" class="bar-btn active">Neighborhood Envelope</button>
+                <button id="toggleMaxEnvelopeBtn" type="button" class="bar-btn active bar-btn--max-env" title="Toggle max buildable envelope (blue)">Maximum Buildable Shape</button>
+                <button id="toggleFarEnvelopeBtn" type="button" class="bar-btn active bar-btn--far-env" title="Toggle FAR-based buildable envelope (green)">Allowed Floor Area Shape</button>
               </div>
             </div>
-            <button id="analyzeSelectionBtn" type="button" class="bar-btn bar-btn--analyze" disabled title="Click a lot or shift+click multiple lots, then analyze">Analyze Selection</button>
+            <button id="chooseLotBtn" type="button" class="bar-btn bar-btn--analyze">Choose a Lot</button>
+            <button id="analyzeSelectionBtn" type="button" class="bar-btn bar-btn--secondary" disabled title="Click a lot or shift+click multiple lots, then analyze">Analyze Selection</button>
             <button id="focusModeBtn" type="button" class="bar-btn bar-btn--secondary" title="Focus on map and selected envelope">Focus Mode</button>
           </div>
           <div class="toolbar-more">
             <button id="toolbarMoreBtn" type="button" class="bar-btn bar-btn--secondary toolbar-more__trigger" aria-haspopup="true" aria-expanded="false">More</button>
             <div id="toolbarMoreMenu" class="toolbar-more__menu" hidden>
               <button id="openStudySheetBtn" type="button" class="bar-btn">Study Sheet</button>
+              <button id="quickExportDiagramBtn" type="button" class="bar-btn">Export Diagram PNG</button>
+              <button id="quickExportReportBtn" type="button" class="bar-btn">Export Report</button>
               <button id="clearSelectionBtn" type="button" class="bar-btn bar-btn--secondary" disabled title="Clear multi-lot selection">Clear Selection</button>
               <button id="diagramModeBtn" type="button" class="bar-btn bar-btn--diagram">Diagram Mode</button>
               <button id="presentationModeBtn" type="button" class="bar-btn bar-btn--presentation">Presentation</button>
@@ -45,6 +51,16 @@
 
       <main class="map-wrap">
         <div id="map"></div>
+        <div id="mapGuideCard" class="map-guide-card">
+          <div class="map-guide-card__title">Start here</div>
+          <div class="map-guide-card__text">Start by selecting a lot on the map. The tool will translate zoning text into a visual 3D envelope.</div>
+          <div class="map-guide-card__steps">
+            <div>Step 1: Select a lot</div>
+            <div>Step 2: Review zoning information</div>
+            <div>Step 3: Adjust assumptions</div>
+            <div>Step 4: Compare existing building vs maximum buildable shape</div>
+          </div>
+        </div>
 
         <!-- Analysis Modal (centered architectural sheet) -->
         <div class="analysis-modal-overlay" id="analysisModalOverlay" aria-hidden="true">
@@ -69,19 +85,20 @@
       </main>
 
       <button id="controlsPanelTabBtn" class="panel-tab panel-tab--left" type="button" aria-expanded="false">Controls</button>
-      <button id="infoPanelTabBtn" class="panel-tab panel-tab--right" type="button" aria-expanded="false" hidden>Lot Info</button>
+      <button id="infoPanelTabBtn" class="panel-tab panel-tab--right" type="button" aria-expanded="false">Choose Lot</button>
 
       <section class="bottom-ui">
         <section class="panel-section">
           <div class="panel-section__title">Envelope Controls</div>
+          <div class="panel-help">These settings change your test scenario. FAR is allowed floor area relative to lot area.</div>
           <div class="control-row">
-            <label for="farSlider">Density (Floor Area Ratio)</label>
+            <label for="farSlider">Allowed floor area (FAR)</label>
             <input id="farSlider" type="range" min="0.1" max="15" step="0.01" value="3" />
             <span id="farVal" class="value-pill">3.00</span>
           </div>
 
           <div class="control-row">
-            <label for="envelopeOpacitySlider">Envelope Transparency</label>
+            <label for="envelopeOpacitySlider">Maximum buildable shape transparency</label>
             <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="75" />
             <span id="envelopeOpacityVal" class="value-pill">75%</span>
           </div>
@@ -95,10 +112,20 @@
           </div>
 
           <div class="control-row">
-            <label for="floorHeightBottomSlider">Floor Height</label>
+            <label for="floorHeightBottomSlider">Typical floor height</label>
             <input id="floorHeightBottomSlider" type="range" min="8" max="20" step="0.5" value="10" title="Floor height in feet" />
             <span id="floorHeightBottomVal" class="value-pill">10 ft</span>
           </div>
+
+          <details class="panel-accordion">
+            <summary>What do these terms mean?</summary>
+            <div class="panel-help-list">
+              <div><strong>FAR:</strong> Allowed floor area compared to lot size.</div>
+              <div><strong>Setbacks:</strong> Required distance from lot edges before building can start.</div>
+              <div><strong>Height:</strong> Maximum allowed building height.</div>
+              <div><strong>Lot coverage:</strong> How much of the lot footprint can be occupied.</div>
+            </div>
+          </details>
         </section>
 
         <section class="panel-section panel-section--legend">
@@ -108,19 +135,19 @@
             <div class="map-legend" id="mapLegend">
               <div class="map-legend__item">
                 <span class="map-legend__swatch map-legend__swatch--building"></span>
-                <span>Existing building</span>
+                <span>Gray hatch = existing building</span>
               </div>
               <div class="map-legend__item">
                 <span class="map-legend__swatch" style="background:rgba(59,130,246,0.18);border:1.5px solid #1d4ed8;"></span>
-                <span>Max zoning envelope</span>
+                <span>Outlined volume = maximum buildable shape</span>
               </div>
               <div class="map-legend__item">
                 <span class="map-legend__swatch" style="background:rgba(34,197,94,0.35);border:1.5px solid #15803d;"></span>
-                <span>FAR buildable envelope</span>
+                <span>Green volume = FAR-based buildable shape</span>
               </div>
               <div class="map-legend__item">
                 <span class="map-legend__swatch" style="background:rgba(59,130,246,0.18);border:1.5px solid #1E5AA8;"></span>
-                <span>Neighborhood envelope</span>
+                <span>Blue ghost = neighborhood context</span>
               </div>
               <div class="map-legend__item">
                 <span class="map-legend__swatch map-legend__swatch--selected"></span>
@@ -131,6 +158,7 @@
                 <span>Multi-selected lots</span>
               </div>
               <div class="map-legend__hint">Shift+click to multi-select lots</div>
+              <div class="map-legend__hint">Dimension lines = zoning limits; road-facing edge marks lot frontage.</div>
             </div>
           </details>
         </section>
@@ -138,9 +166,9 @@
 
       <aside class="info-card">
         <section class="panel-section">
-          <div class="panel-section__title">Find Lot</div>
+          <div class="panel-section__title">Choose a Lot</div>
           <details class="panel-accordion" id="findLotAccordion">
-            <summary>Find Lot</summary>
+            <summary>Search by Borough, Block, Lot (BBL)</summary>
             <div class="lookup-grid">
               <select id="borough">
                 <option value="1">Manhattan</option>
@@ -158,6 +186,7 @@
         </section>
         <section class="panel-section">
           <div class="panel-section__title">Lot Summary</div>
+          <div class="panel-help">Review key values first. Open details only when needed.</div>
           <button id="compactFullAnalysisBtn" type="button" class="small-btn small-btn--analysis">Full Analysis</button>
           <div id="lotSummary" class="lot-summary empty">Choose a neighborhood and click a lot.</div>
           <pre id="report"></pre>
@@ -185,6 +214,6 @@
         document.head.appendChild(s);
       }
     </script>
-    <script type="module" src="/app.js?v=20260506c"></script>
+    <script type="module" src="/app.js?v=20260506d"></script>
   </body>
 </html>

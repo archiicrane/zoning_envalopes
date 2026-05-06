@@ -121,6 +121,9 @@ const layersMenu = document.getElementById("layersMenu");
 const toolbarMoreBtn = document.getElementById("toolbarMoreBtn");
 const toolbarMoreMenu = document.getElementById("toolbarMoreMenu");
 const openStudySheetBtn = document.getElementById("openStudySheetBtn");
+const quickExportDiagramBtn = document.getElementById("quickExportDiagramBtn");
+const quickExportReportBtn = document.getElementById("quickExportReportBtn");
+const chooseLotBtn = document.getElementById("chooseLotBtn");
 const focusModeBtn = document.getElementById("focusModeBtn");
 const compactFullAnalysisBtn = document.getElementById("compactFullAnalysisBtn");
 const controlsPanelTabBtn = document.getElementById("controlsPanelTabBtn");
@@ -130,6 +133,16 @@ const closePanelBtn = document.getElementById("closePanelBtn");
 const exportDiagramBtn = document.getElementById("exportDiagramBtn");
 const exportReportBtn = document.getElementById("exportReportBtn");
 const openFullAnalysisBtn = document.getElementById("openFullAnalysisBtn");
+
+function syncToolbarHeightVar() {
+  const topUi = document.querySelector(".top-ui");
+  const fallback = 72;
+  const measured = topUi ? Math.max(topUi.offsetHeight, fallback) : fallback;
+  document.documentElement.style.setProperty("--toolbar-current-h", `${measured}px`);
+}
+
+window.addEventListener("resize", syncToolbarHeightVar);
+window.addEventListener("load", syncToolbarHeightVar);
 
 coverageInput.addEventListener("input", () => {
   covVal.textContent = `${coverageInput.value}%`;
@@ -242,6 +255,14 @@ function _setInfoPanelOpen(open) {
   if (infoPanelTabBtn) infoPanelTabBtn.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
+if (chooseLotBtn) {
+  chooseLotBtn.addEventListener("click", () => {
+    _setInfoPanelOpen(true);
+    const findLotAccordion = document.getElementById("findLotAccordion");
+    if (findLotAccordion) findLotAccordion.open = true;
+  });
+}
+
 if (controlsPanelTabBtn) {
   controlsPanelTabBtn.addEventListener("click", () => {
     _setControlsPanelOpen(!document.body.classList.contains("controls-open"));
@@ -310,6 +331,44 @@ if (openStudySheetBtn) {
   });
 }
 
+if (quickExportDiagramBtn) {
+  quickExportDiagramBtn.addEventListener("click", () => {
+    const lots = (multiSelectedLots && multiSelectedLots.length)
+      ? multiSelectedLots
+      : (_makeAnalysisFeatureFromActive() ? [_makeAnalysisFeatureFromActive()] : []);
+    if (!lots.length) return;
+    if (!analysisPanelOpen) {
+      openAnalysisPanel(lots);
+    }
+    if (toolbarMoreMenu) {
+      toolbarMoreMenu.hidden = true;
+      if (toolbarMoreBtn) toolbarMoreBtn.setAttribute("aria-expanded", "false");
+    }
+    window.setTimeout(() => {
+      if (exportDiagramBtn) exportDiagramBtn.click();
+    }, 120);
+  });
+}
+
+if (quickExportReportBtn) {
+  quickExportReportBtn.addEventListener("click", () => {
+    const lots = (multiSelectedLots && multiSelectedLots.length)
+      ? multiSelectedLots
+      : (_makeAnalysisFeatureFromActive() ? [_makeAnalysisFeatureFromActive()] : []);
+    if (!lots.length) return;
+    if (!analysisPanelOpen) {
+      openAnalysisPanel(lots);
+    }
+    if (toolbarMoreMenu) {
+      toolbarMoreMenu.hidden = true;
+      if (toolbarMoreBtn) toolbarMoreBtn.setAttribute("aria-expanded", "false");
+    }
+    window.setTimeout(() => {
+      if (exportReportBtn) exportReportBtn.click();
+    }, 120);
+  });
+}
+
 if (compactFullAnalysisBtn) {
   compactFullAnalysisBtn.addEventListener("click", () => {
     const lots = (multiSelectedLots && multiSelectedLots.length)
@@ -321,6 +380,8 @@ if (compactFullAnalysisBtn) {
 
 _setControlsPanelOpen(false);
 _setInfoPanelOpen(false);
+document.body.classList.remove("has-lot");
+syncToolbarHeightVar();
 
 // Diagram mode: desaturates basemap via CSS + lightens buildings for a clean arch diagram look
 function applyDiagramMode() {
@@ -2090,13 +2151,15 @@ function updateLotSummary(data, envelopeResults) {
 
   lotSummary.className = "lot-summary";
   lotSummary.innerHTML = `
+    <div class="summary-row"><span>Overview</span><strong>${activeOriginalZone || "n/a"} district</strong></div>
+    <div class="panel-help">This lot is in <strong>${activeOriginalZone || "n/a"}</strong>. Based on the current assumptions, the maximum buildable envelope is approximately <strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong> tall with about <strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong> FAR allowed floor area.</div>
     <div class="summary-row"><span>Address</span><strong>${data.address || "n/a"}</strong></div>
     <div class="summary-row"><span>Zoning</span><strong>${activeOriginalZone || "n/a"}</strong></div>
     <div class="summary-row"><span>BBL</span><strong>${data.bbl || "n/a"}</strong></div>
     <div class="summary-row"><span>Max Height</span><strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong></div>
-    <div class="summary-row"><span>Scenario FAR</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
+    <div class="summary-row"><span>Allowed Floor Area (FAR)</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
     <details>
-      <summary>Show Details</summary>
+      <summary>Advanced Details</summary>
       <div class="summary-row"><span>Neighborhood</span><strong>${data.neighborhood_name || activeNeighborhood?.name || "n/a"}</strong></div>
       <div class="summary-row summary-row--zone"><span>Scenario Zone</span>${zoneSelect}</div>
       <div class="summary-row"><span>Code FAR</span><strong>${formatNumber(zoning.base_far, 2)}</strong></div>
@@ -4011,8 +4074,12 @@ function _updateSelectionButtonStates() {
   if (clearSelectionBtn) {
     clearSelectionBtn.disabled = !hasMulti;
   }
+  document.body.classList.toggle("has-lot", hasLot);
+  if (chooseLotBtn) {
+    chooseLotBtn.textContent = hasLot ? "Change Lot" : "Choose a Lot";
+  }
   if (infoPanelTabBtn) {
-    infoPanelTabBtn.hidden = !hasLot;
+    infoPanelTabBtn.textContent = hasLot ? "Lot Info" : "Choose Lot";
   }
 }
 

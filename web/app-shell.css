@@ -54,7 +54,7 @@ body {
 
 .map-wrap {
   position: fixed;
-  top: var(--toolbar-h);
+  top: var(--toolbar-current-h, var(--toolbar-h));
   left: var(--left-docked);
   right: var(--right-docked);
   bottom: 0;
