@@ -21,7 +21,7 @@
 }
 
 .lot-sheet.is-open {
-  --body-h: min(420px, 60vh);
+  --body-h: min(286px, 38vh);
 }
 
 .lot-sheet__handle {
@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 10px var(--space-4);
+  padding: 7px var(--space-4);
   min-height: var(--sheet-peek-h);
   cursor: pointer;
 }
@@ -70,8 +70,8 @@
 .lot-zone-badge:empty { display: none; }
 
 .lot-address {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: #1a2430;
   white-space: nowrap;
   overflow: hidden;
@@ -88,14 +88,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #f4f6f9;
-  border-radius: 6px;
-  padding: 3px 9px;
-  min-width: 52px;
+  background: rgba(248, 251, 253, 0.88);
+  border: 1px solid #dfe6ed;
+  border-radius: 5px;
+  padding: 2px 7px;
+  min-width: 48px;
 }
 
 .stat-chip__val {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   color: #1a2430;
   line-height: 1;
@@ -135,20 +136,62 @@
   overflow: hidden auto;
   height: var(--body-h);
   transition: height 280ms cubic-bezier(0.32, 0.72, 0, 1);
-  padding: 0 var(--space-4) var(--space-5);
+  padding: 0 var(--space-3) var(--space-3);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-2);
+}
+
+.sheet-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid #d8e0e8;
+  border-radius: 6px;
+  padding: 2px;
+  background: rgba(246, 249, 252, 0.82);
+  width: fit-content;
+}
+
+.sheet-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #5d6c7e;
+  height: 22px;
+  min-width: 58px;
+  border-radius: 4px;
+  padding: 0 8px;
+  font-size: 10px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sheet-tab.is-active {
+  border-color: #c9d4e0;
+  background: #ffffff;
+  color: #1f2f42;
+}
+
+.sheet-panel {
+  display: none;
+}
+
+.sheet-panel.is-active {
+  display: block;
 }
 
 /* ---- Lot summary inside sheet ---- */
 .lot-summary {
   display: grid;
   gap: 1px;
-  background: #e8ecf0;
-  border-radius: 8px;
+  background: #e2e8ef;
+  border-radius: 6px;
   overflow: hidden;
-  border: 1px solid #e0e5ec;
+  border: 1px solid #d9e1ea;
 }
 
 .lot-summary:empty { display: none; }
@@ -158,22 +201,57 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: #ffffff;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .summary-row span:first-child { color: #6b7a8d; }
 .summary-row strong { color: #1a2430; font-weight: 700; }
 
+.summary-row--overview {
+  border-top: 1px solid #e8eef4;
+}
+
+.summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: #dfe7ef;
+}
+
+.metric-tag {
+  background: #f7fafc;
+  border-bottom: 1px solid #e3e9f1;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.metric-tag__key {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #738195;
+}
+
+.metric-tag strong {
+  font-size: 11px;
+  color: #172331;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 .lot-summary details {
   background: #ffffff;
-  padding: 8px 12px;
+  padding: 6px 10px;
 }
 
 .lot-summary details summary {
   cursor: pointer;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #5a6878;
   text-transform: uppercase;
@@ -186,7 +264,7 @@
 .lot-summary details[open] summary::after { content: " ▴"; }
 
 .summary-section-head {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -199,18 +277,22 @@
 .sheet-sliders {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  border: 1px solid #dbe3ec;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 8px;
 }
 
 .sheet-slider-row {
   display: grid;
   grid-template-columns: 52px 1fr 44px;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
 }
 
 .sheet-slider-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #6b7a8d;
   text-transform: uppercase;
@@ -218,7 +300,7 @@
 }
 
 .sheet-slider-val {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #1a2430;
   text-align: right;
@@ -226,58 +308,47 @@
 
 .sheet-select {
   grid-column: 2 / -1;
-  height: 30px;
-  border-radius: 6px;
-  border: 1px solid #d0d6de;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid #cfd9e4;
   background: #ffffff;
-  font-size: 12px;
+  font-size: 11px;
   padding: 0 var(--space-2);
 }
 
 /* ---- Search by BBL ---- */
 .sheet-section {
-  border-top: 1px solid #eaecf0;
-  padding-top: var(--space-3);
+  border: 1px solid #dbe3ec;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 8px;
 }
-
-.sheet-section > summary {
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-  color: #5a6878;
-  list-style: none;
-}
-
-.sheet-section > summary::-webkit-details-marker { display: none; }
-.sheet-section > summary::after { content: " ▾"; }
-.sheet-section[open] > summary::after { content: " ▴"; }
 
 .lookup-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
-  margin-top: var(--space-2);
 }
 
 .lookup-grid select,
 .lookup-grid input {
-  border-radius: 6px;
-  border: 1px solid #d0d6de;
-  font-size: 12px;
-  padding: 6px 8px;
-  height: 32px;
+  border-radius: 4px;
+  border: 1px solid #cfd9e4;
+  font-size: 11px;
+  padding: 4px 8px;
+  height: 28px;
   background: #ffffff;
 }
 
 .sheet-btn {
   appearance: none;
-  border-radius: 6px;
-  border: 1px solid #d0d6de;
+  border-radius: 4px;
+  border: 1px solid #cfd9e4;
   background: #ffffff;
   color: #2a3340;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  height: 34px;
+  height: 28px;
   padding: 0 12px;
   cursor: pointer;
   width: 100%;
@@ -299,8 +370,8 @@
 }
 
 .sheet-status {
-  margin-top: var(--space-1);
-  font-size: 11px;
+  margin-top: 6px;
+  font-size: 10px;
   color: #6b7a8d;
 }
 
@@ -327,12 +398,31 @@
 
 /* .panel-help: contextual help text in lot summary */
 .panel-help {
-  font-size: 11px;
+  font-size: 10px;
   color: #5a6878;
-  padding: 6px 12px 8px;
-  background: #f6f8fb;
+  padding: 5px 10px 7px;
+  background: #f7fafc;
   border-bottom: 1px solid #eaecf0;
-  line-height: 1.45;
+  line-height: 1.35;
+}
+
+.sheet-slider-row input[type="range"] {
+  height: 2px;
+  background: #d5dde6;
+}
+
+.sheet-slider-row input[type="range"]::-webkit-slider-thumb {
+  width: 11px;
+  height: 11px;
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(31, 122, 77, 0.35);
+}
+
+.sheet-slider-row input[type="range"]::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(31, 122, 77, 0.35);
 }
 
 #report { display: none; }
@@ -346,8 +436,12 @@
   }
 
   .lot-sheet.is-open {
-    --body-h: min(55vh, 500px);
+    --body-h: min(46vh, 360px);
   }
 
   .lot-sheet__chips { display: none; }
+
+  .summary-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

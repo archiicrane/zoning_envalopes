@@ -138,9 +138,23 @@ const openFullAnalysisBtn = document.getElementById("openFullAnalysisBtn");
 const lotSheet = document.getElementById("lotSheet");
 const lotSheetToggleBtn = document.getElementById("lotSheetToggleBtn");
 const lotSheetPeek = lotSheet ? lotSheet.querySelector(".lot-sheet__peek") : null;
+const sheetTabs = Array.from(document.querySelectorAll(".sheet-tab"));
+const sheetPanels = Array.from(document.querySelectorAll(".sheet-panel"));
 const lotZoneBadge = document.getElementById("lotZoneBadge");
 const lotSheetAddress = document.getElementById("lotSheetAddress");
 const lotSheetChips = document.getElementById("lotSheetChips");
+
+function _setSheetTab(tabName) {
+  if (!sheetTabs.length || !sheetPanels.length) return;
+  sheetTabs.forEach((tab) => {
+    const isActive = tab.dataset.sheetTab === tabName;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+  sheetPanels.forEach((panel) => {
+    panel.classList.toggle("is-active", panel.dataset.sheetPanel === tabName);
+  });
+}
 
 function _setSheetOpen(open) {
   if (!lotSheet) return;
@@ -159,6 +173,15 @@ if (lotSheetToggleBtn) {
 if (lotSheetPeek) {
   lotSheetPeek.addEventListener("click", () => {
     if (!lotSheet.classList.contains("is-open")) _setSheetOpen(true);
+  });
+}
+
+if (sheetTabs.length) {
+  sheetTabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      _setSheetTab(tab.dataset.sheetTab || "summary");
+      _setSheetOpen(true);
+    });
   });
 }
 
@@ -2141,6 +2164,7 @@ function updateLotSummary(data, envelopeResults) {
     lotSummary.className = "lot-summary";
     lotSummary.innerHTML = "";
     _updateSheetPeek(null, null);
+    _setSheetTab("summary");
     return;
   }
 
@@ -2160,8 +2184,14 @@ function updateLotSummary(data, envelopeResults) {
 
   lotSummary.className = "lot-summary";
   lotSummary.innerHTML = `
-    <div class="summary-row"><span>Overview</span><strong>${activeOriginalZone || "n/a"} district</strong></div>
-    <div class="panel-help">This lot is in <strong>${activeOriginalZone || "n/a"}</strong>. Based on the current assumptions, the maximum buildable envelope is approximately <strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong> tall with about <strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong> FAR allowed floor area.</div>
+    <div class="summary-metrics">
+      <div class="metric-tag"><span class="metric-tag__key">Zoning</span><strong>${activeOriginalZone || "n/a"}</strong></div>
+      <div class="metric-tag"><span class="metric-tag__key">FAR</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
+      <div class="metric-tag"><span class="metric-tag__key">Max Height</span><strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong></div>
+      <div class="metric-tag"><span class="metric-tag__key">Lot Area</span><strong>${formatNumber(data.lot_area || data.lotarea, 0)} sf</strong></div>
+    </div>
+    <div class="summary-row summary-row--overview"><span>Overview</span><strong>${activeOriginalZone || "n/a"} district</strong></div>
+    <div class="panel-help">This lot is in <strong>${activeOriginalZone || "n/a"}</strong>. With current assumptions, the maximum envelope is approximately <strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong> and about <strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong> FAR.</div>
     <div class="summary-row"><span>Address</span><strong>${data.address || "n/a"}</strong></div>
     <div class="summary-row"><span>Zoning</span><strong>${activeOriginalZone || "n/a"}</strong></div>
     <div class="summary-row"><span>BBL</span><strong>${data.bbl || "n/a"}</strong></div>
@@ -2183,6 +2213,7 @@ function updateLotSummary(data, envelopeResults) {
   `;
 
   _updateSheetPeek(data, zoning);
+  _setSheetTab("summary");
   _setSheetOpen(true);
 
   if (envelopeResults?.zoning_buildability_study && activeLotPolygon) {

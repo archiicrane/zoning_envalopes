@@ -133,7 +133,7 @@
   z-index: var(--z-pills);
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .pill {
@@ -141,28 +141,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  min-width: 64px;
-  padding: 0 10px;
+  height: 24px;
+  min-width: 56px;
+  padding: 0 9px;
   border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(32, 51, 74, 0.22);
+  background: rgba(250, 252, 255, 0.68);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #4a5668;
-  font-size: 11px;
+  color: #46586d;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   cursor: pointer;
   transition: all 120ms ease;
 }
 
-.pill:hover { background: rgba(255, 255, 255, 0.96); }
+.pill:hover {
+  background: rgba(252, 254, 255, 0.94);
+  border-color: rgba(31, 51, 74, 0.3);
+}
 
 .pill.pill--on {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(0, 0, 0, 0.18);
-  color: #1a2430;
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(31, 51, 74, 0.35);
+  color: #18283a;
 }
 
 .pill:not(.pill--on) {
@@ -181,25 +184,25 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: var(--space-2);
+  gap: 6px;
   transition: bottom 280ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 body.sheet-open .map-fabs {
-  bottom: calc(min(420px, 60vh) + var(--sheet-peek-h) + var(--space-3));
+  bottom: calc(min(286px, 38vh) + var(--sheet-peek-h) + var(--space-3));
 }
 
 .map-fab {
   appearance: none;
-  height: 36px;
-  padding: 0 14px;
+  height: 30px;
+  padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(31, 51, 74, 0.24);
+  background: rgba(250, 252, 255, 0.8);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #2a3340;
-  font-size: 12px;
+  color: #253446;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -208,7 +211,8 @@ body.sheet-open .map-fabs {
 }
 
 .map-fab:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 1);
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(31, 51, 74, 0.34);
   transform: translateY(-1px);
 }
 

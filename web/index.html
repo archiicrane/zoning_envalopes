@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260507a" />
+    <link rel="stylesheet" href="/styles.css?v=20260507c" />
   </head>
   <body>
 
@@ -62,51 +62,62 @@
         <button id="lotSheetToggleBtn" class="lot-sheet__toggle" type="button" aria-label="Expand details">↑</button>
       </div>
       <div class="lot-sheet__body" id="lotSheetBody">
-        <div id="lotSummary" class="lot-summary"></div>
-
-        <div class="sheet-sliders">
-          <div class="sheet-slider-row">
-            <span class="sheet-slider-label">FAR</span>
-            <input id="farSlider" type="range" min="0.1" max="15" step="0.01" value="3" />
-            <span id="farVal" class="sheet-slider-val">3.00</span>
-          </div>
-          <div class="sheet-slider-row">
-            <span class="sheet-slider-label">Opacity</span>
-            <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="75" />
-            <span id="envelopeOpacityVal" class="sheet-slider-val">75%</span>
-          </div>
-          <div class="sheet-slider-row">
-            <span class="sheet-slider-label">Floor Ht</span>
-            <input id="floorHeightBottomSlider" type="range" min="8" max="20" step="0.5" value="10" />
-            <span id="floorHeightBottomVal" class="sheet-slider-val">10 ft</span>
-          </div>
-          <div class="sheet-slider-row">
-            <span class="sheet-slider-label">Use</span>
-            <select id="useType" class="sheet-select">
-              <option value="market_rate">Market Rate</option>
-              <option value="affordable">Affordable</option>
-            </select>
-          </div>
+        <div class="sheet-tabs" role="tablist" aria-label="Lot analysis sections">
+          <button id="sheetTabSummary" class="sheet-tab is-active" type="button" role="tab" aria-selected="true" data-sheet-tab="summary">Lot</button>
+          <button id="sheetTabControls" class="sheet-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="controls">Controls</button>
+          <button id="sheetTabSearch" class="sheet-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="search">Lookup</button>
         </div>
 
-        <details class="sheet-section">
-          <summary>Search by BBL</summary>
-          <div class="lookup-grid">
-            <select id="borough">
-              <option value="1">Manhattan</option>
-              <option value="2">Bronx</option>
-              <option value="3" selected>Brooklyn</option>
-              <option value="4">Queens</option>
-              <option value="5">Staten Island</option>
-            </select>
-            <input id="block" type="number" value="981" min="1" placeholder="Block" />
-            <input id="lot" type="number" value="1" min="1" placeholder="Lot" />
-            <button id="lookupBtn" type="button" class="sheet-btn">Find Lot</button>
-          </div>
-          <div id="dataStatus" class="sheet-status"></div>
-        </details>
+        <section class="sheet-panel is-active" data-sheet-panel="summary" role="tabpanel" aria-labelledby="sheetTabSummary">
+          <div id="lotSummary" class="lot-summary"></div>
+        </section>
 
-        <button id="compactFullAnalysisBtn" type="button" class="sheet-btn sheet-btn--primary">Full Analysis</button>
+        <section class="sheet-panel" data-sheet-panel="controls" role="tabpanel" aria-labelledby="sheetTabControls">
+          <div class="sheet-sliders">
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">FAR</span>
+              <input id="farSlider" type="range" min="0.1" max="15" step="0.01" value="3" />
+              <span id="farVal" class="sheet-slider-val">3.00</span>
+            </div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">Opacity</span>
+              <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="75" />
+              <span id="envelopeOpacityVal" class="sheet-slider-val">75%</span>
+            </div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">Floor Ht</span>
+              <input id="floorHeightBottomSlider" type="range" min="8" max="20" step="0.5" value="10" />
+              <span id="floorHeightBottomVal" class="sheet-slider-val">10 ft</span>
+            </div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">Use</span>
+              <select id="useType" class="sheet-select">
+                <option value="market_rate">Market Rate</option>
+                <option value="affordable">Affordable</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="compactFullAnalysisBtn" type="button" class="sheet-btn sheet-btn--primary">Full Analysis</button>
+        </section>
+
+        <section class="sheet-panel" data-sheet-panel="search" role="tabpanel" aria-labelledby="sheetTabSearch">
+          <div class="sheet-section">
+            <div class="lookup-grid">
+              <select id="borough">
+                <option value="1">Manhattan</option>
+                <option value="2">Bronx</option>
+                <option value="3" selected>Brooklyn</option>
+                <option value="4">Queens</option>
+                <option value="5">Staten Island</option>
+              </select>
+              <input id="block" type="number" value="981" min="1" placeholder="Block" />
+              <input id="lot" type="number" value="1" min="1" placeholder="Lot" />
+              <button id="lookupBtn" type="button" class="sheet-btn">Find Lot</button>
+            </div>
+            <div id="dataStatus" class="sheet-status"></div>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -159,6 +170,6 @@
         document.head.appendChild(s);
       }
     </script>
-    <script type="module" src="/app.js?v=20260507b"></script>
+    <script type="module" src="/app.js?v=20260507c"></script>
   </body>
 </html>

@@ -27,8 +27,8 @@
   --space-6: 32px;
 
   /* Layout */
-  --topbar-h: 48px;
-  --sheet-peek-h: 56px;
+  --topbar-h: 44px;
+  --sheet-peek-h: 46px;
 
   /* Z-index stack */
   --z-map: 1;
@@ -53,6 +53,7 @@ html, body {
   color: var(--text);
   font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   overflow: hidden;
+  font-size: 13px;
 }
 
 /* Map fills everything — it is the hero */
