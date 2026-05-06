@@ -1,0 +1,90 @@
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  appearance: none;
+}
+
+input[type="range"] {
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: #d7dbe1;
+  accent-color: #1f7a4d;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1f7a4d;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(31, 122, 77, 0.35);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1f7a4d;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(31, 122, 77, 0.35);
+}
+
+.btn,
+.study-sheet-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #c5cdd7;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #2a3644;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn:hover,
+.study-sheet-btn:hover {
+  background: #f3f6f9;
+}
+
+.btn-primary,
+.study-sheet-btn--primary {
+  background: #1f7a4d;
+  border-color: #1f7a4d;
+  color: #ffffff;
+}
+
+.btn-secondary,
+.study-sheet-btn--secondary {
+  background: #ffffff;
+  border-color: #c4cdd8;
+}
+
+.btn-ghost,
+.study-sheet-btn--ghost {
+  background: transparent;
+  border-color: #c4ccd6;
+  color: #4c5967;
+}
+
+.btn-danger {
+  background: #b42318;
+  border-color: #b42318;
+  color: #ffffff;
+}
+
+.btn:disabled,
+.study-sheet-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

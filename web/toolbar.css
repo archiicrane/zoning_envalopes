@@ -1,0 +1,131 @@
+.top-ui {
+  position: relative;
+  z-index: var(--z-toolbar);
+  height: var(--toolbar-h);
+  padding: var(--space-2) var(--space-4);
+  display: grid;
+  grid-template-columns: 250px minmax(220px, 320px) 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--surface-2);
+  border-bottom: 1px solid #cbc8bf;
+}
+
+.title-row {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #232f3c;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#neighborhoodSelect {
+  width: 100%;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid #c9d0d8;
+  padding: 0 var(--space-3);
+  background: #ffffff;
+  color: #293441;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.top-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.bar-btn {
+  appearance: none;
+  border-radius: 8px;
+  border: 1px solid #c6cdd6;
+  background: #ffffff;
+  color: #2d3744;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  height: 32px;
+  padding: 0 var(--space-3);
+  margin: 0;
+  width: auto;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.bar-btn:hover:not(:disabled) {
+  background: #f3f6fa;
+}
+
+.bar-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bar-btn.active {
+  background: #eef8f2;
+  border-color: #9ecdb3;
+  color: #155739;
+}
+
+.bar-btn--max-env.active {
+  background: #edf3ff;
+  border-color: #91a9df;
+  color: #244a9e;
+}
+
+.bar-btn--far-env.active {
+  background: #ecf9f0;
+  border-color: #95d0aa;
+  color: #1f7a4d;
+}
+
+.bar-btn--analyze {
+  background: #1f7a4d;
+  border-color: #1f7a4d;
+  color: #ffffff;
+}
+
+.bar-btn--secondary {
+  background: transparent;
+  border-color: #c3cad4;
+}
+
+.bar-btn--diagram.active,
+.bar-btn--presentation.active {
+  background: #27384a;
+  border-color: #27384a;
+  color: #f8fafc;
+}
+
+@media (max-width: 1300px) {
+  .top-ui {
+    grid-template-columns: 200px minmax(200px, 280px) 1fr;
+  }
+
+  .title-row {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 980px) {
+  .top-ui {
+    height: auto;
+    min-height: var(--toolbar-h);
+    grid-template-columns: 1fr;
+    align-items: start;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .title-row {
+    font-size: 22px;
+  }
+
+  .top-actions {
+    justify-content: flex-start;
+  }
+}
