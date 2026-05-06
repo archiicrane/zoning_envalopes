@@ -227,12 +227,14 @@
 }
 
 .typology-hud {
-  position: fixed;
-  top: calc(var(--topbar-h) + 116px);
-  right: calc(320px + var(--space-4));
+  position: relative;
+  top: auto;
+  right: auto;
   left: auto;
-  z-index: 31;
-  width: min(280px, calc(100vw - 28px));
+  z-index: auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 8px 10px;
   border: 1px solid rgba(31, 51, 74, 0.2);
   border-radius: 8px;
@@ -315,13 +317,6 @@
   .map-fabs {
     bottom: var(--space-3);
     right: var(--space-3);
-  }
-
-  .typology-hud {
-    left: var(--space-3);
-    top: calc(var(--topbar-h) + 6px);
-    width: calc(100vw - 24px);
-    max-width: 100%;
   }
 
   #map {

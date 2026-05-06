@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260507f" />
+    <link rel="stylesheet" href="/styles.css?v=20260507g" />
   </head>
   <body>
 
@@ -60,17 +60,6 @@
       <button id="showEnvelopeBtn" class="pill pill--on" type="button" title="Show buildable footprint and setback area">Area</button>
     </div>
 
-    <aside id="typologyHud" class="typology-hud" hidden aria-live="polite">
-      <div class="typology-hud__head">
-        <span class="typology-hud__kicker">FAR Morphology</span>
-        <span id="typologyHudLabel" class="typology-hud__label">—</span>
-      </div>
-      <div class="typology-hud__meta">
-        <span id="typologyHudScore" class="typology-hud__score">Score —</span>
-      </div>
-      <div id="typologyHudBreakdown" class="typology-hud__grid"></div>
-    </aside>
-
     <!-- Floating map action buttons (bottom-right) -->
     <div class="map-fabs">
       <button id="focusModeBtn" class="map-fab" type="button" title="Focus on selected lot">⊙</button>
@@ -95,6 +84,17 @@
           <button id="sheetTabControls" class="sheet-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="controls">Controls</button>
           <button id="sheetTabSearch" class="sheet-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="search">Lookup</button>
         </div>
+
+        <aside id="typologyHud" class="typology-hud" hidden aria-live="polite">
+          <div class="typology-hud__head">
+            <span class="typology-hud__kicker">FAR Morphology</span>
+            <span id="typologyHudLabel" class="typology-hud__label">—</span>
+          </div>
+          <div class="typology-hud__meta">
+            <span id="typologyHudScore" class="typology-hud__score">Score —</span>
+          </div>
+          <div id="typologyHudBreakdown" class="typology-hud__grid"></div>
+        </aside>
 
         <section class="sheet-panel is-active" data-sheet-panel="summary" role="tabpanel" aria-labelledby="sheetTabSummary">
           <div id="lotSummary" class="lot-summary"></div>
