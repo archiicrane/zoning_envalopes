@@ -74,12 +74,22 @@ html, body {
 body.diagram-mode #map { filter: saturate(0.12) contrast(1.1) brightness(1.06); }
 body.presentation-mode #map { filter: saturate(0.08) contrast(1.15) brightness(1.08); }
 
-/* Focus mode: hide sheet + pills */
+/* Focus mode: hide sheet + pills, but keep focus button itself accessible */
 body.focus-mode .lot-sheet,
-body.focus-mode .layer-pills,
-body.focus-mode .map-fabs {
+body.focus-mode .layer-pills {
   opacity: 0;
   pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+/* Keep the focus button visible so user can exit */
+body.focus-mode .map-fabs .map-fab:not(#focusModeBtn) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.focus-mode #focusModeBtn {
+  opacity: 0.55;
   transition: opacity 200ms ease;
 }
 

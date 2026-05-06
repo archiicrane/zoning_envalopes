@@ -145,6 +145,7 @@ const lotSheetChips = document.getElementById("lotSheetChips");
 function _setSheetOpen(open) {
   if (!lotSheet) return;
   lotSheet.classList.toggle("is-open", !!open);
+  document.body.classList.toggle("sheet-open", !!open);
 }
 
 function _toggleSheet() {
@@ -6423,6 +6424,21 @@ if (exportReportBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
+if (focusModeBtn) {
+  focusModeBtn.addEventListener("click", () => {
+    const isOn = document.body.classList.toggle("focus-mode");
+    focusModeBtn.classList.toggle("pill--on", isOn);
+    focusModeBtn.title = isOn ? "Exit focus mode" : "Focus mode";
+  });
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.body.classList.contains("focus-mode")) {
+    document.body.classList.remove("focus-mode");
+    if (focusModeBtn) { focusModeBtn.classList.remove("pill--on"); focusModeBtn.title = "Focus mode"; }
+  }
+});
 
 if (openFullAnalysisBtn) {
   openFullAnalysisBtn.addEventListener("click", () => {

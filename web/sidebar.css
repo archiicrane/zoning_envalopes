@@ -311,13 +311,28 @@
 .map-legend__swatch--selected { background: rgba(101, 224, 194, 0.4); }
 
 /* ---- Zone select inside summary ---- */
-#lotZoneSelect {
+#lotZoneSelect,
+.summary-zone-select {
   border: 1px solid #d0d6de;
   border-radius: 6px;
   font-size: 12px;
   height: 28px;
   padding: 0 6px;
   background: #fff;
+}
+
+/* .summary-row--zone: zone scenario row with inline select */
+.summary-row--zone { align-items: center; }
+.summary-row--zone select { margin-left: auto; }
+
+/* .panel-help: contextual help text in lot summary */
+.panel-help {
+  font-size: 11px;
+  color: #5a6878;
+  padding: 6px 12px 8px;
+  background: #f6f8fb;
+  border-bottom: 1px solid #eaecf0;
+  line-height: 1.45;
 }
 
 #report { display: none; }
