@@ -19,6 +19,8 @@
   --toolbar-h: 72px;
   --left-sidebar-w: 320px;
   --right-panel-w: 360px;
+  --left-docked: 0px;
+  --right-docked: 0px;
 
   --z-map: 1;
   --z-sidebar: 10;
@@ -53,8 +55,8 @@ body {
 .map-wrap {
   position: fixed;
   top: var(--toolbar-h);
-  left: var(--left-sidebar-w);
-  right: var(--right-panel-w);
+  left: var(--left-docked);
+  right: var(--right-docked);
   bottom: 0;
   overflow: hidden;
 }
@@ -63,6 +65,19 @@ body {
   position: absolute;
   inset: 0;
   z-index: var(--z-map);
+}
+
+body.controls-open {
+  --left-docked: var(--left-sidebar-w);
+}
+
+body.info-open {
+  --right-docked: var(--right-panel-w);
+}
+
+body.focus-mode {
+  --left-docked: 0px;
+  --right-docked: 0px;
 }
 
 .hidden-controls {
@@ -93,5 +108,12 @@ body {
   .map-wrap {
     left: 0;
     right: 0;
+  }
+
+  body.controls-open,
+  body.info-open,
+  body.focus-mode {
+    --left-docked: 0px;
+    --right-docked: 0px;
   }
 }

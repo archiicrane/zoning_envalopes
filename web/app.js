@@ -116,8 +116,15 @@ const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const toggleMaxEnvelopeBtn = document.getElementById("toggleMaxEnvelopeBtn");
 const toggleFarEnvelopeBtn = document.getElementById("toggleFarEnvelopeBtn");
 const uploadProposalBtn = document.getElementById("uploadProposalBtn");
+const layersMenuBtn = document.getElementById("layersMenuBtn");
+const layersMenu = document.getElementById("layersMenu");
 const toolbarMoreBtn = document.getElementById("toolbarMoreBtn");
 const toolbarMoreMenu = document.getElementById("toolbarMoreMenu");
+const openStudySheetBtn = document.getElementById("openStudySheetBtn");
+const focusModeBtn = document.getElementById("focusModeBtn");
+const compactFullAnalysisBtn = document.getElementById("compactFullAnalysisBtn");
+const controlsPanelTabBtn = document.getElementById("controlsPanelTabBtn");
+const infoPanelTabBtn = document.getElementById("infoPanelTabBtn");
 const analysisPanel = document.getElementById("analysisModalOverlay");
 const closePanelBtn = document.getElementById("closePanelBtn");
 const exportDiagramBtn = document.getElementById("exportDiagramBtn");
@@ -225,6 +232,49 @@ if (showEnvelopeBtn) {
   });
 }
 
+function _setControlsPanelOpen(open) {
+  document.body.classList.toggle("controls-open", !!open);
+  if (controlsPanelTabBtn) controlsPanelTabBtn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+function _setInfoPanelOpen(open) {
+  document.body.classList.toggle("info-open", !!open);
+  if (infoPanelTabBtn) infoPanelTabBtn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+if (controlsPanelTabBtn) {
+  controlsPanelTabBtn.addEventListener("click", () => {
+    _setControlsPanelOpen(!document.body.classList.contains("controls-open"));
+  });
+}
+
+if (infoPanelTabBtn) {
+  infoPanelTabBtn.addEventListener("click", () => {
+    _setInfoPanelOpen(!document.body.classList.contains("info-open"));
+  });
+}
+
+if (focusModeBtn) {
+  focusModeBtn.addEventListener("click", () => {
+    const next = !document.body.classList.contains("focus-mode");
+    document.body.classList.toggle("focus-mode", next);
+    focusModeBtn.classList.toggle("active", next);
+    if (next) {
+      _setControlsPanelOpen(false);
+      _setInfoPanelOpen(false);
+    }
+  });
+}
+
+if (layersMenuBtn && layersMenu) {
+  layersMenuBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const expanded = layersMenuBtn.getAttribute("aria-expanded") === "true";
+    layersMenuBtn.setAttribute("aria-expanded", expanded ? "false" : "true");
+    layersMenu.hidden = expanded;
+  });
+}
+
 if (toolbarMoreBtn && toolbarMoreMenu) {
   toolbarMoreBtn.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -234,12 +284,43 @@ if (toolbarMoreBtn && toolbarMoreMenu) {
   });
 
   document.addEventListener("click", (event) => {
+    if (layersMenuBtn && layersMenu && !layersMenu.hidden && !layersMenu.contains(event.target) && event.target !== layersMenuBtn) {
+      layersMenu.hidden = true;
+      layersMenuBtn.setAttribute("aria-expanded", "false");
+    }
     if (!toolbarMoreMenu.hidden && !toolbarMoreMenu.contains(event.target) && event.target !== toolbarMoreBtn) {
       toolbarMoreMenu.hidden = true;
       toolbarMoreBtn.setAttribute("aria-expanded", "false");
     }
   });
 }
+
+if (openStudySheetBtn) {
+  openStudySheetBtn.addEventListener("click", () => {
+    const lots = (multiSelectedLots && multiSelectedLots.length)
+      ? multiSelectedLots
+      : (_makeAnalysisFeatureFromActive() ? [_makeAnalysisFeatureFromActive()] : []);
+    if (lots.length) {
+      openAnalysisPanel(lots);
+      if (toolbarMoreMenu) {
+        toolbarMoreMenu.hidden = true;
+        if (toolbarMoreBtn) toolbarMoreBtn.setAttribute("aria-expanded", "false");
+      }
+    }
+  });
+}
+
+if (compactFullAnalysisBtn) {
+  compactFullAnalysisBtn.addEventListener("click", () => {
+    const lots = (multiSelectedLots && multiSelectedLots.length)
+      ? multiSelectedLots
+      : (_makeAnalysisFeatureFromActive() ? [_makeAnalysisFeatureFromActive()] : []);
+    if (lots.length) openAnalysisPanel(lots);
+  });
+}
+
+_setControlsPanelOpen(false);
+_setInfoPanelOpen(false);
 
 // Diagram mode: desaturates basemap via CSS + lightens buildings for a clean arch diagram look
 function applyDiagramMode() {
@@ -1989,6 +2070,7 @@ function updateLotSummary(data, envelopeResults) {
   if (!data) {
     lotSummary.className = "lot-summary empty";
     lotSummary.textContent = "Choose a neighborhood and click a lot.";
+    _setInfoPanelOpen(false);
     return;
   }
 
@@ -2008,24 +2090,28 @@ function updateLotSummary(data, envelopeResults) {
 
   lotSummary.className = "lot-summary";
   lotSummary.innerHTML = `
-    <div class="summary-section-head">Lot</div>
-    <div class="summary-row"><span>Neighborhood</span><strong>${data.neighborhood_name || activeNeighborhood?.name || "n/a"}</strong></div>
     <div class="summary-row"><span>Address</span><strong>${data.address || "n/a"}</strong></div>
+    <div class="summary-row"><span>Zoning</span><strong>${activeOriginalZone || "n/a"}</strong></div>
     <div class="summary-row"><span>BBL</span><strong>${data.bbl || "n/a"}</strong></div>
-    <div class="summary-row"><span>Original Zone</span><strong>${activeOriginalZone || "n/a"}</strong></div>
-    <div class="summary-row summary-row--zone"><span>Scenario Zone</span>${zoneSelect}</div>
-    <div class="summary-row"><span>Code FAR</span><strong>${formatNumber(zoning.base_far, 2)}</strong></div>
-    <div class="summary-row"><span>Existing FAR</span><strong>${formatNumber(data.built_far ?? zoning.existing_far, 2)}</strong></div>
-    <div class="summary-row"><span>Scenario FAR</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
-    <div class="summary-section-head">Envelope Study</div>
     <div class="summary-row"><span>Max Height</span><strong>${formatNumber(zoning.max_height_ft, 0)} ft</strong></div>
-    <div class="summary-row"><span>Existing Height</span><strong>${formatNumber(existingHeight, 0)} ft</strong></div>
-    <div class="summary-row"><span>Baseline Envelope</span><strong>${formatNumber(baselineHeight, 0)} ft</strong></div>
-    <div class="summary-row"><span>Scenario Envelope</span><strong>${formatNumber(scenarioHeight ?? envelopeHeight, 0)} ft</strong></div>
-    ${_buildRuleEngineRows(ruleEngineSnapshot)}
-    ${_buildZoningReqRows(zoning)}
-    ${_buildBuildabilityStudyRows(zoning, envelopeResults)}
+    <div class="summary-row"><span>Scenario FAR</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
+    <details>
+      <summary>Show Details</summary>
+      <div class="summary-row"><span>Neighborhood</span><strong>${data.neighborhood_name || activeNeighborhood?.name || "n/a"}</strong></div>
+      <div class="summary-row summary-row--zone"><span>Scenario Zone</span>${zoneSelect}</div>
+      <div class="summary-row"><span>Code FAR</span><strong>${formatNumber(zoning.base_far, 2)}</strong></div>
+      <div class="summary-row"><span>Existing FAR</span><strong>${formatNumber(data.built_far ?? zoning.existing_far, 2)}</strong></div>
+      <div class="summary-row"><span>Existing Height</span><strong>${formatNumber(existingHeight, 0)} ft</strong></div>
+      <div class="summary-row"><span>Baseline Envelope</span><strong>${formatNumber(baselineHeight, 0)} ft</strong></div>
+      <div class="summary-row"><span>Scenario Envelope</span><strong>${formatNumber(scenarioHeight ?? envelopeHeight, 0)} ft</strong></div>
+      ${_buildRuleEngineRows(ruleEngineSnapshot)}
+      ${_buildZoningReqRows(zoning)}
+      ${_buildBuildabilityStudyRows(zoning, envelopeResults)}
+    </details>
   `;
+
+  _setInfoPanelOpen(true);
+  if (infoPanelTabBtn) infoPanelTabBtn.hidden = false;
 
   if (envelopeResults?.zoning_buildability_study && activeLotPolygon) {
     const result = _recalcStudy();
@@ -3917,12 +4003,16 @@ function _clearMultiSelection() {
 
 function _updateSelectionButtonStates() {
   const hasMulti = multiSelectedLots.length > 0;
+  const hasLot = !!activeLotData;
   if (analyzeSelectionBtn) {
     analyzeSelectionBtn.classList.toggle("active", hasMulti);
-    analyzeSelectionBtn.disabled = !hasMulti && !activeLotData;
+    analyzeSelectionBtn.disabled = !hasMulti && !hasLot;
   }
   if (clearSelectionBtn) {
     clearSelectionBtn.disabled = !hasMulti;
+  }
+  if (infoPanelTabBtn) {
+    infoPanelTabBtn.hidden = !hasLot;
   }
 }
 
