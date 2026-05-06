@@ -61,6 +61,88 @@
       "bulkRegime": "pitched-envelope",
       "standardFar": 0.75,
       "qualifyingFar": 1.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 0.75,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 20,
+          "sideYardEachFt": 8,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 20,
+          "sideYardEachFt": 8,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 20,
+          "sideYardEachFt": 8,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 20,
       "sideYardEachFt": 8,
       "rearYardFt": 20,
@@ -68,7 +150,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 20,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R2",
@@ -76,6 +164,88 @@
       "bulkRegime": "pitched-envelope",
       "standardFar": 0.75,
       "qualifyingFar": 1.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 0.75,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 15,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
@@ -83,7 +253,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R2X",
@@ -91,12 +267,89 @@
       "bulkRegime": "pitched-envelope",
       "standardFar": 1.0,
       "qualifyingFar": 1.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 15,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342"
+      ]
     },
     {
       "zoneCode": "R3-1",
@@ -104,6 +357,88 @@
       "bulkRegime": "pitched-envelope",
       "standardFar": 0.75,
       "qualifyingFar": 1.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 0.75,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 15,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
@@ -111,7 +446,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R3-2",
@@ -119,12 +460,94 @@
       "bulkRegime": "flat-roof",
       "standardFar": 0.75,
       "qualifyingFar": 1.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 0.75,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 15,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 15,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R3A",
@@ -132,6 +555,88 @@
       "bulkRegime": "pitched-envelope",
       "standardFar": 0.75,
       "qualifyingFar": 1.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 0.75,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 10,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
@@ -139,7 +644,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R3X",
@@ -147,6 +658,88 @@
       "bulkRegime": "pitched-envelope",
       "standardFar": 0.75,
       "qualifyingFar": 1.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 0.75,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 10,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
@@ -154,7 +747,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R4",
@@ -162,12 +761,94 @@
       "bulkRegime": "flat-roof",
       "standardFar": 1.0,
       "qualifyingFar": 1.5,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 10,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R4-1",
@@ -175,6 +856,88 @@
       "bulkRegime": "pitched-envelope",
       "standardFar": 1.0,
       "qualifyingFar": 1.5,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 10,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
@@ -182,7 +945,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R4A",
@@ -190,6 +959,88 @@
       "bulkRegime": "pitched-envelope",
       "standardFar": 1.0,
       "qualifyingFar": 1.5,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 10,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
@@ -197,7 +1048,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R4B",
@@ -205,12 +1062,94 @@
       "bulkRegime": "flat-roof",
       "standardFar": 1.0,
       "qualifyingFar": 1.5,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 1.0,
+          "maximumBuildingHeightFt": 25,
+          "frontYardFt": 5,
+          "sideYardEachFt": 5,
+          "rearYardFt": 30,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 25,
+          "frontYardFt": 5,
+          "sideYardEachFt": 5,
+          "rearYardFt": 30,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 25,
+          "frontYardFt": 5,
+          "sideYardEachFt": 5,
+          "rearYardFt": 30,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 5,
       "sideYardEachFt": 5,
       "rearYardFt": 30,
       "maximumBuildingHeightFt": 25,
       "simplifiedPlanInsetFt": 5,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R5",
@@ -218,6 +1157,95 @@
       "bulkRegime": "base-and-setback",
       "standardFar": 1.5,
       "qualifyingFar": 2.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 1.5,
+          "maximumBaseHeightFt": 35,
+          "maximumBuildingHeightFt": 45,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "base-and-setback",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422",
+            "zr-23-423"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 2.0,
+          "maximumBaseHeightFt": 35,
+          "maximumBuildingHeightFt": 45,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "base-and-setback",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422",
+            "zr-23-423"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 2.0,
+          "maximumBaseHeightFt": 35,
+          "maximumBuildingHeightFt": 45,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "base-and-setback",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422",
+            "zr-23-423"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422",
+            "zr-23-423"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 10,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
@@ -226,7 +1254,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422", "zr-23-423"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422",
+        "zr-23-423"
+      ]
     },
     {
       "zoneCode": "R5A",
@@ -234,6 +1269,88 @@
       "bulkRegime": "pitched-envelope",
       "standardFar": 1.5,
       "qualifyingFar": 2.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 2.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 2.0,
+          "maximumBuildingHeightFt": 35,
+          "perimeterWallHeightFt": 25,
+          "ridgeHeightFt": 35,
+          "frontYardFt": 10,
+          "sideYardEachFt": 5,
+          "rearYardFt": 20,
+          "bulkRegime": "pitched-envelope",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-421"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 10,
       "sideYardEachFt": 5,
       "rearYardFt": 20,
@@ -241,7 +1358,13 @@
       "ridgeHeightFt": 35,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-421"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-421"
+      ]
     },
     {
       "zoneCode": "R5B",
@@ -249,12 +1372,94 @@
       "bulkRegime": "flat-roof",
       "standardFar": 1.5,
       "qualifyingFar": 2.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 1.5,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 5,
+          "sideYardEachFt": 5,
+          "rearYardFt": 30,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 2.0,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 5,
+          "sideYardEachFt": 5,
+          "rearYardFt": 30,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 2.0,
+          "maximumBuildingHeightFt": 35,
+          "frontYardFt": 5,
+          "sideYardEachFt": 5,
+          "rearYardFt": 30,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 5,
       "sideYardEachFt": 5,
       "rearYardFt": 30,
       "maximumBuildingHeightFt": 35,
       "simplifiedPlanInsetFt": 5,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R5D",
@@ -262,12 +1467,94 @@
       "bulkRegime": "flat-roof",
       "standardFar": 2.0,
       "qualifyingFar": 2.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 2.0,
+          "maximumBuildingHeightFt": 45,
+          "frontYardFt": 5,
+          "sideYardEachFt": 5,
+          "rearYardFt": 30,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 2.0,
+          "maximumBuildingHeightFt": 45,
+          "frontYardFt": 5,
+          "sideYardEachFt": 5,
+          "rearYardFt": 30,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 2.0,
+          "maximumBuildingHeightFt": 45,
+          "frontYardFt": 5,
+          "sideYardEachFt": 5,
+          "rearYardFt": 30,
+          "bulkRegime": "flat-roof",
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-21",
+            "zr-23-321",
+            "zr-23-332",
+            "zr-23-342",
+            "zr-23-422"
+          ],
+          "notes": null
+        }
+      },
       "frontYardFt": 5,
       "sideYardEachFt": 5,
       "rearYardFt": 30,
       "maximumBuildingHeightFt": 45,
       "simplifiedPlanInsetFt": 5,
-      "sourceSections": ["zr-23-21", "zr-23-321", "zr-23-332", "zr-23-342", "zr-23-422"]
+      "sourceSections": [
+        "zr-23-21",
+        "zr-23-321",
+        "zr-23-332",
+        "zr-23-342",
+        "zr-23-422"
+      ]
     },
     {
       "zoneCode": "R6",
@@ -280,7 +1567,13 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"],
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736"
+      ],
       "variants": {
         "standardResidential": {
           "label": "Standard / Market Rate Residential",
@@ -288,7 +1581,13 @@
           "maximumFrontWallHeightFt": 60,
           "streetSetbackWideFt": 15,
           "streetSetbackNarrowFt": 20,
-          "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
         },
         "qualifyingAffordableHousing": {
           "label": "Qualifying Affordable Housing",
@@ -296,7 +1595,13 @@
           "maximumFrontWallHeightFt": 60,
           "streetSetbackWideFt": 15,
           "streetSetbackNarrowFt": 20,
-          "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
         },
         "qualifyingSeniorHousing": {
           "label": "Qualifying Senior Housing",
@@ -304,7 +1609,13 @@
           "maximumFrontWallHeightFt": 60,
           "streetSetbackWideFt": 15,
           "streetSetbackNarrowFt": 20,
-          "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
         },
         "nonResidential": {
           "label": "Non-Residential / Community Facility",
@@ -327,7 +1638,11 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"],
+      "sourceSections": [
+        "zr-23-22",
+        "zr-23-432",
+        "zr-23-433"
+      ],
       "variants": {
         "standardResidential": {
           "label": "Standard / Market Rate Residential (R6^2)",
@@ -337,7 +1652,11 @@
           "maximumBuildingHeightFt": 55,
           "streetSetbackWideFt": 10,
           "streetSetbackNarrowFt": 15,
-          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+          "sourceSections": [
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ]
         },
         "qualifyingAffordableHousing": {
           "label": "Qualifying Affordable Housing (R6^2)",
@@ -347,7 +1666,11 @@
           "maximumBuildingHeightFt": 85,
           "streetSetbackWideFt": 10,
           "streetSetbackNarrowFt": 15,
-          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+          "sourceSections": [
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ]
         },
         "qualifyingSeniorHousing": {
           "label": "Qualifying Senior Housing (R6^2)",
@@ -357,7 +1680,11 @@
           "maximumBuildingHeightFt": 85,
           "streetSetbackWideFt": 10,
           "streetSetbackNarrowFt": 15,
-          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+          "sourceSections": [
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ]
         },
         "nonResidential": {
           "label": "Non-Residential / Community Facility",
@@ -380,7 +1707,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"],
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ],
       "variants": {
         "standardResidential": {
           "label": "Standard / Market Rate Residential",
@@ -390,7 +1724,11 @@
           "maximumBuildingHeightFt": 75,
           "streetSetbackWideFt": 10,
           "streetSetbackNarrowFt": 15,
-          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+          "sourceSections": [
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ]
         },
         "qualifyingAffordableHousing": {
           "label": "Qualifying Affordable Housing",
@@ -400,7 +1738,11 @@
           "maximumBuildingHeightFt": 95,
           "streetSetbackWideFt": 10,
           "streetSetbackNarrowFt": 15,
-          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+          "sourceSections": [
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ]
         },
         "qualifyingSeniorHousing": {
           "label": "Qualifying Senior Housing",
@@ -410,7 +1752,11 @@
           "maximumBuildingHeightFt": 95,
           "streetSetbackWideFt": 10,
           "streetSetbackNarrowFt": 15,
-          "sourceSections": ["zr-23-22", "zr-23-432", "zr-23-433"]
+          "sourceSections": [
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ]
         },
         "nonResidential": {
           "label": "Non-Residential / Community Facility",
@@ -426,6 +1772,92 @@
       "bulkRegime": "contextual",
       "standardFar": 2.0,
       "qualifyingFar": 2.4,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 2.0,
+          "minimumBaseHeightFt": 30,
+          "maximumBaseHeightFt": 45,
+          "maximumBuildingHeightFt": 55,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 16,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 2.4,
+          "minimumBaseHeightFt": 30,
+          "maximumBaseHeightFt": 45,
+          "maximumBuildingHeightFt": 55,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 16,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 2.4,
+          "minimumBaseHeightFt": 30,
+          "maximumBaseHeightFt": 45,
+          "maximumBuildingHeightFt": 55,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 16,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 16,
       "minimumBaseHeightFt": 30,
       "maximumBaseHeightFt": 45,
@@ -433,7 +1865,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R7-1",
@@ -441,12 +1880,94 @@
       "bulkRegime": "sky-exposure-plane",
       "standardFar": 3.44,
       "qualifyingFar": 5.01,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 3.44,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 20,
+          "bulkRegime": "sky-exposure-plane",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 5.01,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 20,
+          "bulkRegime": "sky-exposure-plane",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 5.01,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 20,
+          "bulkRegime": "sky-exposure-plane",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 20,
       "maximumFrontWallHeightFt": 60,
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736"
+      ]
     },
     {
       "zoneCode": "R7-2",
@@ -454,12 +1975,94 @@
       "bulkRegime": "sky-exposure-plane",
       "standardFar": 3.44,
       "qualifyingFar": 5.01,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 3.44,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 20,
+          "bulkRegime": "sky-exposure-plane",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 5.01,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 20,
+          "bulkRegime": "sky-exposure-plane",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 5.01,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 20,
+          "bulkRegime": "sky-exposure-plane",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 20,
       "maximumFrontWallHeightFt": 60,
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736"
+      ]
     },
     {
       "zoneCode": "R7A",
@@ -467,6 +2070,92 @@
       "bulkRegime": "contextual",
       "standardFar": 4.0,
       "qualifyingFar": 5.01,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 4.0,
+          "minimumBaseHeightFt": 40,
+          "maximumBaseHeightFt": 75,
+          "maximumBuildingHeightFt": 85,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 5.01,
+          "minimumBaseHeightFt": 40,
+          "maximumBaseHeightFt": 75,
+          "maximumBuildingHeightFt": 85,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 5.01,
+          "minimumBaseHeightFt": 40,
+          "maximumBaseHeightFt": 75,
+          "maximumBuildingHeightFt": 85,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 18,
       "minimumBaseHeightFt": 40,
       "maximumBaseHeightFt": 75,
@@ -474,7 +2163,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R7B",
@@ -482,6 +2178,92 @@
       "bulkRegime": "contextual",
       "standardFar": 3.0,
       "qualifyingFar": 3.9,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 3.0,
+          "minimumBaseHeightFt": 40,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 75,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 3.9,
+          "minimumBaseHeightFt": 40,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 75,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 3.9,
+          "minimumBaseHeightFt": 40,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 75,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 18,
       "minimumBaseHeightFt": 40,
       "maximumBaseHeightFt": 65,
@@ -489,7 +2271,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R7D",
@@ -497,6 +2286,92 @@
       "bulkRegime": "contextual",
       "standardFar": 4.66,
       "qualifyingFar": 5.6,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 4.66,
+          "minimumBaseHeightFt": 60,
+          "maximumBaseHeightFt": 85,
+          "maximumBuildingHeightFt": 105,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 5.6,
+          "minimumBaseHeightFt": 60,
+          "maximumBaseHeightFt": 85,
+          "maximumBuildingHeightFt": 105,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 5.6,
+          "minimumBaseHeightFt": 60,
+          "maximumBaseHeightFt": 85,
+          "maximumBuildingHeightFt": 105,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 18,
       "minimumBaseHeightFt": 60,
       "maximumBaseHeightFt": 85,
@@ -504,7 +2379,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R8",
@@ -516,7 +2398,89 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 6.02,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 20,
+          "bulkRegime": "sky-exposure-plane",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 6.02,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 20,
+          "bulkRegime": "sky-exposure-plane",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 6.02,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 20,
+          "bulkRegime": "sky-exposure-plane",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "R8A",
@@ -524,6 +2488,92 @@
       "bulkRegime": "contextual",
       "standardFar": 6.02,
       "qualifyingFar": 7.2,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 6.02,
+          "minimumBaseHeightFt": 60,
+          "maximumBaseHeightFt": 95,
+          "maximumBuildingHeightFt": 125,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 20,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 7.2,
+          "minimumBaseHeightFt": 60,
+          "maximumBaseHeightFt": 95,
+          "maximumBuildingHeightFt": 125,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 20,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 7.2,
+          "minimumBaseHeightFt": 60,
+          "maximumBaseHeightFt": 95,
+          "maximumBuildingHeightFt": 125,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 20,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 20,
       "minimumBaseHeightFt": 60,
       "maximumBaseHeightFt": 95,
@@ -531,7 +2581,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R8B",
@@ -539,6 +2596,92 @@
       "bulkRegime": "contextual",
       "standardFar": 4.0,
       "qualifyingFar": 4.8,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 4.0,
+          "minimumBaseHeightFt": 55,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 75,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 4.8,
+          "minimumBaseHeightFt": 55,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 75,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 4.8,
+          "minimumBaseHeightFt": 55,
+          "maximumBaseHeightFt": 65,
+          "maximumBuildingHeightFt": 75,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 18,
+          "bulkRegime": "contextual",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 18,
       "minimumBaseHeightFt": 55,
       "maximumBaseHeightFt": 65,
@@ -546,7 +2689,14 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "R9",
@@ -558,7 +2708,94 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-736", "zr-23-737"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-736",
+        "zr-23-737"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 7.52,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 23,
+          "bulkRegime": "sky-exposure-plane-or-tower",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736",
+            "zr-23-737"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 7.52,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 23,
+          "bulkRegime": "sky-exposure-plane-or-tower",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736",
+            "zr-23-737"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 7.52,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 23,
+          "bulkRegime": "sky-exposure-plane-or-tower",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736",
+            "zr-23-737"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-736",
+            "zr-23-737"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "R9A",
@@ -569,7 +2806,91 @@
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-432",
+        "zr-23-433"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 7.52,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 23,
+          "bulkRegime": "contextual-variant",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 7.52,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 23,
+          "bulkRegime": "contextual-variant",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 7.52,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 23,
+          "bulkRegime": "contextual-variant",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-432",
+            "zr-23-433"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "R10",
@@ -577,12 +2898,104 @@
       "bulkRegime": "sky-exposure-plane-or-tower",
       "standardFar": 10.0,
       "qualifyingFar": 12.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 10.0,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 25,
+          "bulkRegime": "sky-exposure-plane-or-tower",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-733",
+            "zr-23-736",
+            "zr-23-737"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 12.0,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 25,
+          "bulkRegime": "sky-exposure-plane-or-tower",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-733",
+            "zr-23-736",
+            "zr-23-737"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 12.0,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "openSpaceRatio": 25,
+          "bulkRegime": "sky-exposure-plane-or-tower",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-733",
+            "zr-23-736",
+            "zr-23-737"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-322",
+            "zr-23-335",
+            "zr-23-733",
+            "zr-23-736",
+            "zr-23-737"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 25,
       "maximumFrontWallHeightFt": 85,
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-322", "zr-23-335", "zr-23-733", "zr-23-736", "zr-23-737"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-322",
+        "zr-23-335",
+        "zr-23-733",
+        "zr-23-736",
+        "zr-23-737"
+      ]
     },
     {
       "zoneCode": "R10A",
@@ -590,137 +3003,1111 @@
       "bulkRegime": "contextual-variant",
       "standardFar": 10.0,
       "qualifyingFar": 12.0,
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 10.0,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 25,
+          "bulkRegime": "contextual-variant",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 12.0,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 25,
+          "bulkRegime": "contextual-variant",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 12.0,
+          "streetSetbackWideFt": 10,
+          "streetSetbackNarrowFt": 15,
+          "openSpaceRatio": 25,
+          "bulkRegime": "contextual-variant",
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-23-14",
+            "zr-23-22",
+            "zr-23-432",
+            "zr-23-433"
+          ],
+          "notes": null
+        }
+      },
       "openSpaceRatio": 25,
       "streetSetbackWideFt": 10,
       "streetSetbackNarrowFt": 15,
       "simplifiedPlanInsetFt": 10,
-      "sourceSections": ["zr-23-14", "zr-23-22", "zr-23-432", "zr-23-433"]
+      "sourceSections": [
+        "zr-23-14",
+        "zr-23-22",
+        "zr-23-432",
+        "zr-23-433"
+      ]
     },
     {
       "zoneCode": "C3",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R3-2",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C4-1",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R5",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C4-2",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R6",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C4-4",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R7-2",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C4-4D",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R8A",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C4-5",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R7-2",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C4-6",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C4-7",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C5-1",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10A",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C5-2",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10A",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C5-3",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C5-5",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C6-1",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R7-2",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C6-2",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R8",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C6-3",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R9",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C6-4",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C6-5",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "C6-9",
       "zoneType": "commercial",
       "bulkRegime": "residential-equivalent",
       "residentialEquivalent": "R10",
-      "sourceSections": ["zr-34-112"]
+      "sourceSections": [
+        "zr-34-112"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": null,
+          "bulkRegime": "residential-equivalent",
+          "sourceSections": [
+            "zr-34-112"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-34-112"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "M1-1",
@@ -732,7 +4119,84 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 1.0,
+          "maximumFrontWallHeightFt": 30,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 1.0,
+          "maximumFrontWallHeightFt": 30,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 1.0,
+          "maximumFrontWallHeightFt": 30,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "M1-2",
@@ -744,7 +4208,84 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "M1-3",
@@ -756,7 +4297,84 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 5.0,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 5.0,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 5.0,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "M1-4",
@@ -768,7 +4386,84 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "M2-1",
@@ -780,7 +4475,84 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "M2-2",
@@ -792,7 +4564,84 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 5.0,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 5.0,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 5.0,
+          "maximumFrontWallHeightFt": 85,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ],
+          "notes": null
+        }
+      }
     },
     {
       "zoneCode": "M3-1",
@@ -804,7 +4653,84 @@
       "streetSetbackWideFt": 15,
       "streetSetbackNarrowFt": 20,
       "simplifiedPlanInsetFt": 15,
-      "sourceSections": ["zr-43-12", "zr-43-25", "zr-43-26", "zr-43-43"]
+      "sourceSections": [
+        "zr-43-12",
+        "zr-43-25",
+        "zr-43-26",
+        "zr-43-43"
+      ],
+      "variants": {
+        "standardResidential": {
+          "label": "Standard / Market Rate Residential",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingAffordableHousing": {
+          "label": "Qualifying Affordable Housing",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "qualifyingSeniorHousing": {
+          "label": "Qualifying Senior Housing",
+          "far": 2.0,
+          "maximumFrontWallHeightFt": 60,
+          "streetSetbackWideFt": 15,
+          "streetSetbackNarrowFt": 20,
+          "rearYardFt": 20,
+          "bulkRegime": "manufacturing-sky-exposure",
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ]
+        },
+        "nonResidential": {
+          "label": "Non-Residential / Community Facility",
+          "far": null,
+          "minimumBaseHeightFt": null,
+          "maximumBaseHeightFt": null,
+          "maximumBuildingHeightFt": null,
+          "maximumFrontWallHeightFt": null,
+          "perimeterWallHeightFt": null,
+          "ridgeHeightFt": null,
+          "streetSetbackWideFt": null,
+          "streetSetbackNarrowFt": null,
+          "openSpaceRatio": null,
+          "usesOpenSpaceRatio": null,
+          "frontYardFt": null,
+          "sideYardEachFt": null,
+          "rearYardFt": null,
+          "bulkRegime": null,
+          "sourceSections": [
+            "zr-43-12",
+            "zr-43-25",
+            "zr-43-26",
+            "zr-43-43"
+          ],
+          "notes": null
+        }
+      }
     }
   ]
 }

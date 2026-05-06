@@ -31,7 +31,7 @@ async function resolveMapboxToken() {
 }
 
 const EMPTY_FC = { type: "FeatureCollection", features: [] };
-const ZONING_RULES_URLS = ["/web/zoning-rules.jsonld?v=20260507d", "/web/zoningRules.json?v=20260507d"];
+const ZONING_RULES_URLS = ["/web/zoning-rules.jsonld?v=20260507e", "/web/zoningRules.json?v=20260507e"];
 
 const feetToMeters = (ft) => Number(ft || 0) * 0.3048;
 
