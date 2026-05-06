@@ -5510,19 +5510,25 @@ function renderStudySheet() {
 
   const planCanvas = document.getElementById("planCanvas");
   const isoCanvas = document.getElementById("isoCanvas");
-  if (!planCanvas || !isoCanvas) return;
 
-  planCanvas.width = Math.max(520, planCanvas.clientWidth || 620);
-  planCanvas.height = Math.max(360, planCanvas.clientHeight || 420);
-  isoCanvas.width = Math.max(520, isoCanvas.clientWidth || 620);
-  isoCanvas.height = Math.max(360, isoCanvas.clientHeight || 420);
-
-  clearCanvas(planCanvas);
-  clearCanvas(isoCanvas);
-
-  drawPlan(planCanvas, geometry);
-  drawIso(isoCanvas, geometry);
-  updateStudyLabels(geometry);
+  // Use new SVG diagram system if available, otherwise fall back to canvas
+  if (diagramSystem) {
+    updateStudyLabels(geometry);
+    _updateTopPlanDiagram();
+    _updateIsometricDiagram();
+  } else if (planCanvas && isoCanvas) {
+    planCanvas.width = Math.max(520, planCanvas.clientWidth || 620);
+    planCanvas.height = Math.max(360, planCanvas.clientHeight || 420);
+    isoCanvas.width = Math.max(520, isoCanvas.clientWidth || 620);
+    isoCanvas.height = Math.max(360, isoCanvas.clientHeight || 420);
+    clearCanvas(planCanvas);
+    clearCanvas(isoCanvas);
+    drawPlan(planCanvas, geometry);
+    drawIso(isoCanvas, geometry);
+    updateStudyLabels(geometry);
+  } else {
+    return;
+  }
 
   // Keep map-side FAR layer synced with sheet sliders.
   farInput.value = geometry.farUsed;
