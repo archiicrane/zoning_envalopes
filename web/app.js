@@ -547,7 +547,7 @@ farInput.addEventListener("input", () => {
 if (osrSlider) {
   osrSlider.addEventListener("input", () => {
     if (osrVal) osrVal.textContent = `${formatNumber(osrSlider.value, 1)}%`;
-    if (activeLotPolygon && activeLotData) {
+    if ((activeLotPolygon && activeLotData) || multiSelectedLots.length > 0) {
       _ensureFarVisibleAndRebuild();
     }
   });
