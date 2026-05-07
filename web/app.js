@@ -116,6 +116,7 @@ let showSetbackLines = true;
 let showBuildableArea = true;
 let showOpenSpaceArea = true;
 let showLabels = true;
+let showMapText = true;
 let solidMode = false;             // toggle: Transparent Analysis vs Solid Massing
 let analysisPanelOpen = false;     // whether the analysis modal is open
 let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, footprintAreaFt2, selectedTypology, scoreBreakdown, warnings }
@@ -186,6 +187,7 @@ const toggleSetbackLinesBtn = document.getElementById("toggleSetbackLinesBtn");
 const toggleBuildableAreaBtn = document.getElementById("toggleBuildableAreaBtn");
 const toggleOpenSpaceAreaBtn = document.getElementById("toggleOpenSpaceAreaBtn");
 const toggleLabelsBtn = document.getElementById("toggleLabelsBtn");
+const toggleMapTextBtn = document.getElementById("toggleMapTextBtn");
 const controlsZoneOverrideSelect = document.getElementById("controlsZoneOverrideSelect");
 const uploadProposalBtn = document.getElementById("uploadProposalBtn");
 const layersMenuBtn = document.getElementById("layersMenuBtn");
@@ -2195,6 +2197,32 @@ const LAYER_GROUPS = {
     "road-centerlines-debug-line",
   ],
 };
+const MANAGED_LAYER_IDS = new Set(Object.values(LAYER_GROUPS).flat());
+const mapTextLayerDefaultVisibility = new Map();
+
+function _syncBasemapTextVisibility() {
+  if (!map) return;
+  const styleLayers = map.getStyle()?.layers || [];
+  for (const layer of styleLayers) {
+    if (layer.type !== "symbol") continue;
+    if (MANAGED_LAYER_IDS.has(layer.id)) continue;
+
+    if (!mapTextLayerDefaultVisibility.has(layer.id)) {
+      const defaultVisibility = layer.layout?.visibility === "none" ? "none" : "visible";
+      mapTextLayerDefaultVisibility.set(layer.id, defaultVisibility);
+    }
+
+    const targetVisibility = showMapText
+      ? (mapTextLayerDefaultVisibility.get(layer.id) || "visible")
+      : "none";
+
+    try {
+      map.setLayoutProperty(layer.id, "visibility", targetVisibility);
+    } catch (_err) {
+      // Ignore layers that disappear during style updates.
+    }
+  }
+}
 
 function _bringAnalysisLayersToFront() {
   if (!map) return;
@@ -2258,14 +2286,14 @@ function syncLayerVisibility() {
   _setLayerGroupVisibility(LAYER_GROUPS.openSpaceArea, showArea && showOpenSpace);
   _setLayerGroupVisibility(LAYER_GROUPS.buildableArea, showArea && showBuildable);
   _setLayerGroupVisibility(LAYER_GROUPS.setbackLines, showArea && showSetbacks);
-  _setLayerGroupVisibility(LAYER_GROUPS.labels, showArea && showTextLabels);
+  _setLayerGroupVisibility(LAYER_GROUPS.labels, showArea && showTextLabels && showMapText);
 
   // Area sub-controls: optional yard edge lines and road-link diagnostics.
   _setLayerVisibility("yard-edge-front-line", showArea && showSetbacks && showYardEdgeTypes);
   _setLayerVisibility("yard-edge-rear-line", showArea && showSetbacks && showYardEdgeTypes);
   _setLayerVisibility("yard-edge-side-line", showArea && showSetbacks && showYardEdgeTypes);
   _setLayerVisibility("yard-edge-corner-line", showArea && showSetbacks && showYardEdgeTypes);
-  _setLayerVisibility("yard-edge-labels", showArea && showSetbacks && showTextLabels && showYardEdgeTypes);
+  _setLayerVisibility("yard-edge-labels", showArea && showSetbacks && showTextLabels && showYardEdgeTypes && showMapText);
   _setLayerGroupVisibility(LAYER_GROUPS.debugLinks, showArea && debugMode && showRoadCenterlines);
 
   // Debug group remains independent from Area.
@@ -2309,6 +2337,10 @@ function syncLayerVisibility() {
     toggleLabelsBtn.classList.toggle("active", showTextLabels);
     toggleLabelsBtn.classList.toggle("pill--on", showTextLabels);
   }
+  if (toggleMapTextBtn) {
+    toggleMapTextBtn.classList.toggle("active", showMapText);
+    toggleMapTextBtn.classList.toggle("pill--on", showMapText);
+  }
   if (solidModeBtn) {
     solidModeBtn.classList.toggle("active", solidMode);
     solidModeBtn.classList.toggle("pill--on", solidMode);
@@ -2318,6 +2350,7 @@ function syncLayerVisibility() {
     debugModeBtn.classList.toggle("pill--on", debugMode);
   }
 
+  _syncBasemapTextVisibility();
   _bringAnalysisLayersToFront();
 }
 
@@ -8628,6 +8661,14 @@ if (toggleLabelsBtn) {
   toggleLabelsBtn.addEventListener("click", () => {
     showLabels = !showLabels;
     toggleLabelsBtn.classList.toggle("pill--on", showLabels);
+    syncLayerVisibility();
+  });
+}
+
+if (toggleMapTextBtn) {
+  toggleMapTextBtn.addEventListener("click", () => {
+    showMapText = !showMapText;
+    toggleMapTextBtn.classList.toggle("pill--on", showMapText);
     syncLayerVisibility();
   });
 }
