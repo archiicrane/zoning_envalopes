@@ -93,21 +93,6 @@ function _rectGeometry(minX, minY, maxX, maxY) {
   };
 }
 
-function _bboxFallbackRect(geometry, insetRatio = 0.08) {
-  if (!geometry) return null;
-  try {
-    const [minX, minY, maxX, maxY] = turf.bbox(_asFeature(geometry));
-    const w = maxX - minX;
-    const h = maxY - minY;
-    if (!(w > 0) || !(h > 0)) return null;
-    const ix = w * Math.max(0, Math.min(0.35, insetRatio));
-    const iy = h * Math.max(0, Math.min(0.35, insetRatio));
-    return _rectGeometry(minX + ix, minY + iy, maxX - ix, maxY - iy);
-  } catch (_err) {
-    return null;
-  }
-}
-
 function _normalizeBuildableGeometry(geometry) {
   if (!geometry) return null;
   if (geometry.type === "Polygon") return geometry;
@@ -126,7 +111,7 @@ function _normalizeBuildableGeometry(geometry) {
     if (best && bestArea > 0) return best;
   }
 
-  return _bboxFallbackRect(geometry, 0.04);
+  return null;
 }
 
 function _centroidCoord(geometry) {
@@ -296,7 +281,51 @@ function _guaranteedInBoundsFootprint(buildableGeom, orientationDeg = null) {
   if (fallbackRect && _areaFt2(fallbackRect) > 20) return fallbackRect;
 
   // Absolute fallback: tiny square centered on an interior point.
-  return _fallbackSquareInsideBuildable(buildableGeom) || _bboxFallbackRect(buildableGeom, 0.18);
+  return _fallbackSquareInsideBuildable(buildableGeom);
+}
+
+function _largestRectInsideBuildable(buildableGeom, orientationDeg = null) {
+  if (!buildableGeom || _areaFt2(buildableGeom) <= 1) return null;
+  const fractions = [0.98, 0.94, 0.9, 0.86, 0.82, 0.78, 0.74, 0.7, 0.66, 0.62, 0.58, 0.54, 0.5, 0.46, 0.42, 0.38, 0.34, 0.3, 0.26, 0.22, 0.18];
+  let best = null;
+  let bestArea = 0;
+  for (const w of fractions) {
+    for (const d of fractions) {
+      const rect = _rectInsideBuildable(buildableGeom, w, d, "center", orientationDeg);
+      if (!rect) continue;
+      const area = _areaFt2(rect);
+      if (area > bestArea) {
+        best = rect;
+        bestArea = area;
+      }
+    }
+  }
+  return best || _guaranteedInBoundsFootprint(buildableGeom, orientationDeg);
+}
+
+function _forEachVertex(geometry, visitor) {
+  if (!geometry || typeof visitor !== "function") return;
+  const polygons = geometry.type === "Polygon"
+    ? [geometry.coordinates]
+    : geometry.type === "MultiPolygon"
+      ? geometry.coordinates
+      : [];
+  for (const poly of polygons) {
+    for (const ring of poly || []) {
+      for (const coord of ring || []) {
+        if (Array.isArray(coord) && coord.length >= 2) visitor(coord);
+      }
+    }
+  }
+}
+
+function _countVerticesOutside(geometry, containerGeometry) {
+  if (!geometry || !containerGeometry) return Number.MAX_SAFE_INTEGER;
+  let outside = 0;
+  _forEachVertex(geometry, (coord) => {
+    if (!_isPointInside(coord, containerGeometry)) outside += 1;
+  });
+  return outside;
 }
 
 function _intersection(aGeom, bGeom) {
@@ -591,6 +620,7 @@ function _makePlanFeature(geometry, kind, color, typology, label, areaFt2 = null
  */
 export function buildFarMassing({
   buildableFootprintGeometry,
+  selectedLotGeometry = null,
   allowedFarFloorArea,
   floorHeightFt = 10,
   coveragePct = 80,
@@ -617,22 +647,23 @@ export function buildFarMassing({
     };
   }
 
-  const normalizedBuildable = _normalizeBuildableGeometry(buildableFootprintGeometry);
-  const simplifiedBuildable = _simplifyGeometry(normalizedBuildable || buildableFootprintGeometry);
-  let buildableAreaFt2 = _areaFt2(simplifiedBuildable);
-  if (!(buildableAreaFt2 > 0)) {
-    const bboxRect = _bboxFallbackRect(simplifiedBuildable || buildableFootprintGeometry, 0.08);
-    if (bboxRect) {
-      buildableAreaFt2 = _areaFt2(bboxRect);
-      if (buildableAreaFt2 > 0) {
-        warnings.push("FAR fallback: buildable geometry area invalid; using bbox rectangle proxy.");
-      }
-    }
-  }
-  if (buildableAreaFt2 <= 0) {
+  const normalizedLot = _normalizeBuildableGeometry(selectedLotGeometry || buildableFootprintGeometry)
+    || _simplifyGeometry(selectedLotGeometry || buildableFootprintGeometry);
+  const normalizedBuildable = _normalizeBuildableGeometry(buildableFootprintGeometry)
+    || _simplifyGeometry(buildableFootprintGeometry);
+
+  const selectedLotPolygon = normalizedLot;
+  const buildableAreaPolygon = normalizedBuildable;
+  const safeBuildablePolygon = _normalizeBuildableGeometry(_intersection(selectedLotPolygon, buildableAreaPolygon));
+
+  const selectedLotAreaFt2 = _areaFt2(selectedLotPolygon);
+  const buildableAreaFt2 = _areaFt2(buildableAreaPolygon);
+  const safeBuildableAreaFt2 = _areaFt2(safeBuildablePolygon);
+
+  if (!(safeBuildableAreaFt2 > 0)) {
     return {
       features,
-      warnings: ["Buildable footprint area is zero."],
+      warnings: ["Safe buildable footprint area is zero after lot/buildable intersection."],
       numFloors: 0,
       buildingHeightFt: 0,
       footprintAreaFt2: 0,
@@ -651,31 +682,29 @@ export function buildFarMassing({
   const unclampedTargetFootprintArea = targetFloorArea / floorCount;
   const targetFootprintArea = Math.max(
     40,
-    Math.min(buildableAreaFt2, unclampedTargetFootprintArea)
+    Math.min(safeBuildableAreaFt2, unclampedTargetFootprintArea)
   );
 
   let fallbackReason = null;
   let primaryFootprint = _rectForTargetAreaInsideBuildable(
-    simplifiedBuildable,
+    safeBuildablePolygon,
     targetFootprintArea,
     orientationDeg
   );
 
   if (!primaryFootprint || _areaFt2(primaryFootprint) <= 0) {
-    fallbackReason = "front-axis rectangular fitting failed; using rectangular in-bounds fallback.";
-    primaryFootprint = _guaranteedInBoundsFootprint(simplifiedBuildable, orientationDeg)
-      || _bboxFallbackRect(simplifiedBuildable, 0.18);
+    fallbackReason = "front-axis rectangular fitting failed; using largest in-bounds rectangle fallback.";
+    primaryFootprint = _largestRectInsideBuildable(safeBuildablePolygon, orientationDeg);
   }
 
-  let footprintAreaFt2 = _areaFt2(primaryFootprint);
-  if (!(footprintAreaFt2 > 0)) {
-    fallbackReason = fallbackReason || "rectangular fallback could not be resolved.";
-    const bboxFootprint = _bboxFallbackRect(simplifiedBuildable, 0.2);
-    if (bboxFootprint && _areaFt2(bboxFootprint) > 0) {
-      primaryFootprint = bboxFootprint;
-      footprintAreaFt2 = _areaFt2(primaryFootprint);
-      fallbackReason = "rectangular fitting failed; using bbox rectangle fallback.";
-    }
+  let finalFarFootprint = _intersection(primaryFootprint, safeBuildablePolygon);
+  let footprintAreaFt2 = _areaFt2(finalFarFootprint);
+  const targetPrimaryArea = _areaFt2(primaryFootprint);
+  if (!(footprintAreaFt2 > 0) || !(targetPrimaryArea > 0) || footprintAreaFt2 < (targetPrimaryArea * 0.92)) {
+    fallbackReason = fallbackReason || "final clip created invalid/sliver geometry; using largest clean rectangle fallback.";
+    const fallbackRect = _largestRectInsideBuildable(safeBuildablePolygon, orientationDeg);
+    finalFarFootprint = _intersection(fallbackRect, safeBuildablePolygon);
+    footprintAreaFt2 = _areaFt2(finalFarFootprint);
   }
 
   if (!(footprintAreaFt2 > 0)) {
@@ -683,6 +712,30 @@ export function buildFarMassing({
     return {
       features,
       warnings: [...warnings, "No valid FAR footprint could be generated."],
+      numFloors: 0,
+      buildingHeightFt: 0,
+      footprintAreaFt2: 0,
+      selectedTypology: "box",
+      scoreBreakdown: null,
+    };
+  }
+
+  let outsideLotCount = _countVerticesOutside(finalFarFootprint, selectedLotPolygon);
+  let outsideSafeCount = _countVerticesOutside(finalFarFootprint, safeBuildablePolygon);
+
+  if (outsideLotCount > 0 || outsideSafeCount > 0) {
+    fallbackReason = fallbackReason || "vertex validation failed; recalculated with clean in-bounds rectangle fallback.";
+    const fallbackRect = _largestRectInsideBuildable(safeBuildablePolygon, orientationDeg);
+    finalFarFootprint = _intersection(fallbackRect, safeBuildablePolygon);
+    footprintAreaFt2 = _areaFt2(finalFarFootprint);
+    outsideLotCount = _countVerticesOutside(finalFarFootprint, selectedLotPolygon);
+    outsideSafeCount = _countVerticesOutside(finalFarFootprint, safeBuildablePolygon);
+  }
+
+  if (!(footprintAreaFt2 > 0) || outsideLotCount > 0 || outsideSafeCount > 0) {
+    return {
+      features,
+      warnings: [...warnings, "Unable to generate valid in-bounds FAR footprint after fallback."],
       numFloors: 0,
       buildingHeightFt: 0,
       footprintAreaFt2: 0,
@@ -704,20 +757,24 @@ export function buildFarMassing({
   }
   const numFloors = Math.max(1, Math.floor(buildingHeightFt / safeFloorHeight));
 
-  console.log(`[far-massing] buildableArea: ${buildableAreaFt2}`);
-  console.log(`[far-massing] targetFloorArea: ${targetFloorArea}`);
-  console.log(`[far-massing] targetFootprintArea: ${targetFootprintArea}`);
+  console.log(`[far-massing] selectedLotPolygon area: ${selectedLotAreaFt2}`);
+  console.log(`[far-massing] buildableAreaPolygon area: ${buildableAreaFt2}`);
+  console.log(`[far-massing] safeBuildablePolygon area: ${safeBuildableAreaFt2}`);
+  console.log(`[far-massing] targetFarFootprint area: ${targetFootprintArea}`);
+  console.log(`[far-massing] finalFarFootprint area: ${footprintAreaFt2}`);
+  console.log(`[far-massing] number of vertices outside lot: ${outsideLotCount}`);
+  console.log(`[far-massing] fallback used: ${Boolean(fallbackReason)}`);
   console.log(`[far-massing] selectedFarFootprint:`, {
     areaFt2: footprintAreaFt2,
     orientationDeg,
-    geometryType: primaryFootprint?.type || null,
+    geometryType: finalFarFootprint?.type || null,
   });
   console.log(`[far-massing] farHeight: ${buildingHeightFt}`);
 
-  features.push(_makeMassFeature(primaryFootprint, 0, buildingHeightFt, color, "box", numFloors, "box"));
-  features.push(_makePlanFeature(primaryFootprint, "far_footprint", "#1a7f54", "box", "footprint", _areaFt2(primaryFootprint)));
+  features.push(_makeMassFeature(finalFarFootprint, 0, buildingHeightFt, color, "box", numFloors, "box"));
+  features.push(_makePlanFeature(finalFarFootprint, "far_footprint", "#1a7f54", "box", "footprint", _areaFt2(finalFarFootprint)));
 
-  const computedOpenSpace = _difference(simplifiedBuildable, primaryFootprint);
+  const computedOpenSpace = _difference(safeBuildablePolygon, finalFarFootprint);
   const computedOpenAreaFt2 = _areaFt2(computedOpenSpace);
   if (computedOpenSpace && computedOpenAreaFt2 > 60) {
     features.push(_makePlanFeature(computedOpenSpace, "far_open_space", "#98d8bb", "box", "open-space", computedOpenAreaFt2));
@@ -730,9 +787,9 @@ export function buildFarMassing({
   let rawFeatures = features.filter(Boolean);
 
   // Last-resort guard: never return zero FAR features when buildable geometry exists.
-  if (!rawFeatures.length && _areaFt2(simplifiedBuildable) > 1) {
+  if (!rawFeatures.length && _areaFt2(safeBuildablePolygon) > 1) {
     const strictFallbackFootprint = _guaranteedInBoundsFootprint(
-      simplifiedBuildable,
+      safeBuildablePolygon,
       orientationDeg
     );
     const strictFallbackHeightFt = Math.max(safeFloorHeight, Number(buildingHeightFt) || safeFloorHeight);
@@ -759,8 +816,8 @@ export function buildFarMassing({
       targetOpenSpaceFt2: Math.max(0, Number(openSpaceTargetFt2) || 0),
       requestedMassingOption: massingOption,
       farIntensity: targetFloorArea / Math.max(1, buildableAreaFt2),
-      buildableAreaFt2,
-      targetCoverage: targetFootprintArea / Math.max(1, buildableAreaFt2),
+        buildableAreaFt2: safeBuildableAreaFt2,
+        targetCoverage: targetFootprintArea / Math.max(1, safeBuildableAreaFt2),
       frontageOrientationDeg: orientationDeg,
     },
   };

@@ -5047,6 +5047,7 @@ function _buildEnvelopesForMultiSelectedLots() {
 
       const farBuilt = buildFarMassing({
         buildableFootprintGeometry: controlsFootprintGeometry,
+        selectedLotGeometry: lotGeometry,
         allowedFarFloorArea,
         floorHeightFt,
         coveragePct: effectiveCoveragePct,
@@ -5442,6 +5443,7 @@ function buildFarEnvelopeForSelectedLot() {
 
     const { features, warnings, numFloors, buildingHeightFt, footprintAreaFt2, selectedTypology, scoreBreakdown } = buildFarMassing({
       buildableFootprintGeometry: controlsFootprintGeometry,
+      selectedLotGeometry: lotGeometry,
       allowedFarFloorArea,
       floorHeightFt,
       coveragePct: effectiveCoveragePct,
