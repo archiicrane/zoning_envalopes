@@ -112,11 +112,16 @@ let multiSelectedLots = [];       // array of lot GeoJSON features
 let multiSelectMode = false;
 let showMaxEnvelope = true;        // toggle: MAX zoning envelope (blue)
 let showFarEnvelope = true;        // toggle: FAR buildable envelope (green)
+let showSetbackLines = true;
+let showBuildableArea = true;
+let showOpenSpaceArea = true;
+let showLabels = true;
 let solidMode = false;             // toggle: Transparent Analysis vs Solid Massing
 let analysisPanelOpen = false;     // whether the analysis modal is open
 let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, footprintAreaFt2, selectedTypology, scoreBreakdown, warnings }
 let lastMaxEnvelopeGeojson = EMPTY_FC;
 let lastFarEnvelopeGeojson = EMPTY_FC;
+let lastMultiLotAnalysis = null;
 let isoRenderer = null;
 let isoScene = null;
 let isoCamera = null;
@@ -176,6 +181,10 @@ const analyzeSelectionBtn = document.getElementById("analyzeSelectionBtn");
 const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const toggleMaxEnvelopeBtn = document.getElementById("toggleMaxEnvelopeBtn");
 const toggleFarEnvelopeBtn = document.getElementById("toggleFarEnvelopeBtn");
+const toggleSetbackLinesBtn = document.getElementById("toggleSetbackLinesBtn");
+const toggleBuildableAreaBtn = document.getElementById("toggleBuildableAreaBtn");
+const toggleOpenSpaceAreaBtn = document.getElementById("toggleOpenSpaceAreaBtn");
+const toggleLabelsBtn = document.getElementById("toggleLabelsBtn");
 const controlsZoneOverrideSelect = document.getElementById("controlsZoneOverrideSelect");
 const uploadProposalBtn = document.getElementById("uploadProposalBtn");
 const layersMenuBtn = document.getElementById("layersMenuBtn");
@@ -1700,7 +1709,7 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "front_yard_zone"],
       paint: {
-        "fill-color": "#2563eb",
+        "fill-color": "#ef4444",
         "fill-opacity": 0.2,
       },
     });
@@ -1711,7 +1720,7 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "side_yard_zone"],
       paint: {
-        "fill-color": "#f97316",
+        "fill-color": "#2563eb",
         "fill-opacity": 0.2,
       },
     });
@@ -1722,7 +1731,7 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "rear_yard_zone"],
       paint: {
-        "fill-color": "#dc2626",
+        "fill-color": "#7c3aed",
         "fill-opacity": 0.2,
       },
     });
@@ -1813,10 +1822,11 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "yard_edge_front"],
       paint: {
-        "line-color": "#2563eb",
-        "line-width": 4,
+        "line-color": "#ef4444",
+        "line-width": 2.5,
+        "line-dasharray": [2, 2],
       },
-      layout: { visibility: "none" },
+      layout: { visibility: "visible" },
     });
 
     map.addLayer({
@@ -1825,10 +1835,11 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "yard_edge_rear"],
       paint: {
-        "line-color": "#dc2626",
-        "line-width": 4,
+        "line-color": "#7c3aed",
+        "line-width": 2.5,
+        "line-dasharray": [2, 2],
       },
-      layout: { visibility: "none" },
+      layout: { visibility: "visible" },
     });
 
     map.addLayer({
@@ -1837,10 +1848,11 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "yard_edge_side"],
       paint: {
-        "line-color": "#f97316",
-        "line-width": 3,
+        "line-color": "#2563eb",
+        "line-width": 2.5,
+        "line-dasharray": [2, 2],
       },
-      layout: { visibility: "none" },
+      layout: { visibility: "visible" },
     });
 
     map.addLayer({
@@ -1876,12 +1888,41 @@ function ensureSourcesAndLayers() {
       filter: ["==", ["get", "kind"], "yard_edge_label"],
       layout: {
         "text-field": ["get", "edge_label"],
-        "text-size": 11,
+        "text-size": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          14, 9,
+          16, 10.5,
+          18, 12,
+          20, 13
+        ],
         "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+        "text-rotate": ["coalesce", ["get", "edge_angle"], 0],
+        "text-rotation-alignment": "map",
+        "symbol-sort-key": [
+          "match",
+          ["get", "edge_label"],
+          "FRONT", 30,
+          "REAR", 20,
+          "SIDE", 10,
+          5
+        ],
+        "text-variable-anchor": ["center", "top", "bottom", "left", "right"],
+        "text-radial-offset": 0.25,
+        "text-padding": 3,
+        "text-optional": true,
         visibility: "visible",
       },
       paint: {
-        "text-color": "#0f172a",
+        "text-color": [
+          "match",
+          ["get", "edge_label"],
+          "FRONT", "#ef4444",
+          "SIDE", "#2563eb",
+          "REAR", "#7c3aed",
+          "#0f172a"
+        ],
         "text-halo-color": "#ffffff",
         "text-halo-width": 1,
       },
@@ -1893,12 +1934,19 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "setback_offset_line"],
       paint: {
-        "line-color": ["coalesce", ["get", "color"], "#64748b"],
+        "line-color": [
+          "match",
+          ["get", "edge_type"],
+          "front", "#ef4444",
+          "side", "#2563eb",
+          "rear", "#7c3aed",
+          ["coalesce", ["get", "color"], "#64748b"]
+        ],
         "line-width": 2,
         "line-dasharray": [2, 2],
         "line-opacity": 0.9,
       },
-      layout: { visibility: "none" },
+      layout: { visibility: "visible" },
     });
 
     map.addLayer({
@@ -2093,10 +2141,48 @@ const LAYER_GROUPS = {
   farEnvelope: [
     "selected-far-envelope-fill",
     "selected-far-envelope-outline",
+  ],
+  openSpaceArea: [
     "selected-far-open-space-fill",
-    "selected-far-footprint-fill",
+    "open-space-zone-fill",
   ],
   buildableArea: [
+    "selected-far-footprint-fill",
+    "front-yard-zone-fill",
+    "side-yard-zone-fill",
+    "rear-yard-zone-fill",
+    "buildable-footprint-fill",
+    "buildable-footprint-outline",
+    "study-outline",
+  ],
+  setbackLines: [
+    "yard-edge-front-line",
+    "yard-edge-rear-line",
+    "yard-edge-side-line",
+    "yard-edge-corner-line",
+    "setback-offset-lines",
+  ],
+  labels: [
+    "yard-edge-labels",
+    "buildable-label",
+  ],
+  debugLinks: [
+    "edge-to-road-links",
+  ],
+  debug: [
+    "road-centerlines-debug-line",
+  ],
+};
+
+function _bringAnalysisLayersToFront() {
+  if (!map) return;
+  const ordered = [
+    "selected-max-envelope-fill",
+    "selected-max-envelope-outline",
+    "selected-far-envelope-fill",
+    "selected-far-envelope-outline",
+    "selected-far-open-space-fill",
+    "selected-far-footprint-fill",
     "front-yard-zone-fill",
     "side-yard-zone-fill",
     "rear-yard-zone-fill",
@@ -2104,19 +2190,19 @@ const LAYER_GROUPS = {
     "buildable-footprint-fill",
     "buildable-footprint-outline",
     "study-outline",
+    "yard-edge-front-line",
+    "yard-edge-side-line",
+    "yard-edge-rear-line",
     "yard-edge-corner-line",
+    "setback-offset-lines",
     "yard-edge-labels",
     "buildable-label",
-    "yard-edge-front-line",
-    "yard-edge-rear-line",
-    "yard-edge-side-line",
-    "edge-to-road-links",
-    "setback-offset-lines",
-  ],
-  debug: [
-    "road-centerlines-debug-line",
-  ],
-};
+    "selected-lot-outline",
+  ];
+  for (const layerId of ordered) {
+    if (map.getLayer(layerId)) map.moveLayer(layerId);
+  }
+}
 
 function _setLayerVisibility(layerId, visible) {
   if (!map?.getLayer(layerId)) return;
@@ -2137,18 +2223,27 @@ function syncLayerVisibility() {
   const showArea = !!showEnvelopeToggle?.checked;
   const showMax = !!showMaxEnvelope;
   const showFar = !!showFarEnvelope;
+  const showSetbacks = !!showSetbackLines;
+  const showBuildable = !!showBuildableArea;
+  const showOpenSpace = !!showOpenSpaceArea;
+  const showTextLabels = !!showLabels;
 
   // Independent category visibility.
   _setLayerGroupVisibility(LAYER_GROUPS.existingBuildings, showBuildings);
   _setLayerGroupVisibility(LAYER_GROUPS.maxEnvelope, showMax);
   _setLayerGroupVisibility(LAYER_GROUPS.farEnvelope, showFar);
-  _setLayerGroupVisibility(LAYER_GROUPS.buildableArea, showArea);
+  _setLayerGroupVisibility(LAYER_GROUPS.openSpaceArea, showArea && showOpenSpace);
+  _setLayerGroupVisibility(LAYER_GROUPS.buildableArea, showArea && showBuildable);
+  _setLayerGroupVisibility(LAYER_GROUPS.setbackLines, showArea && showSetbacks);
+  _setLayerGroupVisibility(LAYER_GROUPS.labels, showArea && showTextLabels);
 
   // Area sub-controls: optional yard edge lines and road-link diagnostics.
-  for (const id of ["yard-edge-front-line", "yard-edge-rear-line", "yard-edge-side-line", "setback-offset-lines", "yard-edge-labels", "buildable-label", "yard-edge-corner-line"]) {
-    _setLayerVisibility(id, showArea && debugMode && showYardEdgeTypes);
-  }
-  _setLayerVisibility("edge-to-road-links", showArea && debugMode && showRoadCenterlines);
+  _setLayerVisibility("yard-edge-front-line", showArea && showSetbacks && showYardEdgeTypes);
+  _setLayerVisibility("yard-edge-rear-line", showArea && showSetbacks && showYardEdgeTypes);
+  _setLayerVisibility("yard-edge-side-line", showArea && showSetbacks && showYardEdgeTypes);
+  _setLayerVisibility("yard-edge-corner-line", showArea && showSetbacks && showYardEdgeTypes);
+  _setLayerVisibility("yard-edge-labels", showArea && showSetbacks && showTextLabels && showYardEdgeTypes);
+  _setLayerGroupVisibility(LAYER_GROUPS.debugLinks, showArea && debugMode && showRoadCenterlines);
 
   // Debug group remains independent from Area.
   _setLayerGroupVisibility(LAYER_GROUPS.debug, debugMode && showRoadCenterlines);
@@ -2175,6 +2270,22 @@ function syncLayerVisibility() {
     toggleFarEnvelopeBtn.classList.toggle("active", showFar);
     toggleFarEnvelopeBtn.classList.toggle("pill--on", showFar);
   }
+  if (toggleSetbackLinesBtn) {
+    toggleSetbackLinesBtn.classList.toggle("active", showSetbacks);
+    toggleSetbackLinesBtn.classList.toggle("pill--on", showSetbacks);
+  }
+  if (toggleBuildableAreaBtn) {
+    toggleBuildableAreaBtn.classList.toggle("active", showBuildable);
+    toggleBuildableAreaBtn.classList.toggle("pill--on", showBuildable);
+  }
+  if (toggleOpenSpaceAreaBtn) {
+    toggleOpenSpaceAreaBtn.classList.toggle("active", showOpenSpace);
+    toggleOpenSpaceAreaBtn.classList.toggle("pill--on", showOpenSpace);
+  }
+  if (toggleLabelsBtn) {
+    toggleLabelsBtn.classList.toggle("active", showTextLabels);
+    toggleLabelsBtn.classList.toggle("pill--on", showTextLabels);
+  }
   if (solidModeBtn) {
     solidModeBtn.classList.toggle("active", solidMode);
     solidModeBtn.classList.toggle("pill--on", solidMode);
@@ -2183,6 +2294,8 @@ function syncLayerVisibility() {
     debugModeBtn.classList.toggle("active", debugMode);
     debugModeBtn.classList.toggle("pill--on", debugMode);
   }
+
+  _bringAnalysisLayersToFront();
 }
 
 function updateSelectionVisual(polygon, shouldRefocus = true) {
@@ -2786,6 +2899,41 @@ function updateLotSummary(data, envelopeResults) {
       .join("")}</select>`
     : `<strong>${effectiveZone || "n/a"}</strong>`;
 
+  const multiSummaryHtml = (() => {
+    if (!lastMultiLotAnalysis?.lots?.length || multiSelectedLots.length < 2) return "";
+    const totals = lastMultiLotAnalysis.totals || {};
+    const activeBbl = String(activeLotData?.bbl || activeLotData?.BBL || "");
+    const lotRows = lastMultiLotAnalysis.lots
+      .map((lot, idx) => {
+        const isActive = activeBbl && String(lot.bbl) === activeBbl;
+        return `
+          <div class="summary-row">
+            <button type="button" class="summary-lot-jump" data-lot-key="${_escapeHtml(String(lot.key || idx))}">
+              ${isActive ? "Active: " : ""}${_escapeHtml(lot.address || "n/a")}
+            </button>
+            <strong>${formatNumber(lot.allowedFarFloorArea, 0)} sf FAR | ${lot.warningCount ? "Warning" : "Compliant"}</strong>
+          </div>
+        `;
+      })
+      .join("");
+
+    return `
+      <details open>
+        <summary>All Selected Lots (${totals.count || lastMultiLotAnalysis.lots.length})</summary>
+        <div class="summary-row"><span>Total Lot Area</span><strong>${formatNumber(totals.totalLotAreaFt2, 0)} sf</strong></div>
+        <div class="summary-row"><span>Total Allowed FAR Area</span><strong>${formatNumber(totals.totalAllowedFarAreaFt2, 0)} sf</strong></div>
+        <div class="summary-row"><span>Total Existing Area</span><strong>${formatNumber(totals.totalExistingAreaFt2, 0)} sf</strong></div>
+        <div class="summary-row"><span>Total Required Open Space</span><strong>${formatNumber(totals.totalRequiredOpenSpaceFt2, 0)} sf</strong></div>
+        <div class="summary-row"><span>Total Provided Open Space</span><strong>${formatNumber(totals.totalProvidedOpenSpaceFt2, 0)} sf</strong></div>
+        <div class="summary-row"><span>Average FAR</span><strong>${formatNumber(totals.avgFar, 2)}</strong></div>
+        <div class="summary-row"><span>Average OSR</span><strong>${formatNumber(totals.avgOsr, 1)}%</strong></div>
+        <div class="summary-row"><span>Compliant Lots</span><strong>${formatNumber(totals.compliantCount, 0)}</strong></div>
+        <div class="summary-row"><span>Lots With Warnings</span><strong>${formatNumber(totals.warningCount, 0)}</strong></div>
+        ${lotRows}
+      </details>
+    `;
+  })();
+
   lotSummary.className = "lot-summary";
   const debugJson = lastEnvelopeDebug
     ? _escapeHtml(JSON.stringify(lastEnvelopeDebug, null, 2))
@@ -2804,6 +2952,7 @@ function updateLotSummary(data, envelopeResults) {
     <div class="summary-row"><span>BBL</span><strong>${data.bbl || "n/a"}</strong></div>
     <div class="summary-row"><span>Max Height</span><strong>${_heightLabel(zoning.max_height_ft)}</strong></div>
     <div class="summary-row"><span>Allowed Floor Area (FAR)</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
+    ${multiSummaryHtml}
     <details>
       <summary>Advanced Details</summary>
       <div class="summary-row"><span>Neighborhood</span><strong>${data.neighborhood_name || activeNeighborhood?.name || "n/a"}</strong></div>
@@ -3786,6 +3935,13 @@ function _edgeDebugFeatures(classification) {
   const pushEdge = (idx, kind, label, color) => {
     const edge = classification.edges.find((e) => e.idx === idx);
     if (!edge) return;
+    const start = edge.start || edge.a || edge.line?.geometry?.coordinates?.[0];
+    const end = edge.end || edge.b || edge.line?.geometry?.coordinates?.[1];
+    const dx = Number(end?.[0]) - Number(start?.[0]);
+    const dy = Number(end?.[1]) - Number(start?.[1]);
+    let edgeAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+    if (edgeAngle > 90) edgeAngle -= 180;
+    if (edgeAngle < -90) edgeAngle += 180;
     features.push({
       type: "Feature",
       properties: { kind, color },
@@ -3793,13 +3949,13 @@ function _edgeDebugFeatures(classification) {
     });
     features.push({
       type: "Feature",
-      properties: { kind: "yard_edge_label", edge_label: label },
+      properties: { kind: "yard_edge_label", edge_label: label, edge_angle: edgeAngle },
       geometry: { type: "Point", coordinates: edge.midpoint },
     });
   };
-  for (const idx of classification.frontEdgeIndices) pushEdge(idx, "yard_edge_front", "FRONT", "#2563eb");
-  if (classification.rearEdgeIndex != null) pushEdge(classification.rearEdgeIndex, "yard_edge_rear", "REAR", "#dc2626");
-  for (const idx of classification.sideEdgeIndices) pushEdge(idx, "yard_edge_side", "SIDE", "#f97316");
+  for (const idx of classification.frontEdgeIndices) pushEdge(idx, "yard_edge_front", "FRONT", "#ef4444");
+  if (classification.rearEdgeIndex != null) pushEdge(classification.rearEdgeIndex, "yard_edge_rear", "REAR", "#7c3aed");
+  for (const idx of classification.sideEdgeIndices) pushEdge(idx, "yard_edge_side", "SIDE", "#2563eb");
   if (classification.isCornerLot) {
     for (const idx of classification.frontEdgeIndices) {
       pushEdge(idx, "yard_edge_corner", "CORNER", "#7c3aed");
@@ -3918,9 +4074,9 @@ function _computeYardAdjustedGeometry(lotRing, edgeRuleEngine) {
     }
   };
 
-  applyEdgeSetbacks(frontRuleEdges, frontStrips, "#2563eb", "[yard-geometry] front yard clip");
-  applyEdgeSetbacks(rearRuleEdges, rearStrips, "#dc2626", "[yard-geometry] rear yard clip");
-  applyEdgeSetbacks(sideRuleEdges, sideStrips, "#f97316", "[yard-geometry] side yard clip");
+  applyEdgeSetbacks(frontRuleEdges, frontStrips, "#ef4444", "[yard-geometry] front yard clip");
+  applyEdgeSetbacks(rearRuleEdges, rearStrips, "#7c3aed", "[yard-geometry] rear yard clip");
+  applyEdgeSetbacks(sideRuleEdges, sideStrips, "#2563eb", "[yard-geometry] side yard clip");
 
   if (!rearRuleEdges.length) {
     console.log("[yard-geometry] rear yard clip", { distanceFt: 0, area_ft2: 0, skipped: true });
@@ -4940,16 +5096,8 @@ async function handleMapClick(ev) {
   if (isMultiPick) {
     // Multi-pick mode: add/remove clicked lot from multi-selection set.
     const feature = features[0];
-    const keyOf = (f) => {
-      const p = f?.properties || {};
-      return String(
-        p.bbl
-        || p.BBL
-        || `${p.borough || p.Borough || ""}-${p.block || p.Block || ""}-${p.lot || p.Lot || ""}`
-      );
-    };
-    const featureKey = keyOf(feature);
-    const existingIdx = multiSelectedLots.findIndex((f) => keyOf(f) === featureKey && featureKey !== "");
+    const featureKey = keyOfLotFeature(feature);
+    const existingIdx = multiSelectedLots.findIndex((f) => keyOfLotFeature(f) === featureKey && featureKey !== "");
     if (existingIdx >= 0) {
       multiSelectedLots.splice(existingIdx, 1);
     } else {
@@ -4972,6 +5120,94 @@ async function handleMapClick(ev) {
 
 // ── Multi-selection helpers ───────────────────────────────────────────────────
 
+function keyOfLotFeature(feature) {
+  const p = feature?.properties || {};
+  return String(
+    p.bbl
+    || p.BBL
+    || `${p.borough || p.Borough || ""}-${p.block || p.Block || ""}-${p.lot || p.Lot || ""}`
+  );
+}
+
+function _labelDensityProfile(selectedCount) {
+  const n = Number(selectedCount || 0);
+  if (n <= 6) {
+    return {
+      minDistanceFt: 18,
+      allowSide: true,
+      allowCorner: true,
+    };
+  }
+  if (n <= 20) {
+    return {
+      minDistanceFt: 30,
+      allowSide: true,
+      allowCorner: false,
+    };
+  }
+  return {
+    minDistanceFt: 45,
+    allowSide: false,
+    allowCorner: false,
+  };
+}
+
+function _applyYardLabelDensity(features, options = {}) {
+  const minDistanceFt = Number(options.minDistanceFt || 18);
+  const minDistanceM = feetToMeters(minDistanceFt);
+  const allowSide = options.allowSide !== false;
+  const allowCorner = options.allowCorner !== false;
+
+  const out = [];
+  const points = [];
+  const labels = [];
+
+  for (const feature of (features || [])) {
+    if (String(feature?.properties?.kind || "") === "yard_edge_label") {
+      labels.push(feature);
+    } else {
+      out.push(feature);
+    }
+  }
+
+  const priority = (label) => {
+    const token = String(label?.properties?.edge_label || "").toUpperCase();
+    if (token === "FRONT") return 4;
+    if (token === "REAR") return 3;
+    if (token === "SIDE") return 2;
+    return 1;
+  };
+
+  labels
+    .filter((feature) => {
+      const token = String(feature?.properties?.edge_label || "").toUpperCase();
+      if (token === "SIDE" && !allowSide) return false;
+      if (token === "CORNER" && !allowCorner) return false;
+      return true;
+    })
+    .sort((a, b) => priority(b) - priority(a))
+    .forEach((feature) => {
+      const coordinates = feature?.geometry?.coordinates;
+      if (!Array.isArray(coordinates)) return;
+
+      const candidate = turf.point(coordinates);
+      const tooClose = points.some((pt) => {
+        try {
+          return turf.distance(candidate, pt, { units: "meters" }) < minDistanceM;
+        } catch (_err) {
+          return false;
+        }
+      });
+
+      if (!tooClose) {
+        points.push(candidate);
+        out.push(feature);
+      }
+    });
+
+  return out;
+}
+
 function _updateMultiSelectHighlight() {
   if (!map?.getSource("multi-selected-lots")) return;
   map.getSource("multi-selected-lots").setData({
@@ -4983,6 +5219,7 @@ function _updateMultiSelectHighlight() {
 
 function _clearMultiSelection() {
   multiSelectedLots = [];
+  lastMultiLotAnalysis = null;
   _updateMultiSelectHighlight();
   _updateSelectionButtonStates();
 }
@@ -5014,6 +5251,7 @@ function _buildEnvelopesForMultiSelectedLots() {
   const maxFeatures = [];
   const farFeatures = [];
   const areaFeatures = [];
+  const perLotStats = [];
 
   for (const feature of multiSelectedLots) {
     try {
@@ -5084,6 +5322,55 @@ function _buildEnvelopesForMultiSelectedLots() {
       // Primary controls drive FAR massing for this lot.
       const controls = controlsArray[0].controls;
       const zoneCode = controlsArray[0].zoneCode || controlsArray[0].zone;
+      const appliedDistrict = normalizeZoneToken(zoneCode || data?.zonedist1 || data?.zone);
+      const appliedRule = resolveZoneRule(appliedDistrict) || {};
+      const frontYardFt = coerceNumber(controls.frontYard) ?? 0;
+      const sideYardFt = coerceNumber(controls.sideYard) ?? 0;
+      const rearYardFt = coerceNumber(controls.rearYard) ?? 0;
+      const yardGeometry = _computeYardAdjustedGeometry(
+        lotPolygon,
+        {
+          frontYardFt,
+          sideYardFt,
+          rearYardFt,
+          appliedRule,
+          appliedDistrict,
+          mixedUseDetected: false,
+        }
+      );
+
+      if (yardGeometry?.frontBufferGeometry) {
+        areaFeatures.push({
+          type: "Feature",
+          properties: { kind: "front_yard_zone", color: "#ef4444" },
+          geometry: yardGeometry.frontBufferGeometry,
+        });
+      }
+      if (yardGeometry?.sideBufferGeometry) {
+        areaFeatures.push({
+          type: "Feature",
+          properties: { kind: "side_yard_zone", color: "#2563eb" },
+          geometry: yardGeometry.sideBufferGeometry,
+        });
+      }
+      if (yardGeometry?.rearBufferGeometry) {
+        areaFeatures.push({
+          type: "Feature",
+          properties: { kind: "rear_yard_zone", color: "#7c3aed" },
+          geometry: yardGeometry.rearBufferGeometry,
+        });
+      }
+
+      const edgeFeatures = _edgeDebugFeatures(yardGeometry?.classification);
+      const densityOptions = _labelDensityProfile(multiSelectedLots.length);
+      const tunedEdgeFeatures = _applyYardLabelDensity(edgeFeatures, densityOptions);
+      if (Array.isArray(edgeFeatures) && edgeFeatures.length) {
+        areaFeatures.push(...tunedEdgeFeatures);
+      }
+      if (Array.isArray(yardGeometry?.setbackOffsetLineFeatures) && yardGeometry.setbackOffsetLineFeatures.length) {
+        areaFeatures.push(...yardGeometry.setbackOffsetLineFeatures);
+      }
+
       const { buildableFootprintFeature } = generateEnvelopeFromControls({
         lotGeometry,
         controls,
@@ -5159,6 +5446,56 @@ function _buildEnvelopesForMultiSelectedLots() {
       const ensuredFar = _ensureFarVolumeFeatures(boundedFar, farBuilt.buildingHeightFt, "#22c55e");
       farFeatures.push(...(ensuredFar.features || []));
 
+      const farFootprintFeature = (ensuredFar.features || []).find((f) => String(f?.properties?.kind || "") === "far_footprint");
+      const farFootprintGeometry = farFootprintFeature?.geometry || controlsFootprintGeometry;
+      const farFootprintAreaFt2 = _areaFt2FromGeometry(farFootprintGeometry);
+      const openSpaceProvidedFt2 = Math.max(0, lotAreaFt2 - farFootprintAreaFt2);
+      const openSpaceDeficitFt2 = Math.max(0, requiredOpenSpaceFt2 - openSpaceProvidedFt2);
+
+      if (openSpaceDeficitFt2 > 0 && yardGeometry?.yardAdjustedGeometry && farFootprintGeometry) {
+        try {
+          const diff = turf.difference(
+            { type: "Feature", geometry: yardGeometry.yardAdjustedGeometry, properties: {} },
+            { type: "Feature", geometry: farFootprintGeometry, properties: {} }
+          );
+          if (diff?.geometry) {
+            areaFeatures.push({
+              type: "Feature",
+              properties: {
+                kind: "open_space_zone",
+                area_ft2: Math.round(openSpaceDeficitFt2),
+                color: "#10b981",
+              },
+              geometry: diff.geometry,
+            });
+          }
+        } catch (_err) {
+          // keep rendering without open-space diff geometry
+        }
+      }
+
+      const bbl = data?.bbl || data?.BBL || "n/a";
+      const existingFar = coerceNumber(data?.built_far) ?? coerceNumber(data?.zoning_analysis?.existing_far) ?? 0;
+      const existingAreaFt2 = Math.max(0, existingFar * lotAreaFt2);
+      const lotWarnings = [...(farBuilt?.warnings || [])];
+      if (openSpaceDeficitFt2 > 0) {
+        lotWarnings.push("Open space requirement is not fully satisfied.");
+      }
+      perLotStats.push({
+        key: keyOfLotFeature(feature),
+        bbl,
+        address: data?.address || "n/a",
+        zone: zoneCode || data?.zonedist1 || "n/a",
+        lotAreaFt2,
+        allowedFarFloorArea,
+        existingAreaFt2,
+        requiredOpenSpaceFt2,
+        openSpaceProvidedFt2,
+        far,
+        osr: Number.isFinite(osr) ? osr : 0,
+        warningCount: lotWarnings.length,
+      });
+
       areaFeatures.push({
         type: "Feature",
         properties: { kind: "selected_lot", color: "#115e59" },
@@ -5169,9 +5506,48 @@ function _buildEnvelopesForMultiSelectedLots() {
     }
   }
 
+  const totals = perLotStats.reduce(
+    (acc, lot) => {
+      acc.count += 1;
+      acc.totalLotAreaFt2 += lot.lotAreaFt2 || 0;
+      acc.totalAllowedFarAreaFt2 += lot.allowedFarFloorArea || 0;
+      acc.totalExistingAreaFt2 += lot.existingAreaFt2 || 0;
+      acc.totalRequiredOpenSpaceFt2 += lot.requiredOpenSpaceFt2 || 0;
+      acc.totalProvidedOpenSpaceFt2 += lot.openSpaceProvidedFt2 || 0;
+      acc.totalFar += lot.far || 0;
+      acc.totalOsr += lot.osr || 0;
+      if ((lot.warningCount || 0) === 0) acc.compliantCount += 1;
+      else acc.warningCount += 1;
+      return acc;
+    },
+    {
+      count: 0,
+      totalLotAreaFt2: 0,
+      totalAllowedFarAreaFt2: 0,
+      totalExistingAreaFt2: 0,
+      totalRequiredOpenSpaceFt2: 0,
+      totalProvidedOpenSpaceFt2: 0,
+      totalFar: 0,
+      totalOsr: 0,
+      compliantCount: 0,
+      warningCount: 0,
+    }
+  );
+
+  lastMultiLotAnalysis = {
+    lots: perLotStats,
+    totals: {
+      ...totals,
+      avgFar: totals.count > 0 ? (totals.totalFar / totals.count) : 0,
+      avgOsr: totals.count > 0 ? (totals.totalOsr / totals.count) : 0,
+    },
+  };
+
   map.getSource("selected-max-envelope").setData({ type: "FeatureCollection", features: maxFeatures });
   map.getSource("selected-far-envelope").setData({ type: "FeatureCollection", features: farFeatures });
   map.getSource("study-model").setData({ type: "FeatureCollection", features: areaFeatures });
+  const summaryLot = activeLotData || (multiSelectedLots[0] ? buildClientLotData(multiSelectedLots[0]) : null);
+  if (summaryLot) updateLotSummary(summaryLot, scenarioEnvelopeResults || baselineEnvelopeResults);
   syncLayerVisibility();
 }
 
@@ -7956,6 +8332,21 @@ lotSummary.addEventListener("input", (event) => {
 
 // Assumption reset button
 lotSummary.addEventListener("click", (event) => {
+  const jumpBtn = event.target?.closest?.(".summary-lot-jump");
+  if (jumpBtn) {
+    const lotKey = String(jumpBtn.getAttribute("data-lot-key") || "");
+    const targetFeature = multiSelectedLots.find((f) => keyOfLotFeature(f) === lotKey);
+    if (targetFeature) {
+      try {
+        selectLotFeature(targetFeature);
+        _updateSelectionButtonStates();
+      } catch (_err) {
+        // keep existing selection if lot focus fails
+      }
+    }
+    return;
+  }
+
   if (event.target?.id !== "assumption-reset-btn") return;
   assumptionOverrides = _defaultAssumptionOverrides();
   lastAssumptionChanged = null;
@@ -8009,6 +8400,38 @@ if (toggleFarEnvelopeBtn) {
   toggleFarEnvelopeBtn.addEventListener("click", () => {
     showFarEnvelope = !showFarEnvelope;
     toggleFarEnvelopeBtn.classList.toggle("pill--on", showFarEnvelope);
+    syncLayerVisibility();
+  });
+}
+
+if (toggleSetbackLinesBtn) {
+  toggleSetbackLinesBtn.addEventListener("click", () => {
+    showSetbackLines = !showSetbackLines;
+    toggleSetbackLinesBtn.classList.toggle("pill--on", showSetbackLines);
+    syncLayerVisibility();
+  });
+}
+
+if (toggleBuildableAreaBtn) {
+  toggleBuildableAreaBtn.addEventListener("click", () => {
+    showBuildableArea = !showBuildableArea;
+    toggleBuildableAreaBtn.classList.toggle("pill--on", showBuildableArea);
+    syncLayerVisibility();
+  });
+}
+
+if (toggleOpenSpaceAreaBtn) {
+  toggleOpenSpaceAreaBtn.addEventListener("click", () => {
+    showOpenSpaceArea = !showOpenSpaceArea;
+    toggleOpenSpaceAreaBtn.classList.toggle("pill--on", showOpenSpaceArea);
+    syncLayerVisibility();
+  });
+}
+
+if (toggleLabelsBtn) {
+  toggleLabelsBtn.addEventListener("click", () => {
+    showLabels = !showLabels;
+    toggleLabelsBtn.classList.toggle("pill--on", showLabels);
     syncLayerVisibility();
   });
 }

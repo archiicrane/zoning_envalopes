@@ -192,6 +192,21 @@
 .summary-row span:first-child { color: #6b7a8d; }
 .summary-row strong { color: #1a2430; font-weight: 700; }
 
+.summary-lot-jump {
+  border: none;
+  background: transparent;
+  color: #0f3d78;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.summary-lot-jump:hover {
+  text-decoration: underline;
+}
+
 .summary-row--overview {
   border-top: 1px solid #e8eef4;
 }
