@@ -147,6 +147,12 @@ const osrSlider = document.getElementById("osrSlider");
 const osrVal = document.getElementById("osrVal");
 const envelopeOpacitySlider = document.getElementById("envelopeOpacitySlider");
 const envelopeOpacityVal = document.getElementById("envelopeOpacityVal");
+const buildingsOpacitySlider = document.getElementById("buildingsOpacitySlider");
+const buildingsOpacityVal = document.getElementById("buildingsOpacityVal");
+const farOpacitySlider = document.getElementById("farOpacitySlider");
+const farOpacityVal = document.getElementById("farOpacityVal");
+const maxEnvOpacitySlider = document.getElementById("maxEnvOpacitySlider");
+const maxEnvOpacityVal = document.getElementById("maxEnvOpacityVal");
 const lotSummary = document.getElementById("lotSummary");
 const useTypeSelect = document.getElementById("useType");
 const housingConditionSelect = document.getElementById("housingCondition");
@@ -534,21 +540,20 @@ if (osrSlider) {
 function _envelopeOpacityValues() {
   const transparencyPercent = Number(envelopeOpacitySlider.value);
   const opacityValue = 1 - transparencyPercent / 100;
+  // Per-layer opacity from individual sliders (fall back to legacy single slider)
+  const farOpacity = farOpacitySlider ? (Number(farOpacitySlider.value) / 100) : opacityValue;
+  const maxOpacity = maxEnvOpacitySlider ? (Number(maxEnvOpacitySlider.value) / 100) : opacityValue;
   const baselineMultiplier = transparencyPercent === 0 ? 1 : 0.35;
-  const maxEnvelopeFillOpacity = Math.max(
-    STYLE_PRESET.maxEnvelope.fillOpacityMin,
-    STYLE_PRESET.maxEnvelope.fillOpacityDefault * opacityValue
-  );
-  const farEnvelopeFillOpacity = Math.max(
-    STYLE_PRESET.farEnvelope.fillOpacityMin,
-    STYLE_PRESET.farEnvelope.fillOpacityDefault * opacityValue
-  );
+  const maxEnvelopeFillOpacity = Math.max(0, Math.min(1, maxOpacity * STYLE_PRESET.maxEnvelope.fillOpacityDefault / 0.5));
+  const farEnvelopeFillOpacity = Math.max(0, Math.min(1, farOpacity * STYLE_PRESET.farEnvelope.fillOpacityDefault / 0.42));
   return {
     transparencyPercent,
     scenarioOpacity: opacityValue,
     baselineOpacity: opacityValue * baselineMultiplier,
     maxEnvelopeFillOpacity,
     farEnvelopeFillOpacity,
+    farOpacity,
+    maxOpacity,
   };
 }
 
@@ -561,7 +566,16 @@ function applyEnvelopeOpacityToLayers() {
     baselineOpacity,
     maxEnvelopeFillOpacity,
     farEnvelopeFillOpacity,
+    farOpacity,
+    maxOpacity,
   } = _envelopeOpacityValues();
+
+  // Existing buildings layer – driven by its own slider
+  if (map.getLayer("existing-buildings-mapbox") && buildingsOpacitySlider) {
+    const bldOpacity = Number(buildingsOpacitySlider.value) / 100;
+    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", bldOpacity);
+  }
+
   if (map.getLayer("zoning-envelope-fill")) {
     map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-opacity", scenarioOpacity);
   }
@@ -590,17 +604,17 @@ function applyEnvelopeOpacityToLayers() {
     map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", farEnvelopeFillOpacity);
   }
   if (map.getLayer("selected-far-open-space-fill")) {
-    map.setPaintProperty("selected-far-open-space-fill", "fill-opacity", Math.max(0.12, farEnvelopeFillOpacity * 0.58));
+    map.setPaintProperty("selected-far-open-space-fill", "fill-opacity", Math.max(0, farOpacity * 0.58));
   }
   if (map.getLayer("selected-far-footprint-fill")) {
-    map.setPaintProperty("selected-far-footprint-fill", "fill-opacity", Math.max(0.08, farEnvelopeFillOpacity * 0.36));
+    map.setPaintProperty("selected-far-footprint-fill", "fill-opacity", Math.max(0, farOpacity * 0.36));
   }
   if (map.getLayer("selected-max-envelope-outline")) {
-    map.setPaintProperty("selected-max-envelope-outline", "line-opacity", STYLE_PRESET.maxEnvelope.outlineOpacity);
+    map.setPaintProperty("selected-max-envelope-outline", "line-opacity", maxOpacity);
     map.setPaintProperty("selected-max-envelope-outline", "line-width", STYLE_PRESET.maxEnvelope.outlineWidth);
   }
   if (map.getLayer("selected-far-envelope-outline")) {
-    map.setPaintProperty("selected-far-envelope-outline", "line-opacity", STYLE_PRESET.farEnvelope.outlineOpacity);
+    map.setPaintProperty("selected-far-envelope-outline", "line-opacity", farOpacity);
     map.setPaintProperty("selected-far-envelope-outline", "line-width", STYLE_PRESET.farEnvelope.outlineWidth);
   }
 }
@@ -616,6 +630,25 @@ envelopeOpacitySlider.addEventListener("input", () => {
   }
   applyEnvelopeOpacityToLayers();
 });
+
+if (buildingsOpacitySlider) {
+  buildingsOpacitySlider.addEventListener("input", () => {
+    if (buildingsOpacityVal) buildingsOpacityVal.textContent = `${buildingsOpacitySlider.value}%`;
+    applyEnvelopeOpacityToLayers();
+  });
+}
+if (farOpacitySlider) {
+  farOpacitySlider.addEventListener("input", () => {
+    if (farOpacityVal) farOpacityVal.textContent = `${farOpacitySlider.value}%`;
+    applyEnvelopeOpacityToLayers();
+  });
+}
+if (maxEnvOpacitySlider) {
+  maxEnvOpacitySlider.addEventListener("input", () => {
+    if (maxEnvOpacityVal) maxEnvOpacityVal.textContent = `${maxEnvOpacitySlider.value}%`;
+    applyEnvelopeOpacityToLayers();
+  });
+}
 
 showBuildingToggle.addEventListener("change", syncLayerVisibility);
 showEnvelopeToggle.addEventListener("change", syncLayerVisibility);
