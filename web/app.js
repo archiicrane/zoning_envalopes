@@ -11,6 +11,13 @@ import { DiagramSystemIntegration } from "./src/diagrams/DiagramSystemIntegratio
 import { ArchitecturalDiagramRenderer } from "./src/diagrams/ArchitecturalDiagramRenderer.js";
 import { ArchitecturalIsometricRenderer } from "./src/diagrams/ArchitecturalIsometricRenderer.js";
 import { HighResolutionExporter } from "./src/diagrams/HighResolutionExporter.js";
+import {
+  createProposalFromForm,
+  readProposalFormValues,
+  renderProposalUploadFormHTML,
+  saveProposalToLocal,
+  validateProposalMetadata,
+} from "./src/proposals/proposalUpload.js";
 
 async function resolveMapboxToken() {
   const local = (window.APP_CONFIG && window.APP_CONFIG.mapboxToken) || "";
@@ -8264,6 +8271,74 @@ function closeAnalysisPanel() {
   _disposeIsometricRenderer();
 }
 
+function openProposalUploadPanel() {
+  if (!analysisPanel) return;
+  analysisPanelOpen = true;
+  analysisPanel.setAttribute("aria-hidden", "false");
+  document.body.classList.add("analysis-modal-open");
+  analysisPanel.classList.add("open");
+
+  const container = document.getElementById("analysisModalContent");
+  if (!container) return;
+  container.innerHTML = renderProposalUploadFormHTML();
+
+  const selectedBbls = (multiSelectedLots || [])
+    .map((feature) => String(feature?.properties?.bbl || "").trim())
+    .filter(Boolean);
+  if (!selectedBbls.length && activeLotData?.bbl) {
+    selectedBbls.push(String(activeLotData.bbl));
+  }
+  const bblInput = document.getElementById("pf-bbls");
+  if (bblInput && selectedBbls.length) {
+    bblInput.value = selectedBbls.join(", ");
+  }
+
+  const submitBtn = document.getElementById("pf-submit");
+  const cancelBtn = document.getElementById("pf-cancel");
+  const errorsNode = document.getElementById("pf-errors");
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      closeAnalysisPanel();
+    });
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", () => {
+      const modelInput = document.getElementById("pf-model-file");
+      const modelFile = modelInput?.files?.[0] || null;
+      const formData = readProposalFormValues();
+      const proposal = createProposalFromForm(formData, modelFile);
+      const validation = validateProposalMetadata(proposal);
+
+      if (!validation.valid) {
+        if (errorsNode) {
+          errorsNode.style.display = "block";
+          errorsNode.innerHTML = validation.errors.map((msg) => `<div>${msg}</div>`).join("");
+        }
+        return;
+      }
+
+      const saved = saveProposalToLocal(proposal);
+      if (!saved) {
+        if (errorsNode) {
+          errorsNode.style.display = "block";
+          errorsNode.innerHTML = "<div>Could not save proposal. Please try again.</div>";
+        }
+        return;
+      }
+
+      if (errorsNode) {
+        errorsNode.style.display = "none";
+        errorsNode.innerHTML = "";
+      }
+
+      setReport(`Saved proposal ${proposal.projectName || "Untitled"} with model ${proposal.modelFile?.name || "file"}.`);
+      closeAnalysisPanel();
+    });
+  }
+}
+
 function _renderAnalysisPanelContent(lots) {
   const container = document.getElementById("analysisModalContent");
   if (!container) return;
@@ -8701,7 +8776,7 @@ if (debugModeBtn) {
 
 if (uploadProposalBtn) {
   uploadProposalBtn.addEventListener("click", () => {
-    openAnalysisPanel(multiSelectedLots.length ? multiSelectedLots : (activeLotData ? [{ properties: activeLotData }] : []));
+    openProposalUploadPanel();
   });
 }
 
