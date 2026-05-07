@@ -119,6 +119,7 @@ let showLabels = true;
 let solidMode = false;             // toggle: Transparent Analysis vs Solid Massing
 let analysisPanelOpen = false;     // whether the analysis modal is open
 let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, footprintAreaFt2, selectedTypology, scoreBreakdown, warnings }
+let lastFarFitWarning = null;
 let lastMaxEnvelopeGeojson = EMPTY_FC;
 let lastFarEnvelopeGeojson = EMPTY_FC;
 let lastMultiLotAnalysis = null;
@@ -1692,8 +1693,9 @@ function ensureSourcesAndLayers() {
       type: "line",
       source: "selected-lot",
       paint: {
-        "line-color": "#0b3d3a",
-        "line-width": 4.5,
+        "line-color": "#111827",
+        "line-width": 3.6,
+        "line-opacity": 0.98,
       },
     });
   }
@@ -1710,7 +1712,7 @@ function ensureSourcesAndLayers() {
       filter: ["==", ["get", "kind"], "front_yard_zone"],
       paint: {
         "fill-color": "#ef4444",
-        "fill-opacity": 0.2,
+        "fill-opacity": 0.1,
       },
     });
 
@@ -1721,7 +1723,7 @@ function ensureSourcesAndLayers() {
       filter: ["==", ["get", "kind"], "side_yard_zone"],
       paint: {
         "fill-color": "#2563eb",
-        "fill-opacity": 0.2,
+        "fill-opacity": 0.1,
       },
     });
 
@@ -1732,7 +1734,18 @@ function ensureSourcesAndLayers() {
       filter: ["==", ["get", "kind"], "rear_yard_zone"],
       paint: {
         "fill-color": "#7c3aed",
-        "fill-opacity": 0.2,
+        "fill-opacity": 0.1,
+      },
+    });
+
+    map.addLayer({
+      id: "setback-band-fill",
+      type: "fill",
+      source: "study-model",
+      filter: ["==", ["get", "kind"], "setback_band"],
+      paint: {
+        "fill-color": "#94a3b8",
+        "fill-opacity": 0.12,
       },
     });
 
@@ -1754,7 +1767,7 @@ function ensureSourcesAndLayers() {
       filter: ["==", ["get", "kind"], "buildable_footprint"],
       paint: {
         "fill-color": "#14b8a6",
-        "fill-opacity": 0.28,
+        "fill-opacity": 0.14,
       },
     });
 
@@ -1798,10 +1811,10 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "buildable_footprint"],
       paint: {
-        "line-color": "#15803d",
-        "line-width": 2,
-        "line-opacity": 0.95,
-        "line-dasharray": [2, 2],
+        "line-color": "#1f2937",
+        "line-width": 2.2,
+        "line-opacity": 0.98,
+        "line-dasharray": [1.6, 1.6],
       },
     });
 
@@ -1811,8 +1824,14 @@ function ensureSourcesAndLayers() {
       source: "study-model",
       filter: ["==", ["get", "kind"], "selected_lot"],
       paint: {
-        "line-color": "#115e59",
-        "line-width": 2,
+        "line-color": "#111827",
+        "line-width": [
+          "case",
+          ["boolean", ["get", "active_lot"], false],
+          3.4,
+          2.4
+        ],
+        "line-opacity": 0.98,
       },
     });
 
@@ -1911,7 +1930,9 @@ function ensureSourcesAndLayers() {
         "text-variable-anchor": ["center", "top", "bottom", "left", "right"],
         "text-radial-offset": 0.25,
         "text-padding": 3,
-        "text-optional": true,
+        "text-optional": false,
+        "text-allow-overlap": true,
+        "symbol-z-order": "source",
         visibility: "visible",
       },
       paint: {
@@ -1924,7 +1945,7 @@ function ensureSourcesAndLayers() {
           "#0f172a"
         ],
         "text-halo-color": "#ffffff",
-        "text-halo-width": 1,
+        "text-halo-width": 1.35,
       },
     });
 
@@ -2065,7 +2086,7 @@ function ensureSourcesAndLayers() {
       filter: ["==", ["get", "kind"], "far_open_space"],
       paint: {
         "fill-color": "#a6dcc5",
-        "fill-opacity": 0.28,
+        "fill-opacity": 0.18,
       },
     });
 
@@ -2076,7 +2097,7 @@ function ensureSourcesAndLayers() {
       filter: ["==", ["get", "kind"], "far_footprint"],
       paint: {
         "fill-color": "#3f8f67",
-        "fill-opacity": 0.16,
+        "fill-opacity": 0.12,
       },
     });
   }
@@ -2148,6 +2169,7 @@ const LAYER_GROUPS = {
   ],
   buildableArea: [
     "selected-far-footprint-fill",
+    "setback-band-fill",
     "front-yard-zone-fill",
     "side-yard-zone-fill",
     "rear-yard-zone-fill",
@@ -2179,25 +2201,26 @@ function _bringAnalysisLayersToFront() {
   const ordered = [
     "selected-max-envelope-fill",
     "selected-max-envelope-outline",
-    "selected-far-envelope-fill",
-    "selected-far-envelope-outline",
-    "selected-far-open-space-fill",
-    "selected-far-footprint-fill",
     "front-yard-zone-fill",
     "side-yard-zone-fill",
     "rear-yard-zone-fill",
-    "open-space-zone-fill",
     "buildable-footprint-fill",
+    "setback-band-fill",
+    "open-space-zone-fill",
     "buildable-footprint-outline",
+    "selected-far-open-space-fill",
+    "selected-far-footprint-fill",
+    "selected-far-envelope-fill",
+    "selected-far-envelope-outline",
     "study-outline",
+    "selected-lot-outline",
     "yard-edge-front-line",
     "yard-edge-side-line",
     "yard-edge-rear-line",
     "yard-edge-corner-line",
     "setback-offset-lines",
-    "yard-edge-labels",
     "buildable-label",
-    "selected-lot-outline",
+    "yard-edge-labels",
   ];
   for (const layerId of ordered) {
     if (map.getLayer(layerId)) map.moveLayer(layerId);
@@ -2339,6 +2362,9 @@ function updateStudyModel(geojson) {
     ? { type: "Polygon", coordinates: [_closeRing(activeLotPolygon)] }
     : null;
   const bounded = _clampFeatureCollectionToLotBounds(geojson || EMPTY_FC, lotGeometry);
+  if (lotGeometry) {
+    _validateFeatureCollectionInsideLot(bounded, lotGeometry, "study-model");
+  }
   map.getSource("study-model").setData(bounded);
   syncLayerVisibility();
 }
@@ -2952,6 +2978,7 @@ function updateLotSummary(data, envelopeResults) {
     <div class="summary-row"><span>BBL</span><strong>${data.bbl || "n/a"}</strong></div>
     <div class="summary-row"><span>Max Height</span><strong>${_heightLabel(zoning.max_height_ft)}</strong></div>
     <div class="summary-row"><span>Allowed Floor Area (FAR)</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
+    ${lastFarFitWarning ? `<div class="summary-row summary-row--warning"><span>FAR Fit Warning</span><strong>${_escapeHtml(lastFarFitWarning)}</strong></div>` : ""}
     ${multiSummaryHtml}
     <details>
       <summary>Advanced Details</summary>
@@ -3839,6 +3866,50 @@ function _clampFeatureCollectionToLotBounds(featureCollection, lotGeometry) {
   return { type: "FeatureCollection", features };
 }
 
+function _clipFeatureToLotBounds(feature, lotGeometry) {
+  if (!feature?.geometry) return null;
+  const geometry = feature.geometry;
+  if (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon") return feature;
+  const clippedGeometry = _clipGeometryToLotBounds(geometry, lotGeometry);
+  if (!clippedGeometry) return null;
+  return {
+    ...feature,
+    geometry: clippedGeometry,
+  };
+}
+
+function _isGeometryInsideLot(geometry, lotGeometry) {
+  if (!geometry || !lotGeometry) return false;
+  if (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon") return true;
+  try {
+    return turf.booleanWithin(
+      { type: "Feature", geometry, properties: {} },
+      { type: "Feature", geometry: lotGeometry, properties: {} }
+    );
+  } catch (_err) {
+    return false;
+  }
+}
+
+function _validateFeatureCollectionInsideLot(featureCollection, lotGeometry, label = "geometry") {
+  const source = featureCollection || EMPTY_FC;
+  const invalid = [];
+  for (const feature of source.features || []) {
+    const geometry = feature?.geometry;
+    if (!geometry) continue;
+    if (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon") continue;
+    const inside = _isGeometryInsideLot(geometry, lotGeometry);
+    console.assert(inside, `[assert] ${label} must remain inside selected lot`, {
+      kind: feature?.properties?.kind || "unknown",
+    });
+    if (!inside) invalid.push(feature?.properties?.kind || "unknown");
+  }
+  return {
+    ok: invalid.length === 0,
+    invalidKinds: invalid,
+  };
+}
+
 function _clipGeometryByEdgeInset(geometry, edge, distanceFt) {
   if (!geometry || !edge || !(distanceFt > 0)) {
     return { geometry, offsetLineGeometry: null };
@@ -4498,15 +4569,31 @@ function _buildStudyOverlayFeaturesFromAssumptions(result) {
   const features = [
     {
       type: "Feature",
-      properties: { kind: "selected_lot", height_ft: 0, base_ft: 0, color: "#115e59", opacity: 0.12 },
+      properties: { kind: "selected_lot", active_lot: true, height_ft: 0, base_ft: 0, color: "#111827", opacity: 0.12 },
       geometry: result.lotGeometry,
     },
   ];
 
+  try {
+    const setbackBand = turf.difference(
+      { type: "Feature", geometry: result.lotGeometry, properties: {} },
+      { type: "Feature", geometry: result.finalBuildableGeometry, properties: {} }
+    );
+    if (setbackBand?.geometry) {
+      features.push({
+        type: "Feature",
+        properties: { kind: "setback_band", color: "#94a3b8" },
+        geometry: setbackBand.geometry,
+      });
+    }
+  } catch (_err) {
+    // keep rendering without setback band if difference fails
+  }
+
   if (result.frontBufferGeometry) {
     features.push({
       type: "Feature",
-      properties: { kind: "front_yard_zone", color: "#2563eb" },
+      properties: { kind: "front_yard_zone", color: "#ef4444" },
       geometry: result.frontBufferGeometry,
     });
   }
@@ -4514,7 +4601,7 @@ function _buildStudyOverlayFeaturesFromAssumptions(result) {
   if (result.sideBufferGeometry) {
     features.push({
       type: "Feature",
-      properties: { kind: "side_yard_zone", color: "#f97316" },
+      properties: { kind: "side_yard_zone", color: "#2563eb" },
       geometry: result.sideBufferGeometry,
     });
   }
@@ -4522,7 +4609,7 @@ function _buildStudyOverlayFeaturesFromAssumptions(result) {
   if (result.rearBufferGeometry) {
     features.push({
       type: "Feature",
-      properties: { kind: "rear_yard_zone", area_ft2: Math.round(Math.max(0, result.lotAreaFt2 - result.yardAdjustedFootprintFt2)), color: "#dc2626" },
+      properties: { kind: "rear_yard_zone", area_ft2: Math.round(Math.max(0, result.lotAreaFt2 - result.yardAdjustedFootprintFt2)), color: "#7c3aed" },
       geometry: result.rearBufferGeometry,
     });
   }
@@ -5308,14 +5395,16 @@ function _buildEnvelopesForMultiSelectedLots() {
 
         const buildableGeometry = generated?.buildableFootprintFeature?.geometry;
         if (buildableGeometry) {
-          areaFeatures.push({
+          const buildableFeature = {
             type: "Feature",
             properties: { kind: "buildable_footprint", color: "#14b8a6" },
             geometry: _clampFeatureCollectionToLotBounds(
               { type: "FeatureCollection", features: [{ type: "Feature", geometry: buildableGeometry, properties: {} }] },
               lotGeometry
             ).features?.[0]?.geometry || buildableGeometry,
-          });
+          };
+          const clippedBuildableFeature = _clipFeatureToLotBounds(buildableFeature, lotGeometry);
+          if (clippedBuildableFeature) areaFeatures.push(clippedBuildableFeature);
         }
       }
 
@@ -5340,25 +5429,28 @@ function _buildEnvelopesForMultiSelectedLots() {
       );
 
       if (yardGeometry?.frontBufferGeometry) {
-        areaFeatures.push({
+        const frontZone = _clipFeatureToLotBounds({
           type: "Feature",
           properties: { kind: "front_yard_zone", color: "#ef4444" },
           geometry: yardGeometry.frontBufferGeometry,
-        });
+        }, lotGeometry);
+        if (frontZone) areaFeatures.push(frontZone);
       }
       if (yardGeometry?.sideBufferGeometry) {
-        areaFeatures.push({
+        const sideZone = _clipFeatureToLotBounds({
           type: "Feature",
           properties: { kind: "side_yard_zone", color: "#2563eb" },
           geometry: yardGeometry.sideBufferGeometry,
-        });
+        }, lotGeometry);
+        if (sideZone) areaFeatures.push(sideZone);
       }
       if (yardGeometry?.rearBufferGeometry) {
-        areaFeatures.push({
+        const rearZone = _clipFeatureToLotBounds({
           type: "Feature",
           properties: { kind: "rear_yard_zone", color: "#7c3aed" },
           geometry: yardGeometry.rearBufferGeometry,
-        });
+        }, lotGeometry);
+        if (rearZone) areaFeatures.push(rearZone);
       }
 
       const edgeFeatures = _edgeDebugFeatures(yardGeometry?.classification);
@@ -5401,6 +5493,25 @@ function _buildEnvelopesForMultiSelectedLots() {
       const controlsFootprintGeometry = buildableFootprintFeature?.geometry || lotGeometry;
       const controlsFootprintAreaFt2 = _areaFt2FromGeometry(controlsFootprintGeometry);
       const frontageOrientationDeg = _computeFrontageOrientationDeg(lotAnalysis);
+      const activeKey = keyOfLotFeature({ properties: activeLotData || {} });
+      const lotKey = keyOfLotFeature(feature);
+
+      try {
+        const setbackBand = turf.difference(
+          { type: "Feature", geometry: lotGeometry, properties: {} },
+          { type: "Feature", geometry: controlsFootprintGeometry, properties: {} }
+        );
+        if (setbackBand?.geometry) {
+          const clippedBand = _clipFeatureToLotBounds({
+            type: "Feature",
+            properties: { kind: "setback_band", color: "#94a3b8" },
+            geometry: setbackBand.geometry,
+          }, lotGeometry);
+          if (clippedBand) areaFeatures.push(clippedBand);
+        }
+      } catch (_err) {
+        // keep rendering without setback band if diff fails
+      }
 
       let effectiveCoveragePct = baseCoveragePct;
       const osr = coerceNumber(osrSlider?.value) ?? coerceNumber(controls.openSpaceRatio);
@@ -5443,10 +5554,32 @@ function _buildEnvelopesForMultiSelectedLots() {
         { type: "FeatureCollection", features: farBuilt.features || [] },
         lotGeometry
       );
+      const insideFarValidation = _validateFeatureCollectionInsideLot(boundedFar, lotGeometry, "multi-far-envelope");
       const ensuredFar = _ensureFarVolumeFeatures(boundedFar, farBuilt.buildingHeightFt, "#22c55e");
+      const farFootprintFeature = (ensuredFar.features || []).find((f) => String(f?.properties?.kind || "") === "far_footprint");
+      const farFootprintInsideLot = _isGeometryInsideLot(farFootprintFeature?.geometry || null, lotGeometry);
+      const buildableInsideLot = _isGeometryInsideLot(controlsFootprintGeometry, lotGeometry);
+      console.log("[far-validation][multi]", {
+        bbl: data?.bbl || data?.BBL || "n/a",
+        lotAreaFt2,
+        buildableAreaFt2: controlsFootprintAreaFt2,
+        farFootprintAreaFt2: farBuilt.footprintAreaFt2,
+        buildableInsideLot,
+        farFootprintInsideLot,
+        farFeaturesInsideLot: insideFarValidation.ok,
+        setbacksApplied: {
+          front: frontYardFt,
+          side: sideYardFt,
+          rear: rearYardFt,
+        },
+        edges: {
+          front: lotAnalysis?.frontEdgeIndices || [],
+          side: lotAnalysis?.sideEdgeIndices || [],
+          rear: lotAnalysis?.rearEdgeIndex ?? null,
+        },
+      });
       farFeatures.push(...(ensuredFar.features || []));
 
-      const farFootprintFeature = (ensuredFar.features || []).find((f) => String(f?.properties?.kind || "") === "far_footprint");
       const farFootprintGeometry = farFootprintFeature?.geometry || controlsFootprintGeometry;
       const farFootprintAreaFt2 = _areaFt2FromGeometry(farFootprintGeometry);
       const openSpaceProvidedFt2 = Math.max(0, lotAreaFt2 - farFootprintAreaFt2);
@@ -5459,7 +5592,7 @@ function _buildEnvelopesForMultiSelectedLots() {
             { type: "Feature", geometry: farFootprintGeometry, properties: {} }
           );
           if (diff?.geometry) {
-            areaFeatures.push({
+            const openSpaceFeature = _clipFeatureToLotBounds({
               type: "Feature",
               properties: {
                 kind: "open_space_zone",
@@ -5467,7 +5600,8 @@ function _buildEnvelopesForMultiSelectedLots() {
                 color: "#10b981",
               },
               geometry: diff.geometry,
-            });
+            }, lotGeometry);
+            if (openSpaceFeature) areaFeatures.push(openSpaceFeature);
           }
         } catch (_err) {
           // keep rendering without open-space diff geometry
@@ -5496,11 +5630,12 @@ function _buildEnvelopesForMultiSelectedLots() {
         warningCount: lotWarnings.length,
       });
 
-      areaFeatures.push({
+      const selectedLotOverlay = _clipFeatureToLotBounds({
         type: "Feature",
-        properties: { kind: "selected_lot", color: "#115e59" },
+        properties: { kind: "selected_lot", color: "#111827", active_lot: lotKey !== "" && lotKey === activeKey },
         geometry: lotGeometry,
-      });
+      }, lotGeometry);
+      if (selectedLotOverlay) areaFeatures.push(selectedLotOverlay);
     } catch (_err) {
       // Skip malformed lots in multi-selection and keep rendering remaining lots.
     }
@@ -5802,6 +5937,7 @@ function buildFarEnvelopeForSelectedLot() {
   if (!map?.getSource("selected-far-envelope")) return;
 
   try {
+    lastFarFitWarning = null;
     const lotGeometry = { type: "Polygon", coordinates: [activeLotPolygon] };
     const lotFeature = { type: "Feature", geometry: lotGeometry, properties: activeLotData };
     const lotAnalysis = analyzeLot({
@@ -5924,6 +6060,22 @@ function buildFarEnvelopeForSelectedLot() {
       frontageOrientationDeg,
     });
 
+    const appliedSetbacks = {
+      frontYardFt: coerceNumber(controls.frontYard) ?? 0,
+      sideYardFt: coerceNumber(controls.sideYard) ?? 0,
+      rearYardFt: coerceNumber(controls.rearYard) ?? 0,
+    };
+
+    console.log("[far-validation] lot area", lotAreaFt2);
+    console.log("[far-validation] buildable area", controlsFootprintAreaFt2);
+    console.log("[far-validation] FAR footprint area", footprintAreaFt2);
+    console.log("[far-validation] setbacks applied", appliedSetbacks);
+    console.log("[far-validation] edges", {
+      front: lotAnalysis?.frontEdgeIndices || [],
+      side: lotAnalysis?.sideEdgeIndices || [],
+      rear: lotAnalysis?.rearEdgeIndex ?? null,
+    });
+
     // DEBUG: Log FAR feature generation
     const volumeFeatures = features.filter(f => f.properties?.kind === "far_volume");
     const maxEnvHeight = Math.max(...volumeFeatures.map(f => f.properties?.envelopeHeight || 0), 0);
@@ -5940,15 +6092,57 @@ function buildFarEnvelopeForSelectedLot() {
       frontageOrientationDeg,
       warnings,
     };
+    const fitWarning = (warnings || []).find((warning) => String(warning || "").includes("FAR mass could not be fit cleanly"));
+    if (fitWarning) {
+      lastFarFitWarning = String(fitWarning);
+    }
     _updateTypologyHud();
     if (Array.isArray(buildWarnings) && buildWarnings.length) {
       console.warn("[far-envelope][warnings]", buildWarnings);
     }
 
-    const boundedFar = {
-      type: "FeatureCollection",
-      features,
-    };
+    const boundedFar = _clampFeatureCollectionToLotBounds(
+      {
+        type: "FeatureCollection",
+        features,
+      },
+      lotGeometry
+    );
+    const insideFarValidation = _validateFeatureCollectionInsideLot(boundedFar, lotGeometry, "far-envelope");
+    const buildableInsideLot = _isGeometryInsideLot(controlsFootprintGeometry, lotGeometry);
+    const farFootprintFeature = (boundedFar.features || []).find((f) => String(f?.properties?.kind || "") === "far_footprint");
+    const farFootprintInsideLot = _isGeometryInsideLot(farFootprintFeature?.geometry || null, lotGeometry);
+    console.log("[far-validation] buildable inside lot", buildableInsideLot);
+    console.log("[far-validation] FAR footprint inside lot", farFootprintInsideLot);
+    console.log("[far-validation] far features inside lot", insideFarValidation.ok);
+
+    if (!insideFarValidation.ok || !farFootprintInsideLot || !buildableInsideLot) {
+      const fallbackGeometry = _clipGeometryToLotBounds(controlsFootprintGeometry, lotGeometry);
+      if (fallbackGeometry) {
+        lastFarFitWarning = "FAR mass could not be fit cleanly; showing setback buildable area.";
+        const fallbackFar = {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              properties: {
+                kind: "far_footprint",
+                envelopeColor: "#1a7f54",
+                massingOption: "fallback-buildable",
+                label: "setback-buildable-fallback",
+                area_ft2: Math.round(_areaFt2FromGeometry(fallbackGeometry)),
+              },
+              geometry: fallbackGeometry,
+            },
+          ],
+        };
+        map.getSource("selected-far-envelope").setData(fallbackFar);
+        lastFarEnvelopeGeojson = fallbackFar;
+        updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
+        setReport(lastFarFitWarning);
+        return;
+      }
+    }
     console.log(`[FAR-DEBUG] After clamping: ${boundedFar.features.length} features. Volume features: ${boundedFar.features.filter(f => f.properties?.kind === "far_volume").length}`);
 
     const ensuredFar = _ensureFarVolumeFeatures(boundedFar, buildingHeightFt, "#22c55e");
@@ -5987,6 +6181,8 @@ function buildFarEnvelopeForSelectedLot() {
       type: ensuredFar.type,
       features: ensuredFar.features,
     };
+
+    updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
 
     // Sync analysis panel live stats if open
     if (analysisPanelOpen) {

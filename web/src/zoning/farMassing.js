@@ -714,9 +714,19 @@ export function generateFARFootprint({
   targetFootprintAreaFt2,
   orientationDeg = null,
 }) {
-  const bounds = lotGeometry
-    ? (_intersection(buildableGeometry, lotGeometry) || buildableGeometry)
-    : buildableGeometry;
+  let bounds = buildableGeometry;
+  if (lotGeometry) {
+    const intersected = _intersection(buildableGeometry, lotGeometry);
+    if (intersected && _areaFt2(intersected) > 1) {
+      bounds = intersected;
+    } else if (_isWithin(buildableGeometry, lotGeometry)) {
+      bounds = buildableGeometry;
+    } else if (_isWithin(lotGeometry, buildableGeometry)) {
+      bounds = lotGeometry;
+    } else {
+      return null;
+    }
+  }
   if (!bounds || _areaFt2(bounds) <= 1) return null;
 
   const maxArea = _areaFt2(bounds);
@@ -899,11 +909,30 @@ export function buildFarMassing({
     orientationDeg: Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null,
   });
 
-  const finalFarFootprint = footprintResult?.geometry || null;
+  let finalFarFootprint = footprintResult?.geometry || null;
   if (!finalFarFootprint || _areaFt2(finalFarFootprint) <= 0) {
+    warnings.push("FAR mass could not be fit cleanly; showing setback buildable area.");
+    finalFarFootprint = safeBuildablePolygon;
+  }
+
+  finalFarFootprint = _intersection(finalFarFootprint, selectedLotPolygon) || finalFarFootprint;
+  const footprintInsideLot = _isWithin(finalFarFootprint, selectedLotPolygon);
+  const buildableInsideLot = _isWithin(safeBuildablePolygon, selectedLotPolygon);
+  console.assert(footprintInsideLot, "[assert] FAR footprint must be inside selected lot");
+  console.assert(buildableInsideLot, "[assert] buildable geometry must be inside selected lot");
+  console.log("[far-massing][validation]", {
+    lotAreaFt2: selectedLotAreaFt2,
+    buildableAreaFt2: safeBuildableAreaFt2,
+    farFootprintAreaFt2: _areaFt2(finalFarFootprint),
+    footprintInsideLot,
+    buildableInsideLot,
+    setbacksAppliedByBuildable: "inward-only",
+  });
+
+  if (!footprintInsideLot || _areaFt2(finalFarFootprint) <= 0) {
     return {
       features,
-      warnings: [...warnings, "No valid FAR footprint could be generated (oriented fit failed)."],
+      warnings: [...warnings, "FAR mass could not be fit cleanly; showing setback buildable area."],
       numFloors: 0,
       buildingHeightFt: 0,
       footprintAreaFt2: 0,
