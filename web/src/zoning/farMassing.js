@@ -284,6 +284,65 @@ function _guaranteedInBoundsFootprint(buildableGeom, orientationDeg = null) {
   return _fallbackSquareInsideBuildable(buildableGeom);
 }
 
+function _rectInsideDualBounds(baseGeom, lotGeom, buildableGeom, widthFrac, depthFrac, orientationDeg = null) {
+  const seed = _rectInsideBuildable(baseGeom, widthFrac, depthFrac, "center", orientationDeg);
+  if (!seed) return null;
+  let candidate = seed;
+  for (let i = 0; i < 20; i += 1) {
+    const inLot = _isWithin(candidate, lotGeom);
+    const inBuildable = _isWithin(candidate, buildableGeom);
+    if (inLot && inBuildable) return candidate;
+    candidate = _scaleFromCentroid(candidate, 0.9);
+  }
+  return (_isWithin(candidate, lotGeom) && _isWithin(candidate, buildableGeom)) ? candidate : null;
+}
+
+function _largestRectInsideDualBounds(lotGeom, buildableGeom, orientationDeg = null) {
+  if (!lotGeom || !buildableGeom) return null;
+  const fractions = [0.98, 0.94, 0.9, 0.86, 0.82, 0.78, 0.74, 0.7, 0.66, 0.62, 0.58, 0.54, 0.5, 0.46, 0.42, 0.38, 0.34, 0.3, 0.26, 0.22, 0.18];
+  let best = null;
+  let bestArea = 0;
+  const baseGeom = _areaFt2(buildableGeom) <= _areaFt2(lotGeom) ? buildableGeom : lotGeom;
+  for (const w of fractions) {
+    for (const d of fractions) {
+      const rect = _rectInsideDualBounds(baseGeom, lotGeom, buildableGeom, w, d, orientationDeg);
+      if (!rect) continue;
+      const area = _areaFt2(rect);
+      if (area > bestArea) {
+        best = rect;
+        bestArea = area;
+      }
+    }
+  }
+  return best;
+}
+
+function _resolveSafeBuildablePolygon(selectedLotPolygon, buildableAreaPolygon) {
+  const directIntersection = _normalizeBuildableGeometry(_intersection(selectedLotPolygon, buildableAreaPolygon));
+  if (_areaFt2(directIntersection) > 0) {
+    return { geometry: directIntersection, reason: null };
+  }
+
+  if (_isWithin(buildableAreaPolygon, selectedLotPolygon)) {
+    return {
+      geometry: buildableAreaPolygon,
+      reason: "intersection failed; using buildable area because it is fully inside selected lot.",
+    };
+  }
+
+  if (_isWithin(selectedLotPolygon, buildableAreaPolygon)) {
+    return {
+      geometry: selectedLotPolygon,
+      reason: "intersection failed; using selected lot because it is fully inside buildable area.",
+    };
+  }
+
+  return {
+    geometry: null,
+    reason: "intersection failed and neither polygon fully contains the other.",
+  };
+}
+
 function _largestRectInsideBuildable(buildableGeom, orientationDeg = null) {
   if (!buildableGeom || _areaFt2(buildableGeom) <= 1) return null;
   const fractions = [0.98, 0.94, 0.9, 0.86, 0.82, 0.78, 0.74, 0.7, 0.66, 0.62, 0.58, 0.54, 0.5, 0.46, 0.42, 0.38, 0.34, 0.3, 0.26, 0.22, 0.18];
@@ -654,11 +713,27 @@ export function buildFarMassing({
 
   const selectedLotPolygon = normalizedLot;
   const buildableAreaPolygon = normalizedBuildable;
-  const safeBuildablePolygon = _normalizeBuildableGeometry(_intersection(selectedLotPolygon, buildableAreaPolygon));
+  const safeResolved = _resolveSafeBuildablePolygon(selectedLotPolygon, buildableAreaPolygon);
+  let safeBuildablePolygon = safeResolved.geometry;
 
   const selectedLotAreaFt2 = _areaFt2(selectedLotPolygon);
   const buildableAreaFt2 = _areaFt2(buildableAreaPolygon);
-  const safeBuildableAreaFt2 = _areaFt2(safeBuildablePolygon);
+  let safeBuildableAreaFt2 = _areaFt2(safeBuildablePolygon);
+
+  if (!(safeBuildableAreaFt2 > 0)) {
+    const dualRectSeed = _largestRectInsideDualBounds(selectedLotPolygon, buildableAreaPolygon, Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null);
+    if (dualRectSeed && _areaFt2(dualRectSeed) > 0) {
+      safeBuildablePolygon = dualRectSeed;
+      safeBuildableAreaFt2 = _areaFt2(safeBuildablePolygon);
+      warnings.push("FAR fallback: safe intersection unavailable; using largest rectangle inside both lot and buildable polygons.");
+      console.warn("[far-massing] reason for fallback: safe intersection unavailable; using largest rectangle inside both lot and buildable polygons.");
+    }
+  }
+
+  if (safeResolved.reason) {
+    warnings.push(`FAR fallback: ${safeResolved.reason}`);
+    console.warn(`[far-massing] reason for fallback: ${safeResolved.reason}`);
+  }
 
   if (!(safeBuildableAreaFt2 > 0)) {
     return {
@@ -694,16 +769,24 @@ export function buildFarMassing({
 
   if (!primaryFootprint || _areaFt2(primaryFootprint) <= 0) {
     fallbackReason = "front-axis rectangular fitting failed; using largest in-bounds rectangle fallback.";
-    primaryFootprint = _largestRectInsideBuildable(safeBuildablePolygon, orientationDeg);
+    primaryFootprint = _largestRectInsideDualBounds(selectedLotPolygon, safeBuildablePolygon, orientationDeg)
+      || _largestRectInsideBuildable(safeBuildablePolygon, orientationDeg);
   }
 
   let finalFarFootprint = _intersection(primaryFootprint, safeBuildablePolygon);
+  if (!finalFarFootprint && _isWithin(primaryFootprint, safeBuildablePolygon) && _isWithin(primaryFootprint, selectedLotPolygon)) {
+    finalFarFootprint = primaryFootprint;
+  }
   let footprintAreaFt2 = _areaFt2(finalFarFootprint);
   const targetPrimaryArea = _areaFt2(primaryFootprint);
   if (!(footprintAreaFt2 > 0) || !(targetPrimaryArea > 0) || footprintAreaFt2 < (targetPrimaryArea * 0.92)) {
     fallbackReason = fallbackReason || "final clip created invalid/sliver geometry; using largest clean rectangle fallback.";
-    const fallbackRect = _largestRectInsideBuildable(safeBuildablePolygon, orientationDeg);
+    const fallbackRect = _largestRectInsideDualBounds(selectedLotPolygon, safeBuildablePolygon, orientationDeg)
+      || _largestRectInsideBuildable(safeBuildablePolygon, orientationDeg);
     finalFarFootprint = _intersection(fallbackRect, safeBuildablePolygon);
+    if (!finalFarFootprint && _isWithin(fallbackRect, safeBuildablePolygon) && _isWithin(fallbackRect, selectedLotPolygon)) {
+      finalFarFootprint = fallbackRect;
+    }
     footprintAreaFt2 = _areaFt2(finalFarFootprint);
   }
 
@@ -725,8 +808,12 @@ export function buildFarMassing({
 
   if (outsideLotCount > 0 || outsideSafeCount > 0) {
     fallbackReason = fallbackReason || "vertex validation failed; recalculated with clean in-bounds rectangle fallback.";
-    const fallbackRect = _largestRectInsideBuildable(safeBuildablePolygon, orientationDeg);
+    const fallbackRect = _largestRectInsideDualBounds(selectedLotPolygon, safeBuildablePolygon, orientationDeg)
+      || _largestRectInsideBuildable(safeBuildablePolygon, orientationDeg);
     finalFarFootprint = _intersection(fallbackRect, safeBuildablePolygon);
+    if (!finalFarFootprint && _isWithin(fallbackRect, safeBuildablePolygon) && _isWithin(fallbackRect, selectedLotPolygon)) {
+      finalFarFootprint = fallbackRect;
+    }
     footprintAreaFt2 = _areaFt2(finalFarFootprint);
     outsideLotCount = _countVerticesOutside(finalFarFootprint, selectedLotPolygon);
     outsideSafeCount = _countVerticesOutside(finalFarFootprint, safeBuildablePolygon);
