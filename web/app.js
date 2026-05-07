@@ -111,6 +111,7 @@ let multiSelectedLots = [];       // array of lot GeoJSON features
 let multiSelectMode = false;
 let showMaxEnvelope = true;        // toggle: MAX zoning envelope (blue)
 let showFarEnvelope = true;        // toggle: FAR buildable envelope (green)
+let solidMode = false;             // toggle: Transparent Analysis vs Solid Massing
 let analysisPanelOpen = false;     // whether the analysis modal is open
 let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, footprintAreaFt2, selectedTypology, scoreBreakdown, warnings }
 let lastMaxEnvelopeGeojson = EMPTY_FC;
@@ -165,6 +166,7 @@ const showBuildingToggle = document.getElementById("showBuildingToggle");
 const showEnvelopeToggle = document.getElementById("showEnvelopeToggle");
 const showBuildingsBtn = document.getElementById("showBuildingsBtn");
 const showEnvelopeBtn = document.getElementById("showEnvelopeBtn");
+const solidModeBtn = document.getElementById("solidModeBtn");
 const diagramModeBtn = document.getElementById("diagramModeBtn");
 const presentationModeBtn = document.getElementById("presentationModeBtn");
 // New action buttons
@@ -579,50 +581,69 @@ function applyEnvelopeOpacityToLayers() {
 
   // Existing buildings layer – driven by its own slider
   if (map.getLayer("existing-buildings-mapbox") && buildingsOpacitySlider) {
-    const bldOpacity = Number(buildingsOpacitySlider.value) / 100;
+    const inputOpacity = Number(buildingsOpacitySlider.value) / 100;
+    const bldOpacity = solidMode
+      ? Math.max(0.14, Math.min(0.4, inputOpacity * 0.5 + 0.12))
+      : inputOpacity;
+    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-color", solidMode ? "#9ca3af" : STYLE_PRESET.existingBuildings.color);
     map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", bldOpacity);
   }
 
   if (map.getLayer("zoning-envelope-fill")) {
-    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-opacity", scenarioOpacity);
+    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-color", solidMode ? "#f3f4f6" : STYLE_PRESET.maxEnvelope.fillColor);
+    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-opacity", solidMode ? 1 : scenarioOpacity);
+    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("zoning-envelope-fill-baseline")) {
-    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-opacity", baselineOpacity);
+    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-color", solidMode ? "#e5e7eb" : STYLE_PRESET.maxEnvelope.fillColor);
+    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-opacity", solidMode ? 1 : baselineOpacity);
+    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-vertical-gradient", false);
   }
   // Also apply (scaled down) to the neighborhood ghost-volume envelope
   if (map.getLayer("zoning-envelope-layer")) {
     const baseOpacity = presentationMode
       ? STYLE_PRESET.contextEnvelope.fillOpacityPresentation
       : STYLE_PRESET.contextEnvelope.fillOpacityDefault;
-    const opacity = Math.max(0, Math.min(1, baseOpacity * (neighborhoodOpacity / 0.2)));
+    const opacity = solidMode ? 1 : Math.max(0, Math.min(1, baseOpacity * (neighborhoodOpacity / 0.2)));
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-color", solidMode ? "#e5e7eb" : ["coalesce", ["get", "envelopeColor"], "#3b82f6"]);
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", opacity);
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-vertical-gradient", !solidMode);
   }
   if (map.getLayer("zoning-envelope-outline")) {
     const outlineOpacity = presentationMode
       ? STYLE_PRESET.contextEnvelope.outlineOpacityPresentation
       : STYLE_PRESET.contextEnvelope.outlineOpacityDefault;
-    map.setPaintProperty("zoning-envelope-outline", "line-opacity", Math.max(0, Math.min(1, outlineOpacity * (neighborhoodOpacity / 0.2))));
+    map.setPaintProperty("zoning-envelope-outline", "line-opacity", solidMode ? 1 : Math.max(0, Math.min(1, outlineOpacity * (neighborhoodOpacity / 0.2))));
+    map.setPaintProperty("zoning-envelope-outline", "line-color", solidMode ? "#94a3b8" : "#475569");
   }
 
   if (map.getLayer("selected-max-envelope-fill")) {
-    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-opacity", maxEnvelopeFillOpacity);
+    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-color", solidMode ? "#f8fafc" : STYLE_PRESET.maxEnvelope.fillColor);
+    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-opacity", solidMode ? 1 : maxEnvelopeFillOpacity);
+    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("selected-far-envelope-fill")) {
-    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", farEnvelopeFillOpacity);
+    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-color", solidMode ? "#14532d" : ["coalesce", ["get", "envelopeColor"], STYLE_PRESET.farEnvelope.fillColor]);
+    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", solidMode ? 1 : farEnvelopeFillOpacity);
+    // Keep vertical gradient in solid mode to make side faces read slightly darker.
+    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-vertical-gradient", true);
   }
   if (map.getLayer("selected-far-open-space-fill")) {
-    map.setPaintProperty("selected-far-open-space-fill", "fill-opacity", Math.max(0, farOpacity * 0.58));
+    map.setPaintProperty("selected-far-open-space-fill", "fill-opacity", solidMode ? 0 : Math.max(0, farOpacity * 0.58));
   }
   if (map.getLayer("selected-far-footprint-fill")) {
-    map.setPaintProperty("selected-far-footprint-fill", "fill-opacity", Math.max(0, farOpacity * 0.36));
+    map.setPaintProperty("selected-far-footprint-fill", "fill-opacity", solidMode ? 0 : Math.max(0, farOpacity * 0.36));
   }
   if (map.getLayer("selected-max-envelope-outline")) {
-    map.setPaintProperty("selected-max-envelope-outline", "line-opacity", maxOpacity);
+    map.setPaintProperty("selected-max-envelope-outline", "line-color", solidMode ? "#64748b" : STYLE_PRESET.maxEnvelope.outlineColor);
+    map.setPaintProperty("selected-max-envelope-outline", "line-opacity", solidMode ? 1 : maxOpacity);
     map.setPaintProperty("selected-max-envelope-outline", "line-width", STYLE_PRESET.maxEnvelope.outlineWidth);
   }
   if (map.getLayer("selected-far-envelope-outline")) {
-    map.setPaintProperty("selected-far-envelope-outline", "line-opacity", farOpacity);
+    map.setPaintProperty("selected-far-envelope-outline", "line-color", solidMode ? "#166534" : STYLE_PRESET.farEnvelope.outlineColor);
+    map.setPaintProperty("selected-far-envelope-outline", "line-opacity", solidMode ? 1 : farOpacity);
     map.setPaintProperty("selected-far-envelope-outline", "line-width", STYLE_PRESET.farEnvelope.outlineWidth);
+    map.setPaintProperty("selected-far-envelope-outline", "line-dasharray", solidMode ? [1, 0] : [2, 2]);
   }
 }
 
@@ -2151,6 +2172,10 @@ function syncLayerVisibility() {
   if (toggleFarEnvelopeBtn) {
     toggleFarEnvelopeBtn.classList.toggle("active", showFar);
     toggleFarEnvelopeBtn.classList.toggle("pill--on", showFar);
+  }
+  if (solidModeBtn) {
+    solidModeBtn.classList.toggle("active", solidMode);
+    solidModeBtn.classList.toggle("pill--on", solidMode);
   }
 }
 
@@ -7968,6 +7993,18 @@ if (toggleFarEnvelopeBtn) {
     showFarEnvelope = !showFarEnvelope;
     toggleFarEnvelopeBtn.classList.toggle("pill--on", showFarEnvelope);
     syncLayerVisibility();
+  });
+}
+
+if (solidModeBtn) {
+  solidModeBtn.addEventListener("click", () => {
+    solidMode = !solidMode;
+    solidModeBtn.classList.toggle("pill--on", solidMode);
+    solidModeBtn.classList.toggle("active", solidMode);
+    applyEnvelopeOpacityToLayers();
+    setReport(solidMode
+      ? "Solid Massing Mode enabled: zoning envelopes render as opaque architectural masses."
+      : "Transparent Analysis Mode enabled.");
   });
 }
 
