@@ -169,28 +169,91 @@ function resolveHeightValueFt(name, value, warnings) {
   return numeric;
 }
 
+export function getApplicableYards(controls = {}, lotAnalysis = null, warnings = []) {
+  const lotType = String(lotAnalysis?.lotType || "Interior");
+  const hasRearEdge = Number.isInteger(lotAnalysis?.rearEdgeIndex);
+
+  const rawFrontYardFt = resolveYardValueFt("front yard", controls?.frontYard, warnings);
+  const rawSideYardEachFt = resolveYardValueFt("side yard", controls?.sideYard, warnings);
+  const rawRearYardFt = resolveYardValueFt("rear yard", controls?.rearYard, warnings);
+
+  const explicitRearRequired = Number.isFinite(rawRearYardFt) && rawRearYardFt > 0;
+  const shouldSuppressRear = (lotType === "Through" || lotType === "Island" || lotType === "Multi-Frontage")
+    && !hasRearEdge
+    && !explicitRearRequired;
+  if (explicitRearRequired && !hasRearEdge) {
+    warnings.push("Rear yard rule exists but lot has no unique rear edge; rear setback cannot be directionally assigned.");
+  }
+
+  const frontYardFt = Math.max(0, rawFrontYardFt ?? 0);
+  const sideYardEachFt = Math.max(0, rawSideYardEachFt ?? 0);
+  const rearYardFt = shouldSuppressRear ? 0 : Math.max(0, rawRearYardFt ?? 0);
+
+  const fullLotCoverageAllowed = frontYardFt <= 0 && sideYardEachFt <= 0 && rearYardFt <= 0;
+
+  return {
+    frontYardFt,
+    sideYardEachFt,
+    rearYardFt,
+    frontYardMissing: rawFrontYardFt === null,
+    sideYardMissing: rawSideYardEachFt === null,
+    rearYardMissing: rawRearYardFt === null,
+    fullLotCoverageAllowed,
+    lotType,
+  };
+}
+
+export function computeOpenSpaceLimit({ lotAreaFt2, far, openSpaceRatio }) {
+  const safeLotArea = coerceNumber(lotAreaFt2);
+  const safeFar = coerceNumber(far);
+  const safeOsr = coerceNumber(openSpaceRatio);
+  if (!(safeLotArea > 0) || !(safeFar > 0) || !(safeOsr > 0)) {
+    return {
+      applicable: false,
+      requiredOpenSpaceFt2: 0,
+      maxFootprintByOpenSpaceFt2: null,
+      allowedFloorAreaFt2: safeLotArea > 0 && safeFar > 0 ? safeLotArea * safeFar : null,
+    };
+  }
+
+  const allowedFloorAreaFt2 = safeLotArea * safeFar;
+  const requiredOpenSpaceFt2 = allowedFloorAreaFt2 * (safeOsr / 100);
+  const maxFootprintByOpenSpaceFt2 = Math.max(0, safeLotArea - requiredOpenSpaceFt2);
+
+  return {
+    applicable: true,
+    lotAreaFt2: safeLotArea,
+    far: safeFar,
+    openSpaceRatio: safeOsr,
+    allowedFloorAreaFt2,
+    requiredOpenSpaceFt2,
+    maxFootprintByOpenSpaceFt2,
+  };
+}
+
 // Compute open space ratio compliance.
 // openSpaceRatio is a percentage (e.g. 20 = 20% of residential floor area must remain open).
 function computeOpenSpaceCheck(lotAreaFt2, controls, buildableFootprintFt2) {
-  const osr = coerceNumber(controls?.openSpaceRatio);
-  const far = coerceNumber(controls?.far);
-  if (osr == null || osr <= 0 || far == null || lotAreaFt2 == null) {
+  const limit = computeOpenSpaceLimit({
+    lotAreaFt2,
+    far: controls?.far,
+    openSpaceRatio: controls?.openSpaceRatio,
+  });
+  if (!limit.applicable) {
     return { applicable: false };
   }
-  const residentialFloorAreaFt2 = lotAreaFt2 * far;
-  const requiredOpenSpaceFt2 = residentialFloorAreaFt2 * (osr / 100);
-  const maxCoverageFt2 = Math.max(0, lotAreaFt2 - requiredOpenSpaceFt2);
+
   const actualBuildableFt2 = buildableFootprintFt2 ?? 0;
-  const providedOpenSpaceFt2 = Math.max(0, lotAreaFt2 - actualBuildableFt2);
-  const pass = providedOpenSpaceFt2 >= requiredOpenSpaceFt2;
+  const providedOpenSpaceFt2 = Math.max(0, limit.lotAreaFt2 - actualBuildableFt2);
+  const pass = providedOpenSpaceFt2 >= limit.requiredOpenSpaceFt2;
   return {
     applicable: true,
-    openSpaceRatio: osr,
-    far,
-    lotAreaFt2: Math.round(lotAreaFt2),
-    residentialFloorAreaFt2: Math.round(residentialFloorAreaFt2),
-    requiredOpenSpaceFt2: Math.round(requiredOpenSpaceFt2),
-    maxCoverageFt2: Math.round(maxCoverageFt2),
+    openSpaceRatio: limit.openSpaceRatio,
+    far: limit.far,
+    lotAreaFt2: Math.round(limit.lotAreaFt2),
+    residentialFloorAreaFt2: Math.round(limit.allowedFloorAreaFt2),
+    requiredOpenSpaceFt2: Math.round(limit.requiredOpenSpaceFt2),
+    maxCoverageFt2: Math.round(limit.maxFootprintByOpenSpaceFt2),
     buildableFootprintFt2: Math.round(actualBuildableFt2),
     providedOpenSpaceFt2: Math.round(providedOpenSpaceFt2),
     pass,
@@ -209,24 +272,18 @@ function edgeRoleMapFromLotAnalysis(lotAnalysis) {
   return roles;
 }
 
-function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) {
-  const frontYardFt = resolveYardValueFt("front yard", controls?.frontYard, warnings);
-  const sideYardEachFt = resolveYardValueFt("side yard", controls?.sideYard, warnings);
-  const rearYardFt = resolveYardValueFt("rear yard", controls?.rearYard, warnings);
-
-  // Distinguish missing rules (null) from explicit zero (no yard required)
-  if (frontYardFt === null) warnings.push("Front yard rule missing from zoning data; no front setback applied.");
-  if (rearYardFt === null) warnings.push("Rear yard rule missing from zoning data; no rear setback applied.");
-  const effectiveFrontYard = frontYardFt ?? 0;
-  const effectiveSideYard = sideYardEachFt ?? 0;
-  const effectiveRearYard = rearYardFt ?? 0;
+export function generateSetbackBuildableArea(lotGeometry, controls, lotAnalysis, warnings) {
+  const yards = getApplicableYards(controls, lotAnalysis, warnings);
+  const effectiveFrontYard = yards.frontYardFt;
+  const effectiveSideYard = yards.sideYardEachFt;
+  const effectiveRearYard = yards.rearYardFt;
 
   const polygon = largestPolygonGeometry(lotGeometry);
   if (!polygon) {
     warnings.push("Lot geometry missing polygon; using original geometry for envelope.");
     return {
       geometry: lotGeometry,
-      yards: { frontYardFt: effectiveFrontYard, sideYardEachFt: effectiveSideYard, rearYardFt: effectiveRearYard, frontYardMissing: frontYardFt === null, rearYardMissing: rearYardFt === null },
+      yards,
       edgeRoles: {},
     };
   }
@@ -236,7 +293,15 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
     warnings.push("Lot geometry ring invalid; using original geometry for envelope.");
     return {
       geometry: polygon,
-      yards: { frontYardFt: effectiveFrontYard, sideYardEachFt: effectiveSideYard, rearYardFt: effectiveRearYard, frontYardMissing: frontYardFt === null, rearYardMissing: rearYardFt === null },
+      yards,
+      edgeRoles: {},
+    };
+  }
+
+  if (yards.fullLotCoverageAllowed) {
+    return {
+      geometry: polygon,
+      yards,
       edgeRoles: {},
     };
   }
@@ -247,7 +312,7 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
     warnings.push("Missing lot edge classification; applying no directional yard offsets.");
     return {
       geometry: polygon,
-      yards: { frontYardFt: effectiveFrontYard, sideYardEachFt: effectiveSideYard, rearYardFt: effectiveRearYard, frontYardMissing: frontYardFt === null, rearYardMissing: rearYardFt === null },
+      yards,
       edgeRoles: {},
     };
   }
@@ -298,8 +363,10 @@ function directionalInsetGeometry(lotGeometry, controls, lotAnalysis, warnings) 
       frontYardFt: effectiveFrontYard,
       sideYardEachFt: effectiveSideYard,
       rearYardFt: effectiveRearYard,
-      frontYardMissing: frontYardFt === null,
-      rearYardMissing: rearYardFt === null,
+      frontYardMissing: yards.frontYardMissing,
+      sideYardMissing: yards.sideYardMissing,
+      rearYardMissing: yards.rearYardMissing,
+      fullLotCoverageAllowed: yards.fullLotCoverageAllowed,
     },
     edgeRoles,
   };
@@ -375,7 +442,7 @@ export function generateEnvelopeFromControls({ lotGeometry, controls, envelopeCo
   const regime = String(controls?.bulkRegime || "flat-roof").toLowerCase();
   const warnings = [];
 
-  const directional = directionalInsetGeometry(lotGeometry, controls || {}, lotAnalysis, warnings);
+  const directional = generateSetbackBuildableArea(lotGeometry, controls || {}, lotAnalysis, warnings);
   const baseGeometry = directional.geometry || lotGeometry;
 
   const maxBuildingHeight = resolveHeightValueFt("maximum building height", controls?.maxBuildingHeight, warnings);

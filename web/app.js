@@ -98,6 +98,7 @@ let lastAssumptionChanged = null;
 let showYardEdgeTypes = true;
 let focusSelectedLotMode = false;
 let showRoadCenterlines = false;
+let debugMode = false;
 let lastStudyResult = null;
 let activeNeighborhood = null;
 let activeNeighborhoodData = EMPTY_FC;
@@ -167,6 +168,7 @@ const showEnvelopeToggle = document.getElementById("showEnvelopeToggle");
 const showBuildingsBtn = document.getElementById("showBuildingsBtn");
 const showEnvelopeBtn = document.getElementById("showEnvelopeBtn");
 const solidModeBtn = document.getElementById("solidModeBtn");
+const debugModeBtn = document.getElementById("debugModeBtn");
 const diagramModeBtn = document.getElementById("diagramModeBtn");
 const presentationModeBtn = document.getElementById("presentationModeBtn");
 // New action buttons
@@ -2143,13 +2145,13 @@ function syncLayerVisibility() {
   _setLayerGroupVisibility(LAYER_GROUPS.buildableArea, showArea);
 
   // Area sub-controls: optional yard edge lines and road-link diagnostics.
-  for (const id of ["yard-edge-front-line", "yard-edge-rear-line", "yard-edge-side-line", "setback-offset-lines"]) {
-    _setLayerVisibility(id, showArea && showYardEdgeTypes);
+  for (const id of ["yard-edge-front-line", "yard-edge-rear-line", "yard-edge-side-line", "setback-offset-lines", "yard-edge-labels", "buildable-label", "yard-edge-corner-line"]) {
+    _setLayerVisibility(id, showArea && debugMode && showYardEdgeTypes);
   }
-  _setLayerVisibility("edge-to-road-links", showArea && showRoadCenterlines);
+  _setLayerVisibility("edge-to-road-links", showArea && debugMode && showRoadCenterlines);
 
   // Debug group remains independent from Area.
-  _setLayerGroupVisibility(LAYER_GROUPS.debug, showRoadCenterlines);
+  _setLayerGroupVisibility(LAYER_GROUPS.debug, debugMode && showRoadCenterlines);
 
   // Multi-selected lots always visible
   for (const id of ["multi-selected-lots-fill", "multi-selected-lots-outline"]) {
@@ -2176,6 +2178,10 @@ function syncLayerVisibility() {
   if (solidModeBtn) {
     solidModeBtn.classList.toggle("active", solidMode);
     solidModeBtn.classList.toggle("pill--on", solidMode);
+  }
+  if (debugModeBtn) {
+    debugModeBtn.classList.toggle("active", debugMode);
+    debugModeBtn.classList.toggle("pill--on", debugMode);
   }
 }
 
@@ -2668,21 +2674,32 @@ function _buildYardClassificationTable(lot, primary) {
 
 function _buildOpenSpaceCheckRows(lot, primary) {
   const osr = coerceNumber(primary?.openSpaceRatio);
-  if (osr == null || osr <= 0) return "";
+  if (osr == null || osr <= 0) {
+    return `
+      <div class="summary-section-head">Required Open Space</div>
+      <div class="summary-row"><span>Required Open Space</span><strong>Not applicable</strong></div>`;
+  }
   const far = coerceNumber(primary?.far);
   const lotAreaFt2 = coerceNumber(lot?.lotAreaFt2);
   if (far == null || lotAreaFt2 == null) return "";
 
   const floorAreaFt2 = lotAreaFt2 * far;
-  const requiredOpenFt2 = Math.round(floorAreaFt2 * osr / 100);
+  const requiredOpenFt2 = Math.max(0, Math.round(floorAreaFt2 * osr / 100));
   const maxCoverageFt2 = Math.max(0, Math.round(lotAreaFt2 - requiredOpenFt2));
   const lotCoveragePct = Math.min(100, Math.round((maxCoverageFt2 / lotAreaFt2) * 100));
+  const score = lastFarEnvelopeData?.scoreBreakdown || null;
+  const providedOpenFt2 = Number.isFinite(Number(score?.openSpaceProvidedFt2))
+    ? Math.round(Number(score.openSpaceProvidedFt2))
+    : Math.max(0, Math.round(lotAreaFt2 - Math.min(maxCoverageFt2, coerceNumber(lastFarEnvelopeData?.footprintAreaFt2) || maxCoverageFt2)));
+  const pass = providedOpenFt2 >= requiredOpenFt2;
 
   return `
-    <div class="summary-section-head">Open Space Ratio</div>
+    <div class="summary-section-head">Required Open Space</div>
     <div class="summary-row"><span>Open Space Ratio</span><strong>${formatNumber(osr, 2)}</strong></div>
     <div class="summary-row"><span>Floor Area (FAR × Lot)</span><strong>${formatNumber(floorAreaFt2, 0)} sf</strong></div>
     <div class="summary-row"><span>Required Open Space</span><strong>${formatNumber(requiredOpenFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Provided Open Space</span><strong>${formatNumber(providedOpenFt2, 0)} sf</strong></div>
+    <div class="summary-row"><span>Open Space Check</span><strong>${pass ? "PASS" : "FAIL"}</strong></div>
     <div class="summary-row"><span>Max Lot Coverage</span><strong>${formatNumber(maxCoverageFt2, 0)} sf (≤ ${lotCoveragePct}%)</strong></div>`;
 }
 
@@ -5127,7 +5144,7 @@ function _buildEnvelopesForMultiSelectedLots() {
         floorHeightFt,
         coveragePct: effectiveCoveragePct,
         maxHeightFt,
-        enforceMaxHeight: false,
+        enforceMaxHeight: true,
         massingOption,
         color: "#22c55e",
         openSpaceTargetFt2: requiredOpenSpaceFt2,
@@ -5523,7 +5540,7 @@ function buildFarEnvelopeForSelectedLot() {
       floorHeightFt,
       coveragePct: effectiveCoveragePct,
       maxHeightFt,
-      enforceMaxHeight: false,
+      enforceMaxHeight: true,
       massingOption,
       color: "#22c55e",
       openSpaceTargetFt2: requiredOpenSpaceFt2,
@@ -5577,7 +5594,7 @@ function buildFarEnvelopeForSelectedLot() {
     const debugPanel = document.getElementById("farDebugPanel");
     const debugContent = document.getElementById("farDebugContent");
     if (debugPanel && debugContent) {
-      debugPanel.style.display = "block";
+      debugPanel.style.display = debugMode ? "block" : "none";
       const volCount = ensuredFar.features.filter(f => f.properties?.kind === "far_volume").length;
       const maxHeight = Math.max(...ensuredFar.features.map(f => f.properties?.envelopeHeight || 0), 0);
       const layerVis = map.getLayoutProperty("selected-far-envelope-fill", "visibility");
@@ -8005,6 +8022,20 @@ if (solidModeBtn) {
     setReport(solidMode
       ? "Solid Massing Mode enabled: zoning envelopes render as opaque architectural masses."
       : "Transparent Analysis Mode enabled.");
+  });
+}
+
+if (debugModeBtn) {
+  debugModeBtn.addEventListener("click", () => {
+    debugMode = !debugMode;
+    debugModeBtn.classList.toggle("pill--on", debugMode);
+    debugModeBtn.classList.toggle("active", debugMode);
+    const debugPanel = document.getElementById("farDebugPanel");
+    if (debugPanel) debugPanel.style.display = debugMode ? "block" : "none";
+    syncLayerVisibility();
+    setReport(debugMode
+      ? "Debug Mode enabled: lot edges, setback diagnostics, and FAR internals are visible."
+      : "Debug Mode disabled.");
   });
 }
 

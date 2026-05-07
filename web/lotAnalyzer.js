@@ -168,30 +168,13 @@ function classifyLotEdges(edges, roads, neighborLines) {
 
   // Prefer edges that do not touch neighboring lot boundaries.
   const nonNeighborStreetEdges = streetFacingCandidates.filter((edge) => !edge.touchesNeighbor);
-  let chosenFrontEdges = nonNeighborStreetEdges.length ? nonNeighborStreetEdges : streetFacingCandidates;
+  const chosenFrontEdges = nonNeighborStreetEdges.length ? nonNeighborStreetEdges : streetFacingCandidates;
 
-  // Always have at least one FRONT edge (closest road edge).
-  if (!chosenFrontEdges.length && primaryFront) {
-    chosenFrontEdges = [primaryFront];
-  }
-
-  // Keep FRONT edges compact to avoid over-constraining insets on noisy geometries.
-  const sortedFrontCandidates = [...chosenFrontEdges].sort((a, b) => a.minRoadDistM - b.minRoadDistM);
-  const frontEdgeIndices = [];
-  if (sortedFrontCandidates.length) {
-    frontEdgeIndices.push(sortedFrontCandidates[0].idx);
-  }
-  for (let i = 1; i < sortedFrontCandidates.length; i += 1) {
-    const candidate = sortedFrontCandidates[i];
-    const nearestExisting = frontEdgeIndices.find((idx) => isAdjacentEdge(idx, candidate.idx, edges.length));
-    if (nearestExisting != null) {
-      frontEdgeIndices.push(candidate.idx);
-      break; // Max 2 FRONT edges for stable directional setbacks.
-    }
-  }
-
+  // Keep all detected street-facing edges as FRONT edges.
+  // This is critical for island/through/corner lots and avoids forcing fake rear/side assignments.
+  let frontEdgeIndices = [...new Set(chosenFrontEdges.map((edge) => edge.idx))];
   if (!frontEdgeIndices.length && primaryFront) {
-    frontEdgeIndices.push(primaryFront.idx);
+    frontEdgeIndices = [primaryFront.idx];
   }
 
   const all = edges.map((e) => e.idx);
@@ -201,7 +184,9 @@ function classifyLotEdges(edges, roads, neighborLines) {
   let lotType = "Interior";
   if (frontEdgeIndices.length >= all.length) {
     lotType = "Island";                          // all edges face streets
-  } else if (frontEdgeIndices.length > 1) {
+  } else if (frontEdgeIndices.length > 2) {
+    lotType = "Multi-Frontage";
+  } else if (frontEdgeIndices.length === 2) {
     const sorted = [...frontEdgeIndices].sort((a, b) => a - b);
     const first = sorted[0];
     const second = sorted[1];
@@ -214,7 +199,7 @@ function classifyLotEdges(edges, roads, neighborLines) {
   // Rear edge: among non-front edges, the one whose midpoint is farthest from
   // the primary front edge midpoint (only for non-island, non-through lots).
   let rearEdgeIndex = null;
-  if (lotType !== "Through" && lotType !== "Island") {
+  if (lotType !== "Through" && lotType !== "Island" && lotType !== "Multi-Frontage") {
     const frontEdge = edges.find((e) => e.idx === (primaryFront?.idx ?? frontEdgeIndices[0] ?? 0)) || edges[0];
     let bestDist = -1;
     for (const edge of edges) {
@@ -243,28 +228,28 @@ function classifyLotEdges(edges, roads, neighborLines) {
     sideEdgeIndices,
     lotType,
     isCornerLot: lotType === "Corner",
-    isThroughLot: lotType === "Through" || lotType === "Island",
+    isThroughLot: lotType === "Through" || lotType === "Island" || lotType === "Multi-Frontage",
     isIslandLot: lotType === "Island",
     frontStreetNames,
     primaryStreetWidthFt: primaryStreetWidth,
   };
 }
 
-export function analyzeLot({ lotFeature, lotRing, map, neighborhoodFeatures = [] }) {
+export function analyzeLotEdges({ lotFeature, lotRing, map, neighborhoodFeatures = [] }) {
   const ring = closeRing(lotRing || lotFeature?.geometry?.coordinates?.[0] || []);
   if (!ring.length) {
     return {
-      warnings: ["Missing lot geometry for analysis."],
+      ring,
       lotType: "Unknown",
-      streetType: "narrow",
-      zoneTokens: [],
+      frontEdgeIndices: [],
+      rearEdgeIndex: null,
+      sideEdgeIndices: [],
+      edges: [],
+      primaryStreetWidthFt: 50,
+      frontStreetNames: [],
+      warnings: ["Missing lot geometry for edge analysis."],
     };
   }
-
-  const lotPolygon = turf.polygon([ring]);
-  const lotAreaFt2 = turf.area(lotPolygon) * 10.7639;
-  const { widthFt, depthFt } = bboxWidthDepthFt(ring);
-
   let rawRoads = [];
   if (map) {
     try {
@@ -279,6 +264,29 @@ export function analyzeLot({ lotFeature, lotRing, map, neighborhoodFeatures = []
   const edges = ringEdges(ring);
   const edgeClass = classifyLotEdges(edges, roads, neighborLines);
 
+  return {
+    ring,
+    ...edgeClass,
+    warnings: [],
+  };
+}
+
+export function analyzeLot({ lotFeature, lotRing, map, neighborhoodFeatures = [] }) {
+  const edgeAnalysis = analyzeLotEdges({ lotFeature, lotRing, map, neighborhoodFeatures });
+  const ring = edgeAnalysis.ring;
+  if (!ring.length) {
+    return {
+      warnings: ["Missing lot geometry for analysis."],
+      lotType: "Unknown",
+      streetType: "narrow",
+      zoneTokens: [],
+    };
+  }
+
+  const lotPolygon = turf.polygon([ring]);
+  const lotAreaFt2 = turf.area(lotPolygon) * 10.7639;
+  const { widthFt, depthFt } = bboxWidthDepthFt(ring);
+
   const props = lotFeature?.properties || {};
   const zoneTokens = extractZoneTokens(props.zonedist1, props.ZoneDist1, props.zonedist2, props.ZoneDist2, props.zone, props.ZoningDist);
   const primaryZone = pickPrimaryZoneToken(props.zonedist1, props.ZoneDist1, props.zonedist2, props.ZoneDist2, props.zone, props.ZoningDist);
@@ -290,8 +298,8 @@ export function analyzeLot({ lotFeature, lotRing, map, neighborhoodFeatures = []
     ?? null;
   const existingBuildingFootprintFt2 = coerceNumber(props.BldgArea ?? props.bldgarea) ?? null;
 
-  const streetType = getStreetType(edgeClass.primaryStreetWidthFt);
-  const adjacentStreets = [...new Set(edgeClass.frontStreetNames)];
+  const streetType = getStreetType(edgeAnalysis.primaryStreetWidthFt);
+  const adjacentStreets = [...new Set(edgeAnalysis.frontStreetNames)];
 
   const warnings = [];
   if (zoneTokens.length > 1) {
@@ -303,17 +311,17 @@ export function analyzeLot({ lotFeature, lotRing, map, neighborhoodFeatures = []
     lotAreaFt2,
     lotWidthFt: widthFt,
     lotDepthFt: depthFt,
-    edges: edgeClass.edges,
-    frontEdgeIndices: edgeClass.frontEdgeIndices,
-    rearEdgeIndex: edgeClass.rearEdgeIndex,
-    sideEdgeIndices: edgeClass.sideEdgeIndices,
-    lotType: edgeClass.lotType,
-    isCornerLot: edgeClass.isCornerLot,
-    isThroughLot: edgeClass.isThroughLot,
-      isIslandLot: edgeClass.isIslandLot || false,
+    edges: edgeAnalysis.edges,
+    frontEdgeIndices: edgeAnalysis.frontEdgeIndices,
+    rearEdgeIndex: edgeAnalysis.rearEdgeIndex,
+    sideEdgeIndices: edgeAnalysis.sideEdgeIndices,
+    lotType: edgeAnalysis.lotType,
+    isCornerLot: edgeAnalysis.isCornerLot,
+    isThroughLot: edgeAnalysis.isThroughLot,
+      isIslandLot: edgeAnalysis.isIslandLot || false,
     primaryStreet: {
       name: adjacentStreets[0] || "Unknown road",
-      widthFt: edgeClass.primaryStreetWidthFt,
+      widthFt: edgeAnalysis.primaryStreetWidthFt,
       type: streetType,
     },
     adjacentStreets,

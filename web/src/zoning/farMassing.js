@@ -679,6 +679,117 @@ function _makePlanFeature(geometry, kind, color, typology, label, areaFt2 = null
   };
 }
 
+function _orientedTargetRect(boundsGeom, targetAreaFt2, orientationDeg = null) {
+  if (!boundsGeom || !(targetAreaFt2 > 0)) return null;
+  const pivot = _interiorPointCoord(boundsGeom) || _centroidCoord(boundsGeom);
+  if (!pivot) return null;
+
+  const localGeom = Number.isFinite(orientationDeg)
+    ? _rotateGeometry(boundsGeom, -orientationDeg, pivot)
+    : boundsGeom;
+  const box = _bboxMetrics(localGeom);
+  const maxWm = Math.max(2 * FT_TO_M, box.maxX - box.minX);
+  const maxDm = Math.max(2 * FT_TO_M, box.maxY - box.minY);
+  const maxAreaFt2 = (maxWm * maxDm) * M2_TO_FT2;
+  const target = Math.max(40, Math.min(maxAreaFt2, targetAreaFt2));
+
+  const aspect = Math.max(0.35, Math.min(3, (maxWm / Math.max(1e-6, maxDm))));
+  const areaM2 = target / M2_TO_FT2;
+  const widthM = Math.min(maxWm * 0.98, Math.sqrt(areaM2 * aspect));
+  const depthM = Math.min(maxDm * 0.98, areaM2 / Math.max(1e-6, widthM));
+
+  const cx = (box.minX + box.maxX) / 2;
+  const cy = (box.minY + box.maxY) / 2;
+  const localRect = _rectGeometry(cx - widthM / 2, cy - depthM / 2, cx + widthM / 2, cy + depthM / 2);
+  if (!localRect) return null;
+
+  return Number.isFinite(orientationDeg)
+    ? _rotateGeometry(localRect, orientationDeg, pivot)
+    : localRect;
+}
+
+export function generateFARFootprint({
+  buildableGeometry,
+  lotGeometry = null,
+  targetFootprintAreaFt2,
+  orientationDeg = null,
+}) {
+  const bounds = lotGeometry
+    ? (_intersection(buildableGeometry, lotGeometry) || buildableGeometry)
+    : buildableGeometry;
+  if (!bounds || _areaFt2(bounds) <= 1) return null;
+
+  const maxArea = _areaFt2(bounds);
+  const target = Math.max(40, Math.min(maxArea, targetFootprintAreaFt2 || maxArea));
+  let bestGeom = null;
+  let bestDelta = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < 16; i += 1) {
+    const scale = Math.pow(0.92, i);
+    const rectTarget = target * scale;
+    const rect = _orientedTargetRect(bounds, rectTarget, orientationDeg);
+    if (!rect) continue;
+    const clipped = _intersection(rect, bounds) || rect;
+    const area = _areaFt2(clipped);
+    if (!(area > 0)) continue;
+    const delta = Math.abs(area - target);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      bestGeom = clipped;
+    }
+    if (area >= target * 0.93) {
+      return { geometry: clipped, areaFt2: area, targetAreaFt2: target, iterations: i + 1 };
+    }
+  }
+
+  if (bestGeom && _areaFt2(bestGeom) > 0) {
+    return { geometry: bestGeom, areaFt2: _areaFt2(bestGeom), targetAreaFt2: target, iterations: 16 };
+  }
+
+  const fallback = _guaranteedBboxFootprint(bounds, 0.76);
+  const fallbackClipped = _intersection(fallback, bounds) || fallback;
+  const fallbackArea = _areaFt2(fallbackClipped);
+  return fallbackArea > 0
+    ? { geometry: fallbackClipped, areaFt2: fallbackArea, targetAreaFt2: target, iterations: 99 }
+    : null;
+}
+
+export function generateFARMassing({
+  footprintGeometry,
+  allowedFarFloorArea,
+  floorHeightFt,
+  maxHeightFt = null,
+  enforceMaxHeight = false,
+}) {
+  const safeFloorHeight = Math.max(8, Number(floorHeightFt) || 10);
+  const targetFloorArea = Math.max(1, Number(allowedFarFloorArea) || 0);
+  const footprintAreaFt2 = _areaFt2(footprintGeometry);
+  if (!(footprintAreaFt2 > 0)) {
+    return {
+      buildingHeightFt: 0,
+      numFloors: 0,
+      estimatedFloors: 0,
+      footprintAreaFt2: 0,
+      clampedByHeight: false,
+    };
+  }
+
+  const estimatedFloors = targetFloorArea / footprintAreaFt2;
+  const unconstrainedHeightFt = Math.max(safeFloorHeight, estimatedFloors * safeFloorHeight);
+  const cap = Number.isFinite(maxHeightFt) && maxHeightFt > 0 ? maxHeightFt : null;
+  const clampedByHeight = Boolean(cap && enforceMaxHeight && unconstrainedHeightFt > cap);
+  const buildingHeightFt = clampedByHeight ? cap : unconstrainedHeightFt;
+  const numFloors = Math.max(1, Math.floor(buildingHeightFt / safeFloorHeight));
+
+  return {
+    buildingHeightFt,
+    numFloors,
+    estimatedFloors,
+    footprintAreaFt2,
+    clampedByHeight,
+  };
+}
+
 /**
  * Build FAR massing GeoJSON features from buildable footprint and zoning controls.
  *
@@ -768,20 +879,31 @@ export function buildFarMassing({
 
   const safeFloorHeight = Math.max(8, Number(floorHeightFt) || 10);
   const targetFloorArea = Math.max(1, Number(allowedFarFloorArea) || 0);
+  const maxFloorsAtCap = Number.isFinite(maxHeightFt) && maxHeightFt > 0
+    ? Math.max(1, Math.floor(maxHeightFt / safeFloorHeight))
+    : 1;
 
-  // Use guaranteed bbox-shrink footprint - does not rely on turf.booleanWithin.
-  // Attempt to intersect with buildable area for a tighter fit; fall back to pure bbox rect.
-  let finalFarFootprint = null;
-  const bboxRect = _guaranteedBboxFootprint(safeBuildablePolygon, 0.82);
-  if (bboxRect) {
-    const clipped = _intersection(bboxRect, safeBuildablePolygon);
-    finalFarFootprint = (clipped && _areaFt2(clipped) > 20) ? clipped : bboxRect;
-  }
+  const osrMaxFootprintFt2 = (openSpaceTargetFt2 > 0 && selectedLotAreaFt2 > 0)
+    ? Math.max(40, selectedLotAreaFt2 - openSpaceTargetFt2)
+    : safeBuildableAreaFt2;
+  const footprintCapFt2 = Math.max(40, Math.min(safeBuildableAreaFt2, osrMaxFootprintFt2));
+  const targetFootprintAreaFt2 = Math.max(
+    40,
+    Math.min(footprintCapFt2, targetFloorArea / Math.max(1, maxFloorsAtCap))
+  );
 
+  const footprintResult = generateFARFootprint({
+    buildableGeometry: safeBuildablePolygon,
+    lotGeometry: selectedLotPolygon,
+    targetFootprintAreaFt2,
+    orientationDeg: Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null,
+  });
+
+  const finalFarFootprint = footprintResult?.geometry || null;
   if (!finalFarFootprint || _areaFt2(finalFarFootprint) <= 0) {
     return {
       features,
-      warnings: [...warnings, "No valid FAR footprint could be generated (bbox approach failed)."],
+      warnings: [...warnings, "No valid FAR footprint could be generated (oriented fit failed)."],
       numFloors: 0,
       buildingHeightFt: 0,
       footprintAreaFt2: 0,
@@ -790,23 +912,35 @@ export function buildFarMassing({
     };
   }
 
-  const footprintAreaFt2 = _areaFt2(finalFarFootprint);
-  const estimatedFloors = Math.max(1, targetFloorArea / footprintAreaFt2);
-  let buildingHeightFt = Math.max(safeFloorHeight, estimatedFloors * safeFloorHeight);
-  if (enforceMaxHeight && Number.isFinite(maxHeightFt) && maxHeightFt > 0) {
-    buildingHeightFt = Math.min(buildingHeightFt, maxHeightFt);
+  const massing = generateFARMassing({
+    footprintGeometry: finalFarFootprint,
+    allowedFarFloorArea: targetFloorArea,
+    floorHeightFt: safeFloorHeight,
+    maxHeightFt,
+    enforceMaxHeight,
+  });
+  const footprintAreaFt2 = massing.footprintAreaFt2;
+  const buildingHeightFt = massing.buildingHeightFt;
+  const numFloors = massing.numFloors;
+  if (massing.clampedByHeight) {
+    warnings.push("FAR height capped by maximum building height; full FAR may not fit under height limit.");
   }
-  const numFloors = Math.max(1, Math.round(buildingHeightFt / safeFloorHeight));
 
-  console.log(`[far-massing] footprintAreaFt2: ${footprintAreaFt2.toFixed(0)}, buildingHeightFt: ${buildingHeightFt.toFixed(1)}, targetFloorArea: ${targetFloorArea.toFixed(0)}, safeBuildableAreaFt2: ${safeBuildableAreaFt2.toFixed(0)}`);
+  console.log(`[far-massing] target=${targetFloorArea.toFixed(0)}sf footprint=${footprintAreaFt2.toFixed(0)}sf (target ${targetFootprintAreaFt2.toFixed(0)}sf) height=${buildingHeightFt.toFixed(1)}ft floors=${numFloors} osrCap=${footprintCapFt2.toFixed(0)}sf`);
 
   features.push(_makeMassFeature(finalFarFootprint, 0, buildingHeightFt, color, "box", numFloors, "box"));
   features.push(_makePlanFeature(finalFarFootprint, "far_footprint", "#1a7f54", "box", "footprint", footprintAreaFt2));
 
-  const computedOpenSpace = _difference(safeBuildablePolygon, finalFarFootprint);
+  const computedOpenSpace = _difference(selectedLotPolygon, finalFarFootprint) || _difference(safeBuildablePolygon, finalFarFootprint);
   const computedOpenAreaFt2 = _areaFt2(computedOpenSpace);
   if (computedOpenSpace && computedOpenAreaFt2 > 60) {
     features.push(_makePlanFeature(computedOpenSpace, "far_open_space", "#98d8bb", "box", "open-space", computedOpenAreaFt2));
+  }
+
+  const requiredOpenSpaceFt2 = Math.max(0, Number(openSpaceTargetFt2) || 0);
+  const providedOpenSpaceFt2 = Math.max(0, selectedLotAreaFt2 - footprintAreaFt2);
+  if (requiredOpenSpaceFt2 > 0 && providedOpenSpaceFt2 < requiredOpenSpaceFt2) {
+    warnings.push(`Open space shortfall: ${Math.round(requiredOpenSpaceFt2 - providedOpenSpaceFt2)} sf below target.`);
   }
 
   return {
@@ -816,6 +950,17 @@ export function buildFarMassing({
     buildingHeightFt,
     footprintAreaFt2,
     selectedTypology: "box",
-    scoreBreakdown: null,
+    scoreBreakdown: {
+      targetFloorAreaFt2: Math.round(targetFloorArea),
+      targetFootprintAreaFt2: Math.round(targetFootprintAreaFt2),
+      finalFootprintAreaFt2: Math.round(footprintAreaFt2),
+      openSpaceRequiredFt2: Math.round(requiredOpenSpaceFt2),
+      openSpaceProvidedFt2: Math.round(providedOpenSpaceFt2),
+      maxFootprintByOpenSpaceFt2: Math.round(footprintCapFt2),
+      frontageOrientationDeg: Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null,
+      footprintIterations: footprintResult?.iterations ?? null,
+      estimatedFloors: massing.estimatedFloors,
+      clampedByHeight: massing.clampedByHeight,
+    },
   };
 }
