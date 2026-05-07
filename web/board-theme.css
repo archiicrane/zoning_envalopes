@@ -12,6 +12,7 @@
 
   --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
   --sans: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --topbar-control-w: 420px;
 }
 
 html,
@@ -67,8 +68,10 @@ body {
 }
 
 .topbar__select {
+  flex: 0 0 var(--topbar-control-w);
+  width: var(--topbar-control-w);
   margin-top: 2px;
-  max-width: 320px;
+  max-width: var(--topbar-control-w);
   border-radius: 3px;
   border: 1px solid var(--line);
   background: #fff;
@@ -297,8 +300,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  width: fit-content;
-  max-width: 100%;
+  flex: 0 0 var(--topbar-control-w);
+  width: var(--topbar-control-w);
+  max-width: var(--topbar-control-w);
   gap: 8px;
   height: 28px;
   margin-top: 2px;
@@ -399,9 +403,17 @@ body {
 
   .process-strip {
     width: 100%;
+    max-width: 100%;
+    flex: 1 1 100%;
     margin-top: 0;
     overflow-x: auto;
     white-space: nowrap;
+  }
+
+  .topbar__select {
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 100%;
   }
 
   .viewport-frame {
