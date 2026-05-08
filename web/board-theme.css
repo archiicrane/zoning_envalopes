@@ -559,9 +559,17 @@ body {
   }
 
   .lot-sheet__peek {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 8px;
     min-height: var(--sheet-peek-h);
     padding-top: 10px;
     padding-bottom: 10px;
+  }
+
+  .lot-sheet__identity {
+    min-width: 0;
   }
 
   .lot-sheet__chips {
@@ -580,6 +588,7 @@ body {
     color: #4b5563;
     font-size: 12px;
     line-height: 1;
+    cursor: pointer;
   }
 
   .lot-sheet__body {

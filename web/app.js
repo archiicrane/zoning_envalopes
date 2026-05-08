@@ -445,6 +445,11 @@ function _setSheetOpen(open) {
   if (!lotSheet) return;
   lotSheet.classList.toggle("is-open", !!open);
   document.body.classList.toggle("sheet-open", !!open);
+  if (lotSheetToggleBtn) {
+    lotSheetToggleBtn.textContent = open ? "↓" : "↑";
+    lotSheetToggleBtn.setAttribute("aria-label", open ? "Collapse details" : "Expand details");
+    lotSheetToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
 }
 
 function _toggleSheet() {
@@ -453,6 +458,10 @@ function _toggleSheet() {
 
 if (lotSheetToggleBtn) {
   lotSheetToggleBtn.addEventListener("click", (e) => { e.stopPropagation(); _toggleSheet(); });
+}
+
+if (lotSheet && lotSheetToggleBtn) {
+  _setSheetOpen(lotSheet.classList.contains("is-open"));
 }
 
 if (lotSheetPeek) {
