@@ -5390,6 +5390,16 @@ function _buildEnvelopesForMultiSelectedLots() {
     return;
   }
 
+  // If no single active lot, ensure the zone dropdown is populated so the user can upzone
+  if (!activeLotData && controlsZoneOverrideSelect && !controlsZoneOverrideSelect.options.length) {
+    const zoneOptions = getAvailableZoningOptions();
+    controlsZoneOverrideSelect.innerHTML = zoneOptions.map((z) => `<option value="${z}">${z}</option>`).join("");
+    const seedZone = activeZoneOverride || normalizeZoneToken(
+      multiSelectedLots[0]?.properties?.zonedist1 || multiSelectedLots[0]?.properties?.zone || ""
+    );
+    if (seedZone) controlsZoneOverrideSelect.value = seedZone;
+  }
+
   const maxFeatures = [];
   const farFeatures = [];
   const areaFeatures = [];
@@ -8604,6 +8614,26 @@ if (controlsZoneOverrideSelect) {
         syncControlsFromLotData(activeLotData);
         updateLotSummary(activeLotData);
         await generateEnvelopes();
+      } else if (newZone && multiSelectedLots.length > 0) {
+        // No single active lot — resolve the new zone's FAR and update the slider
+        const selection = _syncRuleSelectionFromUi();
+        const resolved = resolveZoningVariant(newZone, {
+          buildingUseType: selection.buildingUseType,
+          housingType: selection.housingType,
+          footnoteVariant: selection.footnoteVariant,
+        }, zoningRuleIndex);
+        const rule = resolved?.resolved || null;
+        const standardFar = coerceNumber(rule?.far ?? rule?.standardFar);
+        const maxOsr = coerceNumber(rule?.openSpaceRatio);
+        if (standardFar && standardFar > 0) {
+          farInput.value = standardFar;
+          farInput.max = Math.max(15, Math.ceil(standardFar * 1.5));
+          farVal.textContent = Number(standardFar).toFixed(2);
+        }
+        if (maxOsr != null && osrSlider) {
+          osrSlider.value = String(maxOsr);
+          if (osrVal) osrVal.textContent = `${formatNumber(maxOsr, 1)}%`;
+        }
       }
       buildMaxEnvelopeForSelectedLot();
       if (multiSelectedLots.length > 0) {
