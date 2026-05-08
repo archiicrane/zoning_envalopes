@@ -731,29 +731,47 @@ export function generateFARFootprint({
 
   const maxArea = _areaFt2(bounds);
   const target = Math.max(40, Math.min(maxArea, targetFootprintAreaFt2 || maxArea));
-  let bestGeom = null;
-  let bestDelta = Number.POSITIVE_INFINITY;
+  if (target >= maxArea * 0.995) {
+    return { geometry: bounds, areaFt2: maxArea, targetAreaFt2: target, iterations: 0 };
+  }
 
-  for (let i = 0; i < 16; i += 1) {
-    const scale = Math.pow(0.92, i);
-    const rectTarget = target * scale;
-    const rect = _orientedTargetRect(bounds, rectTarget, orientationDeg);
-    if (!rect) continue;
-    const clipped = _intersection(rect, bounds) || rect;
+  // Use centroid scaling in area space. This avoids meter/degree distortions from bbox math.
+  let bestGeom = null;
+  let bestArea = 0;
+  let bestDelta = Number.POSITIVE_INFINITY;
+  let low = 0.02;
+  let high = 1;
+
+  for (let i = 0; i < 24; i += 1) {
+    const mid = (low + high) / 2;
+    const scaled = _scaleFromCentroid(bounds, mid);
+    const clipped = _intersection(scaled, bounds) || scaled;
     const area = _areaFt2(clipped);
-    if (!(area > 0)) continue;
+    if (!(area > 0)) {
+      high = mid;
+      continue;
+    }
+
     const delta = Math.abs(area - target);
     if (delta < bestDelta) {
       bestDelta = delta;
       bestGeom = clipped;
+      bestArea = area;
     }
-    if (area >= target * 0.93) {
+
+    if (area > target) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+
+    if (delta <= Math.max(30, target * 0.03)) {
       return { geometry: clipped, areaFt2: area, targetAreaFt2: target, iterations: i + 1 };
     }
   }
 
-  if (bestGeom && _areaFt2(bestGeom) > 0) {
-    return { geometry: bestGeom, areaFt2: _areaFt2(bestGeom), targetAreaFt2: target, iterations: 16 };
+  if (bestGeom && bestArea > 0) {
+    return { geometry: bestGeom, areaFt2: bestArea, targetAreaFt2: target, iterations: 24 };
   }
 
   const fallback = _guaranteedBboxFootprint(bounds, 0.76);
