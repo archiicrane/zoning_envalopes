@@ -5401,18 +5401,19 @@ function _buildEnvelopesForMultiSelectedLots() {
       });
 
       const selection = _syncRuleSelectionFromUi();
+      const _multiZoneOverride = activeZoneOverride ? normalizeZoneToken(activeZoneOverride) : null;
       const controlsResult = getControlsForLot(
         {
           ...lotAnalysis,
-          primaryZone: lotAnalysis?.primaryZone,
-          zoneTokens: lotAnalysis?.zoneTokens || extractZoneTokensModule(
+          primaryZone: _multiZoneOverride || lotAnalysis?.primaryZone,
+          zoneTokens: _multiZoneOverride ? [_multiZoneOverride] : (lotAnalysis?.zoneTokens || extractZoneTokensModule(
             data?.zonedist1,
             data?.ZoneDist1,
             data?.zonedist2,
             data?.ZoneDist2,
             data?.zone,
             data?.ZoningDist
-          ),
+          )),
           buildingUseType: selection.buildingUseType,
           housingType: selection.housingType,
           footnoteVariant: selection.footnoteVariant,
@@ -8573,7 +8574,11 @@ lotSummary.addEventListener("change", async (event) => {
     updateLotSummary(activeLotData);
     await generateEnvelopes();
     buildMaxEnvelopeForSelectedLot();
-    buildFarEnvelopeForSelectedLot();
+    if (multiSelectedLots.length > 0) {
+      _buildEnvelopesForMultiSelectedLots();
+    } else {
+      buildFarEnvelopeForSelectedLot();
+    }
   } catch (err) {
     setReport(String(err));
   }
@@ -8582,12 +8587,20 @@ lotSummary.addEventListener("change", async (event) => {
 if (controlsZoneOverrideSelect) {
   controlsZoneOverrideSelect.addEventListener("change", async () => {
     try {
-      applySelectedZoneOverride(controlsZoneOverrideSelect.value);
-      syncControlsFromLotData(activeLotData);
-      updateLotSummary(activeLotData);
-      await generateEnvelopes();
+      const newZone = normalizeZoneToken(controlsZoneOverrideSelect.value);
+      if (newZone) activeZoneOverride = newZone;
+      if (activeLotData) {
+        applySelectedZoneOverride(controlsZoneOverrideSelect.value);
+        syncControlsFromLotData(activeLotData);
+        updateLotSummary(activeLotData);
+        await generateEnvelopes();
+      }
       buildMaxEnvelopeForSelectedLot();
-      buildFarEnvelopeForSelectedLot();
+      if (multiSelectedLots.length > 0) {
+        _buildEnvelopesForMultiSelectedLots();
+      } else {
+        buildFarEnvelopeForSelectedLot();
+      }
     } catch (err) {
       setReport(String(err));
     }
