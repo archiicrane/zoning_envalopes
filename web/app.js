@@ -6,7 +6,7 @@ import {
   extractZoneTokens as extractZoneTokensModule,
   resolveZoningVariant,
 } from "./zoningRuleEngine.js";
-import { buildFarMassing } from "./src/zoning/farMassing.js";
+import { buildFarMassing } from "./src/zoning/farMassing.js?v=20260507ac";
 import { DiagramSystemIntegration } from "./src/diagrams/DiagramSystemIntegration.js";
 import { ArchitecturalDiagramRenderer } from "./src/diagrams/ArchitecturalDiagramRenderer.js";
 import { ArchitecturalIsometricRenderer } from "./src/diagrams/ArchitecturalIsometricRenderer.js";
