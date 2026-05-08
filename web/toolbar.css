@@ -290,17 +290,28 @@
 .typology-hud__item {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 6px;
   font-size: 10px;
+  min-width: 0;
 }
 
 .typology-hud__item span {
   color: #6b7280;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .typology-hud__item strong {
   color: #1f2937;
   font-weight: 700;
+  flex: 0 0 auto;
+  max-width: 44%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 680px) {
