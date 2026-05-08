@@ -441,16 +441,26 @@ body {
 
 @media (max-width: 680px) {
   :root {
-    --topbar-h: 132px;
+    --topbar-h: 112px;
   }
 
   .topbar {
-    min-height: 120px;
-    padding: 10px 12px;
+    min-height: 104px;
+    padding: 8px 10px;
+    gap: 6px 8px;
   }
 
   .topbar__titleblock {
     min-width: 0;
+    gap: 0;
+  }
+
+  .topbar__brand {
+    font-size: 16px;
+  }
+
+  .topbar__subtitle {
+    display: none;
   }
 
   .topbar__select {
@@ -464,26 +474,41 @@ body {
     max-width: 100%;
     flex: 1 1 100%;
     justify-content: flex-start;
-    padding: 0 8px;
+    padding: 0 6px;
     overflow-x: auto;
     white-space: nowrap;
-  }
-
-  .layer-pills {
-    bottom: calc(var(--sheet-peek-h) + 34px);
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    font-size: 9px;
     gap: 6px;
   }
 
+  .layer-pills {
+    left: 8px;
+    right: 8px;
+    bottom: calc(var(--sheet-peek-h) + 42px);
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 6px;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .pill {
-    min-width: 0;
-    width: 100%;
+    min-width: 88px;
+    flex: 0 0 auto;
+    width: auto;
   }
 
   .map-fabs {
-    bottom: calc(var(--sheet-peek-h) + 70px);
-    right: 10px;
+    bottom: calc(var(--sheet-peek-h) + 8px);
+    right: 8px;
+    gap: 4px;
+  }
+
+  .map-fab {
+    min-height: 32px;
+    padding: 0 10px;
   }
 
   .sheet-tabs {
@@ -493,5 +518,9 @@ body {
 
   .sheet-slider-row {
     grid-template-columns: minmax(72px, 80px) minmax(0, 1fr) 64px;
+  }
+
+  .lot-sheet__body {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 }
