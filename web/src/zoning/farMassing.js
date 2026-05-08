@@ -893,10 +893,12 @@ export function buildFarMassing({
     ? Math.max(1, Math.floor(maxHeightFt / safeFloorHeight))
     : 1;
 
+  const coverageRatio = Math.max(0.01, Math.min(1, (Number(coveragePct) || 0) / 100));
+  const coverageCapFt2 = Math.max(40, safeBuildableAreaFt2 * coverageRatio);
   const osrMaxFootprintFt2 = (openSpaceTargetFt2 > 0 && selectedLotAreaFt2 > 0)
     ? Math.max(40, selectedLotAreaFt2 - openSpaceTargetFt2)
     : safeBuildableAreaFt2;
-  const footprintCapFt2 = Math.max(40, Math.min(safeBuildableAreaFt2, osrMaxFootprintFt2));
+  const footprintCapFt2 = Math.max(40, Math.min(safeBuildableAreaFt2, osrMaxFootprintFt2, coverageCapFt2));
   const targetFootprintAreaFt2 = Math.max(
     40,
     Math.min(footprintCapFt2, targetFloorArea / Math.max(1, maxFloorsAtCap))
@@ -985,7 +987,9 @@ export function buildFarMassing({
       finalFootprintAreaFt2: Math.round(footprintAreaFt2),
       openSpaceRequiredFt2: Math.round(requiredOpenSpaceFt2),
       openSpaceProvidedFt2: Math.round(providedOpenSpaceFt2),
-      maxFootprintByOpenSpaceFt2: Math.round(footprintCapFt2),
+      maxFootprintByOpenSpaceFt2: Math.round(osrMaxFootprintFt2),
+      maxFootprintByCoverageFt2: Math.round(coverageCapFt2),
+      maxFootprintAppliedFt2: Math.round(footprintCapFt2),
       frontageOrientationDeg: Number.isFinite(frontageOrientationDeg) ? frontageOrientationDeg : null,
       footprintIterations: footprintResult?.iterations ?? null,
       estimatedFloors: massing.estimatedFloors,
