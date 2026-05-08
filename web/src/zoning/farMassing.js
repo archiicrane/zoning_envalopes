@@ -913,9 +913,9 @@ export function buildFarMassing({
 
   const coverageRatio = Math.max(0.01, Math.min(1, (Number(coveragePct) || 0) / 100));
   const coverageCapFt2 = Math.max(40, safeBuildableAreaFt2 * coverageRatio);
-  // OSR must carve directly out of FAR buildable area, not from lot remainder.
-  const osrMaxFootprintFt2 = openSpaceTargetFt2 > 0
-    ? Math.max(40, safeBuildableAreaFt2 - openSpaceTargetFt2)
+  // OSR is lot-based: if OSR is 20%, at least 20% of lot area stays unbuilt.
+  const osrMaxFootprintFt2 = (openSpaceTargetFt2 > 0 && selectedLotAreaFt2 > 0)
+    ? Math.max(40, selectedLotAreaFt2 - openSpaceTargetFt2)
     : safeBuildableAreaFt2;
   const footprintCapFt2 = Math.max(40, Math.min(safeBuildableAreaFt2, osrMaxFootprintFt2, coverageCapFt2));
   const targetFootprintAreaFt2 = Math.max(
@@ -981,15 +981,15 @@ export function buildFarMassing({
   features.push(_makeMassFeature(finalFarFootprint, 0, buildingHeightFt, color, "box", numFloors, "box"));
   features.push(_makePlanFeature(finalFarFootprint, "far_footprint", "#1a7f54", "box", "footprint", footprintAreaFt2));
 
-  const computedOpenSpace = _difference(safeBuildablePolygon, finalFarFootprint)
-    || _difference(selectedLotPolygon, finalFarFootprint);
+  const computedOpenSpace = _difference(selectedLotPolygon, finalFarFootprint)
+    || _difference(safeBuildablePolygon, finalFarFootprint);
   const computedOpenAreaFt2 = _areaFt2(computedOpenSpace);
   if (computedOpenSpace && computedOpenAreaFt2 > 60) {
     features.push(_makePlanFeature(computedOpenSpace, "far_open_space", "#98d8bb", "box", "open-space", computedOpenAreaFt2));
   }
 
   const requiredOpenSpaceFt2 = Math.max(0, Number(openSpaceTargetFt2) || 0);
-  const providedOpenSpaceFt2 = Math.max(0, safeBuildableAreaFt2 - footprintAreaFt2);
+  const providedOpenSpaceFt2 = Math.max(0, selectedLotAreaFt2 - footprintAreaFt2);
   if (requiredOpenSpaceFt2 > 0 && providedOpenSpaceFt2 < requiredOpenSpaceFt2) {
     warnings.push(`Open space shortfall: ${Math.round(requiredOpenSpaceFt2 - providedOpenSpaceFt2)} sf below target.`);
   }

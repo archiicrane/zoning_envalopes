@@ -6,7 +6,7 @@ import {
   extractZoneTokens as extractZoneTokensModule,
   resolveZoningVariant,
 } from "./zoningRuleEngine.js";
-import { buildFarMassing } from "./src/zoning/farMassing.js?v=20260507ad";
+import { buildFarMassing } from "./src/zoning/farMassing.js?v=20260508a";
 import { DiagramSystemIntegration } from "./src/diagrams/DiagramSystemIntegration.js";
 import { ArchitecturalDiagramRenderer } from "./src/diagrams/ArchitecturalDiagramRenderer.js";
 import { ArchitecturalIsometricRenderer } from "./src/diagrams/ArchitecturalIsometricRenderer.js";
@@ -5588,7 +5588,7 @@ function _buildEnvelopesForMultiSelectedLots() {
         && far > 0
         && controlsFootprintAreaFt2 > 0
       ) {
-        const requiredOpenSpaceFt2 = lotAreaFt2 * far * (osr / 100);
+        const requiredOpenSpaceFt2 = lotAreaFt2 * (osr / 100);
         const maxCoverageFt2 = Math.max(0, lotAreaFt2 - requiredOpenSpaceFt2);
         const osrCoverageCapPct = Math.max(0, Math.min(100, (maxCoverageFt2 / controlsFootprintAreaFt2) * 100));
         effectiveCoveragePct = Math.min(baseCoveragePct, osrCoverageCapPct);
@@ -5599,7 +5599,7 @@ function _buildEnvelopesForMultiSelectedLots() {
         && osr > 0
         && lotAreaFt2 > 0
         && far > 0
-      ) ? (lotAreaFt2 * far * (osr / 100)) : 0;
+      ) ? (lotAreaFt2 * (osr / 100)) : 0;
 
       const farBuilt = buildFarMassing({
         buildableFootprintGeometry: controlsFootprintGeometry,
@@ -6090,7 +6090,7 @@ function buildFarEnvelopeForSelectedLot() {
       && far > 0
       && controlsFootprintAreaFt2 > 0
     ) {
-      const requiredOpenSpaceFt2 = lotAreaFt2 * far * (osr / 100);
+      const requiredOpenSpaceFt2 = lotAreaFt2 * (osr / 100);
       const maxCoverageFt2 = Math.max(0, lotAreaFt2 - requiredOpenSpaceFt2);
       const osrCoverageCapPct = Math.max(0, Math.min(100, (maxCoverageFt2 / controlsFootprintAreaFt2) * 100));
       effectiveCoveragePct = Math.min(baseCoveragePct, osrCoverageCapPct);
@@ -6108,7 +6108,7 @@ function buildFarEnvelopeForSelectedLot() {
       && lotAreaFt2 > 0
       && far > 0
     )
-      ? (lotAreaFt2 * far * (osr / 100))
+      ? (lotAreaFt2 * (osr / 100))
       : 0;
 
     const { features, warnings, numFloors, buildingHeightFt, footprintAreaFt2, selectedTypology, scoreBreakdown } = buildFarMassing({
