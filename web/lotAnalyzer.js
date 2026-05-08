@@ -56,6 +56,10 @@ function roadName(road) {
   return props.name || props.ref || props.class || props.type || "Unknown road";
 }
 
+function normalizeRoadName(value) {
+  return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 function toRoadLineFeatures(rawRoadFeatures) {
   const out = [];
   for (const feature of rawRoadFeatures || []) {
@@ -173,6 +177,26 @@ function classifyLotEdges(edges, roads, neighborLines) {
   // Keep all detected street-facing edges as FRONT edges.
   // This is critical for island/through/corner lots and avoids forcing fake rear/side assignments.
   let frontEdgeIndices = [...new Set(chosenFrontEdges.map((edge) => edge.idx))];
+
+  // Guardrail: on many interior lots, centerline proximity can over-label every edge as FRONT.
+  // If all detected fronts appear to reference the same street name, collapse to the primary
+  // frontage edge and (optionally) one adjacent frontage edge near the same distance.
+  const uniqueFrontRoads = [...new Set(chosenFrontEdges.map((edge) => normalizeRoadName(edge.nearestRoadName)).filter(Boolean))];
+  if (frontEdgeIndices.length > 2 && uniqueFrontRoads.length <= 1 && primaryFront) {
+    const nearThresholdM = 8 * FT_TO_M;
+    const candidateAdjacent = chosenFrontEdges
+      .filter((edge) => edge.idx !== primaryFront.idx)
+      .filter((edge) => isAdjacentEdge(edge.idx, primaryFront.idx, edges.length))
+      .filter((edge) => Number.isFinite(edge.minRoadDistM) && Number.isFinite(primaryFront.minRoadDistM))
+      .filter((edge) => Math.abs(edge.minRoadDistM - primaryFront.minRoadDistM) <= nearThresholdM)
+      .sort((a, b) => a.minRoadDistM - b.minRoadDistM);
+
+    frontEdgeIndices = [primaryFront.idx];
+    if (candidateAdjacent.length) {
+      frontEdgeIndices.push(candidateAdjacent[0].idx);
+    }
+  }
+
   if (!frontEdgeIndices.length && primaryFront) {
     frontEdgeIndices = [primaryFront.idx];
   }
