@@ -3043,7 +3043,9 @@ function updateLotSummary(data, envelopeResults) {
   `;
 
   _updateSheetPeek(data, zoning);
-  _setSheetTab("summary");
+  if (!lotSheet.classList.contains("is-open")) {
+    _setSheetTab("summary");
+  }
   _setSheetOpen(true);
 
   if (envelopeResults?.zoning_buildability_study && activeLotPolygon) {
