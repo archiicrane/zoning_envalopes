@@ -236,7 +236,7 @@ body {
 }
 
 .sheet-slider-row {
-  grid-template-columns: minmax(84px, 96px) minmax(0, 1fr) minmax(56px, auto);
+  grid-template-columns: minmax(84px, 96px) minmax(0, 1fr) 66px;
   gap: 8px;
 }
 
@@ -246,6 +246,11 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sheet-slider-val {
+  text-align: right;
+  padding-right: 10px;
 }
 
 .sheet-slider-row input[type="range"] {
@@ -487,6 +492,6 @@ body {
   }
 
   .sheet-slider-row {
-    grid-template-columns: minmax(72px, 80px) minmax(0, 1fr) minmax(58px, auto);
+    grid-template-columns: minmax(72px, 80px) minmax(0, 1fr) 64px;
   }
 }
