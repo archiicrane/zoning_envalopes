@@ -750,6 +750,16 @@ document.addEventListener("keydown", (e) => {
       focusModeBtn.title = "Focus mode";
     }
   }
+  if (e.key === "Escape") {
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if (multiSelectedLots.length > 0) {
+      _clearMultiSelection();
+    } else if (activeLotData || activeLotPolygon) {
+      clearActiveEnvelope();
+      _setSheetOpen(false);
+    }
+  }
 });
 
 if (toolbarMoreBtn && toolbarMoreMenu) {
