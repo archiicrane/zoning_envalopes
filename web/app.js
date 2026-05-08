@@ -2176,12 +2176,14 @@ const LAYER_GROUPS = {
     "selected-far-open-space-fill",
     "open-space-zone-fill",
   ],
-  buildableArea: [
-    "selected-far-footprint-fill",
+  setbackArea: [
     "setback-band-fill",
     "front-yard-zone-fill",
     "side-yard-zone-fill",
     "rear-yard-zone-fill",
+  ],
+  buildableArea: [
+    "selected-far-footprint-fill",
     "buildable-footprint-fill",
     "buildable-footprint-outline",
     "study-outline",
@@ -2291,6 +2293,7 @@ function syncLayerVisibility() {
   _setLayerGroupVisibility(LAYER_GROUPS.maxEnvelope, showMax);
   _setLayerGroupVisibility(LAYER_GROUPS.farEnvelope, showFar);
   _setLayerGroupVisibility(LAYER_GROUPS.openSpaceArea, showArea && showOpenSpace);
+  _setLayerGroupVisibility(LAYER_GROUPS.setbackArea, showArea);
   _setLayerGroupVisibility(LAYER_GROUPS.buildableArea, showArea && showBuildable);
   _setLayerGroupVisibility(LAYER_GROUPS.setbackLines, showArea && showSetbacks);
   _setLayerGroupVisibility(LAYER_GROUPS.labels, showArea && showTextLabels && showMapText);
