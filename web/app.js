@@ -107,6 +107,7 @@ let focusSelectedLotMode = false;
 let showRoadCenterlines = false;
 let debugMode = false;
 let lastStudyResult = null;
+let neighborhoodEnvelopeFillEnabled = true;
 let activeNeighborhood = null;
 let activeNeighborhoodData = EMPTY_FC;
 let availableNeighborhoods = [];
@@ -130,6 +131,7 @@ let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, footprintAr
 let lastFarFitWarning = null;
 let lastMaxEnvelopeGeojson = EMPTY_FC;
 let lastFarEnvelopeGeojson = EMPTY_FC;
+const MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES = 6000;
 let lastMultiLotAnalysis = null;
 let isoRenderer = null;
 let isoScene = null;
@@ -1478,6 +1480,16 @@ function refreshZoningEnvelopeFromNeighborhood() {
   console.log("[zoning-envelope] envelope features created:", built.features.length);
   console.log("[zoning-envelope] sample FAR/height values:", built.samples);
 
+  neighborhoodEnvelopeFillEnabled = built.features.length <= MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES;
+  if (!neighborhoodEnvelopeFillEnabled) {
+    console.warn(
+      "[zoning-envelope] disabling neighborhood fill extrusion to avoid WebGL overload:",
+      built.features.length,
+      "features"
+    );
+  }
+  syncLayerVisibility();
+
   // Update Three.js wireframe edges to match new envelope geometry
   updateEnvelopeEdges(built.features, []);
 }
@@ -2319,6 +2331,9 @@ function syncLayerVisibility() {
   for (const id of ["multi-selected-lots-fill", "multi-selected-lots-outline"]) {
     _setLayerVisibility(id, true);
   }
+
+  _setLayerVisibility("zoning-envelope-layer", showMax && neighborhoodEnvelopeFillEnabled);
+  _setLayerVisibility("zoning-envelope-outline", showMax);
 
   applyFocusModeVisuals();
   if (showBuildingsBtn) {
