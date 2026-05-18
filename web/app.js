@@ -49,32 +49,32 @@ const feetToMeters = (ft) => Number(ft || 0) * 0.3048;
 
 const STYLE_PRESET = {
   maxEnvelope: {
-    fillColor: "#0ea5e9",
-    fillOpacityDefault: 0.42,
-    fillOpacityMin: 0.32,
-    outlineColor: "#1d4ed8",
+    fillColor: "#9fc3ff",
+    fillOpacityDefault: 1,
+    fillOpacityMin: 1,
+    outlineColor: "#5f7fc9",
     outlineOpacity: 1,
     outlineWidth: 3,
   },
   farEnvelope: {
-    fillColor: "#22c55e",
-    fillOpacityDefault: 0.5,
-    fillOpacityMin: 0.18,
-    outlineColor: "#15803d",
+    fillColor: "#a6d9b6",
+    fillOpacityDefault: 1,
+    fillOpacityMin: 1,
+    outlineColor: "#5e9971",
     outlineOpacity: 1,
     outlineWidth: 2,
   },
   existingBuildings: {
-    color: "#b8bec6",
-    opacityDefault: 0.2,
-    opacityFocus: 0.15,
-    opacityPresentation: 0.16,
+    color: "#f4f6f8",
+    opacityDefault: 1,
+    opacityFocus: 1,
+    opacityPresentation: 1,
   },
   contextEnvelope: {
-    fillOpacityDefault: 0.2,
-    fillOpacityPresentation: 0.1,
-    outlineOpacityDefault: 0.45,
-    outlineOpacityPresentation: 0.12,
+    fillOpacityDefault: 1,
+    fillOpacityPresentation: 1,
+    outlineOpacityDefault: 1,
+    outlineOpacityPresentation: 1,
   },
 };
 
@@ -573,16 +573,14 @@ if (osrSlider) {
 
 function _envelopeOpacityValues() {
   const legacyTransparencyPercent = Number(envelopeOpacitySlider.value);
-  const legacyOpacityValue = 1 - legacyTransparencyPercent / 100;
+  const legacyOpacityValue = 1;
   // Per-layer opacity from individual sliders (fall back to legacy single slider)
-  const neighborhoodOpacity = neighborhoodOpacitySlider
-    ? (Number(neighborhoodOpacitySlider.value) / 100)
-    : legacyOpacityValue;
-  const farOpacity = farOpacitySlider ? (Number(farOpacitySlider.value) / 100) : legacyOpacityValue;
-  const maxOpacity = maxEnvOpacitySlider ? (Number(maxEnvOpacitySlider.value) / 100) : legacyOpacityValue;
-  const baselineMultiplier = neighborhoodOpacity >= 0.999 ? 1 : 0.35;
-  const maxEnvelopeFillOpacity = Math.max(0, Math.min(1, maxOpacity * STYLE_PRESET.maxEnvelope.fillOpacityDefault / 0.5));
-  const farEnvelopeFillOpacity = Math.max(0, Math.min(1, farOpacity * STYLE_PRESET.farEnvelope.fillOpacityDefault / 0.42));
+  const neighborhoodOpacity = legacyOpacityValue;
+  const farOpacity = legacyOpacityValue;
+  const maxOpacity = legacyOpacityValue;
+  const baselineMultiplier = 1;
+  const maxEnvelopeFillOpacity = 1;
+  const farEnvelopeFillOpacity = 1;
   return {
     transparencyPercent: legacyTransparencyPercent,
     neighborhoodOpacity,
@@ -611,50 +609,39 @@ function applyEnvelopeOpacityToLayers() {
 
   // Existing buildings layer – driven by its own slider
   if (map.getLayer("existing-buildings-mapbox") && buildingsOpacitySlider) {
-    const inputOpacity = Number(buildingsOpacitySlider.value) / 100;
-    const bldOpacity = solidMode
-      ? Math.max(0.14, Math.min(0.4, inputOpacity * 0.5 + 0.12))
-      : inputOpacity;
-    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-color", solidMode ? "#9ca3af" : STYLE_PRESET.existingBuildings.color);
-    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", bldOpacity);
+    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-color", solidMode ? "#f8fafc" : STYLE_PRESET.existingBuildings.color);
+    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", 1);
   }
 
   if (map.getLayer("zoning-envelope-fill")) {
-    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-color", solidMode ? "#f3f4f6" : STYLE_PRESET.maxEnvelope.fillColor);
-    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-opacity", solidMode ? 1 : scenarioOpacity);
+    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-color", solidMode ? "#c7dcff" : STYLE_PRESET.maxEnvelope.fillColor);
+    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-opacity", 1);
     map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("zoning-envelope-fill-baseline")) {
-    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-color", solidMode ? "#e5e7eb" : STYLE_PRESET.maxEnvelope.fillColor);
-    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-opacity", solidMode ? 1 : baselineOpacity);
+    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-color", solidMode ? "#dce9ff" : STYLE_PRESET.maxEnvelope.fillColor);
+    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-opacity", 1);
     map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-vertical-gradient", false);
   }
   // Also apply (scaled down) to the neighborhood ghost-volume envelope
   if (map.getLayer("zoning-envelope-layer")) {
-    const baseOpacity = presentationMode
-      ? STYLE_PRESET.contextEnvelope.fillOpacityPresentation
-      : STYLE_PRESET.contextEnvelope.fillOpacityDefault;
-    const opacity = solidMode ? 1 : Math.max(0, Math.min(1, baseOpacity * (neighborhoodOpacity / 0.2)));
-    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-color", solidMode ? "#e5e7eb" : ["coalesce", ["get", "envelopeColor"], "#3b82f6"]);
-    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", opacity);
-    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-vertical-gradient", !solidMode);
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-color", solidMode ? "#e8f0ff" : ["coalesce", ["get", "envelopeColor"], "#9fc3ff"]);
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", 1);
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("zoning-envelope-outline")) {
-    const outlineOpacity = presentationMode
-      ? STYLE_PRESET.contextEnvelope.outlineOpacityPresentation
-      : STYLE_PRESET.contextEnvelope.outlineOpacityDefault;
-    map.setPaintProperty("zoning-envelope-outline", "line-opacity", solidMode ? 1 : Math.max(0, Math.min(1, outlineOpacity * (neighborhoodOpacity / 0.2))));
+    map.setPaintProperty("zoning-envelope-outline", "line-opacity", 1);
     map.setPaintProperty("zoning-envelope-outline", "line-color", solidMode ? "#94a3b8" : "#475569");
   }
 
   if (map.getLayer("selected-max-envelope-fill")) {
-    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-color", solidMode ? "#f8fafc" : STYLE_PRESET.maxEnvelope.fillColor);
-    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-opacity", solidMode ? 1 : maxEnvelopeFillOpacity);
+    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-color", solidMode ? "#c7dcff" : STYLE_PRESET.maxEnvelope.fillColor);
+    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-opacity", 1);
     map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("selected-far-envelope-fill")) {
-    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-color", solidMode ? "#14532d" : ["coalesce", ["get", "envelopeColor"], STYLE_PRESET.farEnvelope.fillColor]);
-    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", solidMode ? 1 : farEnvelopeFillOpacity);
+    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-color", solidMode ? "#bfe4ca" : ["coalesce", ["get", "envelopeColor"], STYLE_PRESET.farEnvelope.fillColor]);
+    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", 1);
     // Keep vertical gradient in solid mode to make side faces read slightly darker.
     map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-vertical-gradient", true);
   }
@@ -6702,8 +6689,17 @@ function _addExtrusion(scene, ring, projector, heightFt, color, opacity, edgeCol
   geometry.rotateX(-Math.PI / 2);
   const mesh = new THREE.Mesh(
     geometry,
-    new THREE.MeshPhongMaterial({ color, transparent: opacity < 1, opacity })
+    new THREE.MeshStandardMaterial({
+      color,
+      transparent: false,
+      opacity: 1,
+      roughness: 0.9,
+      metalness: 0,
+      depthWrite: true,
+      depthTest: true,
+    })
   );
+  mesh.renderOrder = 0;
   scene.add(mesh);
 
   const edgeGeom = new THREE.EdgesGeometry(geometry);
