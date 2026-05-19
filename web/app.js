@@ -7914,6 +7914,25 @@ function resolveLabelOverlap(labels, opts = {}) {
   return sorted;
 }
 
+function layoutHeightLabels(labels, baseX, minSpacing = 18, bounds = {}) {
+  const arranged = resolveLabelOverlap(
+    (labels || []).map((l) => ({
+      ...l,
+      x: baseX,
+      targetY: Number(l.targetY || 0),
+      priority: Number(l.priority || 0),
+    })),
+    {
+      minSpacing,
+      minY: Number.isFinite(bounds.minY) ? bounds.minY : 0,
+      maxY: Number.isFinite(bounds.maxY) ? bounds.maxY : 1e9,
+    }
+  );
+  return arranged
+    .sort((a, b) => (a.priority - b.priority) || (a.targetY - b.targetY))
+    .map((l) => ({ ...l, x: baseX }));
+}
+
 function placeDimensionText(svg, ns, text, x, y, opts = {}, layout = null) {
   const theme = opts.theme || _annotationTheme(1);
   const fontSize = opts.fontSize || theme.fontSize;
@@ -8234,16 +8253,37 @@ function drawPlanSVG(w, h, g, mode = "comparison") {
       w2.setAttribute("stroke", annTheme.lineSoft); w2.setAttribute("stroke-width", "1");
       svg.appendChild(w2);
     } else {
+      const yTop = Math.min(p1.y, p2.y);
+      const yBottom = Math.max(p1.y, p2.y);
+      const xRight = Math.min(w - annTheme.margin - 48, lotBounds.maxX + (annTheme.witness * 1.8));
       createAlignedDimension(svg, ns, {
-        start: p1,
-        end: p2,
-        centroid: lotCentroid,
-        offset: Math.max(annTheme.witness, Number(dim.offsetPx || 32) * annScale),
-        extension: 6,
-        label: dim.label || "",
+        start: { x: xRight, y: yTop },
+        end: { x: xRight, y: yBottom },
+        offset: 0,
+        extension: 5,
+        label: "",
         panelWidth: w,
         panelHeight: h,
         theme: annTheme,
+      }, annotationLayout);
+      const d1 = document.createElementNS(ns, "line");
+      d1.setAttribute("x1", String(p1.x)); d1.setAttribute("y1", String(p1.y));
+      d1.setAttribute("x2", String(xRight)); d1.setAttribute("y2", String(p1.y));
+      d1.setAttribute("stroke", annTheme.lineSoft); d1.setAttribute("stroke-width", "1");
+      d1.setAttribute("stroke-dasharray", "3 3");
+      svg.appendChild(d1);
+      const d2 = document.createElementNS(ns, "line");
+      d2.setAttribute("x1", String(p2.x)); d2.setAttribute("y1", String(p2.y));
+      d2.setAttribute("x2", String(xRight)); d2.setAttribute("y2", String(p2.y));
+      d2.setAttribute("stroke", annTheme.lineSoft); d2.setAttribute("stroke-width", "1");
+      d2.setAttribute("stroke-dasharray", "3 3");
+      svg.appendChild(d2);
+      placeDimensionText(svg, ns, dim.label || "", xRight + 10, ((yTop + yBottom) / 2), {
+        panelWidth: w,
+        panelHeight: h,
+        theme: annTheme,
+        color: annTheme.textStrong,
+        align: "left",
       }, annotationLayout);
     }
   }
@@ -8406,21 +8446,20 @@ function drawIsoSVG(w, h, g, mode = "comparison") {
   const refPt = g.lot[0];
   if (refPt) {
     const botY = iso.project(refPt[0], refPt[1], 0).y;
-    const LABEL_STACK_SPACING = Math.max(18, 18 * annScale);
+    const LABEL_STACK_SPACING = 18;
     const markerX = Math.min(w - annTheme.margin - 70, Math.max(iso.frame.right + (annTheme.witness * 1.1), dimX));
     const labelX = Math.min(w - annTheme.margin - 120, markerX + 30);
     const stackTop = annTheme.margin + 22;
     const stackBottom = h - annTheme.margin - 20;
-    const stackLabels = resolveLabelOverlap(
+    const stackLabels = layoutHeightLabels(
       dimEntries.filter((d) => d.h > 0).map((d, idx) => ({
         ...d,
+        priority: idx,
         targetY: stackTop + (idx * LABEL_STACK_SPACING),
       })),
-      {
-        minSpacing: LABEL_STACK_SPACING,
-        minY: stackTop,
-        maxY: stackBottom,
-      }
+      labelX,
+      LABEL_STACK_SPACING,
+      { minY: stackTop, maxY: stackBottom }
     );
     for (const d of stackLabels) {
       const topY = iso.project(refPt[0], refPt[1], d.h).y;
@@ -8441,6 +8480,16 @@ function drawIsoSVG(w, h, g, mode = "comparison") {
         panelHeight: h,
         theme: annTheme,
       }, annotationLayout);
+      const guide = document.createElementNS(ns, "line");
+      guide.setAttribute("x1", String(markerX + annTheme.tick + 1));
+      guide.setAttribute("y1", String(topY));
+      guide.setAttribute("x2", String(labelX - 4));
+      guide.setAttribute("y2", String(topY));
+      guide.setAttribute("stroke", d.color);
+      guide.setAttribute("stroke-width", "0.9");
+      guide.setAttribute("stroke-dasharray", "4 3");
+      guide.setAttribute("opacity", "0.5");
+      svg.appendChild(guide);
     }
   }
 
@@ -8534,11 +8583,15 @@ function drawSectionSVG(w, h, g, mode = "comparison") {
       targetY: (topY + baseY) / 2,
     };
   });
-  const spacedSectionLabels = resolveLabelOverlap(sectionSpecs, {
-    minSpacing: Math.max(14, 16 * annScale),
-    minY: annTheme.margin + 18,
-    maxY: h - annTheme.margin - 18,
-  });
+  const spacedSectionLabels = layoutHeightLabels(
+    sectionSpecs,
+    sectionLabelX,
+    18,
+    {
+      minY: annTheme.margin + 18,
+      maxY: h - annTheme.margin - 18,
+    }
+  );
   for (const dim of spacedSectionLabels) {
     createVerticalHeightMarker(svg, ns, {
       x: dim.x,
@@ -8555,6 +8608,16 @@ function drawSectionSVG(w, h, g, mode = "comparison") {
       panelHeight: h,
       theme: annTheme,
     }, annotationLayout);
+    const guide = document.createElementNS(ns, "line");
+    guide.setAttribute("x1", String(dim.x + annTheme.tick + 1));
+    guide.setAttribute("y1", String(dim.topY));
+    guide.setAttribute("x2", String(sectionLabelX - 4));
+    guide.setAttribute("y2", String(dim.topY));
+    guide.setAttribute("stroke", dim.color);
+    guide.setAttribute("stroke-width", "0.9");
+    guide.setAttribute("stroke-dasharray", "4 3");
+    guide.setAttribute("opacity", "0.5");
+    svg.appendChild(guide);
   }
 
   const frontSet = Math.max(0, Number(g.setbacks?.front || 0));
@@ -8991,6 +9054,29 @@ function updateStudyLabels(g) {
   }
 }
 
+function renderFarComparisonSummary(g) {
+  const existingHeight = Math.round(Number(g.analysis?.existingHeightFt || 0));
+  const farHeight = Math.round(Number(g.farHeight || 0));
+  const farUsed = Number(g.farUsed || 0).toFixed(2);
+  const existingVol = formatNumber(Number(g.existingVolumeFt3 || 0), 0);
+  const farVol = formatNumber(Number(g.farEnvelopeVolumeFt3 || 0), 0);
+  const pct = Number(g.volumeChangePct);
+  const pctLabel = Number.isFinite(pct)
+    ? `${pct >= 0 ? "+" : ""}${formatNumber(pct, 1)}%`
+    : "n/a";
+
+  return `
+    <div class="board-table">
+      <div class="board-row"><span>Existing Height</span><strong>${existingHeight} ft</strong></div>
+      <div class="board-row"><span>FAR Envelope Height</span><strong>${farHeight} ft</strong></div>
+      <div class="board-row"><span>FAR Used</span><strong>${farUsed}</strong></div>
+      <div class="board-row"><span>Existing Volume</span><strong>${existingVol} ft<sup>3</sup></strong></div>
+      <div class="board-row"><span>FAR Envelope Volume</span><strong>${farVol} ft<sup>3</sup></strong></div>
+      <div class="board-row"><span>Volume Increase</span><strong>${pctLabel}</strong></div>
+    </div>
+  `;
+}
+
 function bindStudySheetSliders() {
   const floorHeightSlider = document.getElementById("floorHeightSlider");
   const farSlider = document.getElementById("farSliderModal");
@@ -9068,6 +9154,10 @@ function renderStudySheet() {
   }
 
   updateStudyLabels(geometry);
+  const comparisonSummary = document.getElementById("amComparisonSummary");
+  if (comparisonSummary) {
+    comparisonSummary.innerHTML = renderFarComparisonSummary(geometry);
+  }
 
   // Keep map-side FAR layer synced with sheet sliders.
   farInput.value = geometry.farUsed;
@@ -9278,6 +9368,10 @@ function _renderAnalysisPanelContent(lots) {
             <div class="board-view">
               <div class="board-view__label">SECTION / HEIGHT VIEW</div>
               <div class="board-view__canvas board-view__canvas--section" id="amComparisonSection"></div>
+            </div>
+            <div class="board-view">
+              <div class="board-view__label">FAR COMPARISON SUMMARY</div>
+              <div class="board-view__canvas" id="amComparisonSummary"></div>
             </div>
           </article>
 
