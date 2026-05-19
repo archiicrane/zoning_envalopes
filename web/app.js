@@ -3413,7 +3413,7 @@ function _renderUpzoneComparisonCard(selectedLots) {
       <div class="summary-row"><span>FAR Envelope</span><strong>${Math.round(geometry.farHeight)} ft</strong></div>
       <div class="summary-row"><span>Existing</span><strong>${Math.round(geometry.analysis?.existingHeightFt || 0)} ft</strong></div>
       <div class="summary-row"><span>Volume Change</span><strong>${volumeChangeLabel}</strong></div>
-      <div class="summary-row"><span>FAR Used</span><strong>${formatNumber(geometry.farUsed, 2)}</strong></div>
+      <div class="summary-row"><span>FAR Target / Achieved</span><strong>${formatNumber(geometry.farUsed, 2)} / ${formatNumber(geometry.achievedFar, 2)}</strong></div>
       <div class="summary-row"><span>Existing Building Volume</span><strong>${formatNumber(existingVolume, 0)} cf</strong></div>
       <div class="summary-row"><span>FAR Envelope Volume</span><strong>${formatNumber(farEnvelopeVolume, 0)} cf</strong></div>
       <div class="summary-row"><span>Existing Height</span><strong>${Math.round(geometry.analysis?.existingHeightFt || 0)} ft</strong></div>
@@ -7518,12 +7518,14 @@ function computeStudyGeometry(state) {
   const allowedFloorArea = lotArea * state.farUsed;
   const farFootprintArea = buildableArea * (state.footprintCoverage / 100);
 
+  // FAR is area-based: allowed floor area / floorplate area = number of floors.
   const rawFloorCount = farFootprintArea > 0 ? (allowedFloorArea / farFootprintArea) : 0;
   const floorCount = Math.max(0, rawFloorCount);
 
-  const rawFarHeight = farFootprintArea > 0 ? (allowedFloorArea / farFootprintArea) : 0;
-  const maxHeight = state.controls.maximumBuildingHeightFt;
-  const farHeight = Math.max(0, rawFarHeight);
+  // Convert floors to height using floor-to-floor height.
+  const farHeightUncapped = floorCount * Math.max(0, Number(state.floorHeight || 0));
+  const maxHeight = Number(state.controls.maximumBuildingHeightFt || 0);
+  const farHeight = maxHeight > 0 ? Math.min(farHeightUncapped, maxHeight) : farHeightUncapped;
 
   const farFootprint = scalePolygonInside(buildable, state.footprintCoverage / 100);
 
@@ -7532,6 +7534,9 @@ function computeStudyGeometry(state) {
   const existingMass = extrudePolygon(existing, state.analysis.existingHeightFt);
   const existingVolumeFt3 = existingFootprintArea * Math.max(0, Number(state.analysis.existingHeightFt || 0));
   const farEnvelopeVolumeFt3 = farFootprintArea * farHeight;
+  const achievedFloorCount = state.floorHeight > 0 ? (farHeight / state.floorHeight) : 0;
+  const achievedFloorArea = farFootprintArea * achievedFloorCount;
+  const achievedFar = lotArea > 0 ? (achievedFloorArea / lotArea) : 0;
   const volumeChangePct = existingVolumeFt3 > 0
     ? ((farEnvelopeVolumeFt3 - existingVolumeFt3) / existingVolumeFt3) * 100
     : null;
@@ -7551,8 +7556,12 @@ function computeStudyGeometry(state) {
     allowedFloorArea,
     farFootprintArea,
     floorCount,
+    farHeightUncapped,
     farHeight,
     maxHeight,
+    achievedFloorCount,
+    achievedFloorArea,
+    achievedFar,
     existingVolumeFt3,
     farEnvelopeVolumeFt3,
     volumeChangePct,
@@ -7562,7 +7571,7 @@ function computeStudyGeometry(state) {
     opacity: state.envelopeOpacity,
     setbacks: state.controls.setbacks,
     dimensions: computeDimensions(state.analysis, state.controls),
-    isCapped: farHeight > maxHeight,
+    isCapped: maxHeight > 0 && farHeightUncapped > maxHeight,
   };
 }
 
@@ -8641,13 +8650,13 @@ function updateStudyLabels(g) {
   setText("#far-footprint-area", `${Math.round(g.farFootprintArea).toLocaleString()} sf`);
   setText("#far-envelope-height", `${Math.round(g.farHeight)} ft`);
   setText("#max-zoning-height", `${Math.round(g.maxHeight)} ft`);
-  setText("#zdtFarUsed", `${g.farUsed.toFixed(2)} (${Math.round(g.allowedFloorArea).toLocaleString()} sf)`);
-  setText("#zdtFarRemaining", `${Math.max(0, maxFar - g.farUsed).toFixed(2)}`);
+  setText("#zdtFarUsed", `${g.farUsed.toFixed(2)} target / ${g.achievedFar.toFixed(2)} achieved (${Math.round(g.allowedFloorArea).toLocaleString()} sf target)`);
+  setText("#zdtFarRemaining", `${Math.max(0, maxFar - g.achievedFar).toFixed(2)}`);
   setText("#zdtCurrentHeight", `${Math.round(g.analysis?.existingHeightFt || 0)} ft`);
   setText("#zdtLotCoverage", `${Math.round(g.coverage)}%`);
   setText("#zdtBuildableArea", `${Math.round(g.buildableArea).toLocaleString()} sf`);
   if (lotAreaFt2 > 0) {
-    setText("#zdtFarUsed", `${g.farUsed.toFixed(2)} (${Math.round(g.farUsed * lotAreaFt2).toLocaleString()} sf)`);
+    setText("#zdtFarUsed", `${g.farUsed.toFixed(2)} target / ${g.achievedFar.toFixed(2)} achieved (${Math.round(g.allowedFloorArea).toLocaleString()} sf target, ${Math.round(g.achievedFloorArea).toLocaleString()} sf achieved)`);
   }
   setText("#floor-height-display", `${g.floorHeight} ft`);
   setText("#far-used-display", g.farUsed.toFixed(2));
@@ -8655,7 +8664,9 @@ function updateStudyLabels(g) {
   setText("#opacity-display", `${Math.round(g.opacity * 100)}%`);
   const capNote = document.getElementById("ap-cap-note");
   if (capNote) {
-    capNote.textContent = g.isCapped ? "FAR massing capped by max zoning height." : "";
+    capNote.textContent = g.isCapped
+      ? `FAR envelope capped by max zoning height. Target FAR ${g.farUsed.toFixed(2)}, achieved FAR ${g.achievedFar.toFixed(2)}.`
+      : "";
     capNote.style.display = g.isCapped ? "block" : "none";
   }
 }
