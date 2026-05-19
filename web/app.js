@@ -7894,6 +7894,26 @@ function resolveTextOverlap(candidate, placed, minGap = 6, panel = null) {
   return box;
 }
 
+function resolveLabelOverlap(labels, opts = {}) {
+  const minSpacing = Number(opts.minSpacing || 18);
+  const minY = Number.isFinite(opts.minY) ? opts.minY : 0;
+  const maxY = Number.isFinite(opts.maxY) ? opts.maxY : 1e9;
+  const sorted = [...(labels || [])].sort((a, b) => a.targetY - b.targetY);
+  let cursor = minY;
+  for (const l of sorted) {
+    l.y = Math.max(l.targetY, cursor);
+    cursor = l.y + minSpacing;
+  }
+  for (let i = sorted.length - 1; i >= 0; i -= 1) {
+    const cap = maxY - ((sorted.length - 1 - i) * minSpacing);
+    if (sorted[i].y > cap) sorted[i].y = cap;
+    if (i < sorted.length - 1) {
+      sorted[i].y = Math.min(sorted[i].y, sorted[i + 1].y - minSpacing);
+    }
+  }
+  return sorted;
+}
+
 function placeDimensionText(svg, ns, text, x, y, opts = {}, layout = null) {
   const theme = opts.theme || _annotationTheme(1);
   const fontSize = opts.fontSize || theme.fontSize;
@@ -7906,8 +7926,10 @@ function placeDimensionText(svg, ns, text, x, y, opts = {}, layout = null) {
     maxX: (opts.panelWidth || 99999) - theme.margin,
     maxY: (opts.panelHeight || 99999) - theme.margin,
   };
+  const align = opts.align || "center";
+  const startX = align === "left" ? x : (x - (w / 2));
   const start = {
-    x: x - (w / 2),
+    x: startX,
     y: y - (h / 2),
     w,
     h,
@@ -7924,9 +7946,9 @@ function placeDimensionText(svg, ns, text, x, y, opts = {}, layout = null) {
   svg.appendChild(bg);
 
   const t = document.createElementNS(ns, "text");
-  t.setAttribute("x", String(resolved.x + (resolved.w / 2)));
+  t.setAttribute("x", String(align === "left" ? (resolved.x + theme.textPadX) : (resolved.x + (resolved.w / 2))));
   t.setAttribute("y", String(resolved.y + (resolved.h / 2) + (fontSize * 0.34)));
-  t.setAttribute("text-anchor", "middle");
+  t.setAttribute("text-anchor", align === "left" ? "start" : "middle");
   t.setAttribute("fill", opts.color || theme.text);
   t.setAttribute("font-size", String(fontSize));
   t.setAttribute("font-family", theme.fontFamily);
@@ -8044,12 +8066,27 @@ function createVerticalHeightMarker(svg, ns, cfg, layout) {
   mk(x - t, y1, x + t, y1);
   mk(x - t, y2, x + t, y2);
 
-  placeDimensionText(svg, ns, cfg.label, cfg.labelX ?? (x + 48), cfg.labelY ?? ((y1 + y2) / 2), {
+  const placed = placeDimensionText(svg, ns, cfg.label, cfg.labelX ?? (x + 48), cfg.labelY ?? ((y1 + y2) / 2), {
     theme,
     color: cfg.textColor || lineColor,
+    align: cfg.labelAlign || "center",
     panelWidth: cfg.panelWidth,
     panelHeight: cfg.panelHeight,
   }, layout);
+
+  if (cfg.drawLeader !== false && placed?.box) {
+    const leader = document.createElementNS(ns, "line");
+    const fromX = x + t + 1;
+    const toX = cfg.labelAlign === "left" ? placed.box.x : placed.box.x + (placed.box.w / 2);
+    leader.setAttribute("x1", String(fromX));
+    leader.setAttribute("y1", String(placed.cy));
+    leader.setAttribute("x2", String(toX));
+    leader.setAttribute("y2", String(placed.cy));
+    leader.setAttribute("stroke", lineColor);
+    leader.setAttribute("stroke-width", "1");
+    leader.setAttribute("stroke-dasharray", "3 3");
+    svg.appendChild(leader);
+  }
 }
 
 function createSetbackDimension(svg, ns, cfg, layout) {
@@ -8356,44 +8393,54 @@ function drawIsoSVG(w, h, g, mode = "comparison") {
   const dimX = w - 92;
   const dimEntries = [];
   if (mode === "existing") {
-    dimEntries.push({ label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#4b5563" });
+    dimEntries.push({ key: "existing", label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#4b5563", ring: ring(g.existingMass) });
   } else if (mode === "comparison") {
-    dimEntries.push({ label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#4b5563" });
-    dimEntries.push({ label: `FAR Envelope: ${Math.round(hFt(g.farEnvelope))} ft`, h: hFt(g.farEnvelope), color: g.isCapped ? "#991b1b" : "#4f7f65" });
-    dimEntries.push({ label: `Max Ref: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#7d67a8" });
+    dimEntries.push({ key: "max", label: `Max Ref: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#7d67a8", ring: ring(g.maxEnvelope) });
+    dimEntries.push({ key: "far", label: `FAR Envelope: ${Math.round(hFt(g.farEnvelope))} ft`, h: hFt(g.farEnvelope), color: g.isCapped ? "#991b1b" : "#4f7f65", ring: ring(g.farEnvelope) });
+    dimEntries.push({ key: "existing", label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#4b5563", ring: ring(g.existingMass) });
   } else {
-    dimEntries.push({ label: `Max: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#7d67a8" });
+    dimEntries.push({ key: "max", label: `Max: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#7d67a8", ring: ring(g.maxEnvelope) });
   }
 
   // Calculate pixel height of a 1ft extrusion using the lot's first point
   const refPt = g.lot[0];
   if (refPt) {
     const botY = iso.project(refPt[0], refPt[1], 0).y;
-    const markerX = Math.min(w - annTheme.margin - 54, Math.max(iso.frame.right + (annTheme.witness * 1.2), dimX));
-    const labelX = Math.min(w - annTheme.margin - 3, markerX + 46);
-    const stackTop = annTheme.margin + 24;
-    const stackStep = Math.max(18, 20 * annScale);
-    let i = 0;
-    for (const d of dimEntries) {
-      if (!d.h) continue;
+    const LABEL_STACK_SPACING = Math.max(18, 18 * annScale);
+    const markerX = Math.min(w - annTheme.margin - 70, Math.max(iso.frame.right + (annTheme.witness * 1.1), dimX));
+    const labelX = Math.min(w - annTheme.margin - 120, markerX + 30);
+    const stackTop = annTheme.margin + 22;
+    const stackBottom = h - annTheme.margin - 20;
+    const stackLabels = resolveLabelOverlap(
+      dimEntries.filter((d) => d.h > 0).map((d, idx) => ({
+        ...d,
+        targetY: stackTop + (idx * LABEL_STACK_SPACING),
+      })),
+      {
+        minSpacing: LABEL_STACK_SPACING,
+        minY: stackTop,
+        maxY: stackBottom,
+      }
+    );
+    for (const d of stackLabels) {
       const topY = iso.project(refPt[0], refPt[1], d.h).y;
-      const anchor = ring(d.label.startsWith("Existing") ? g.existingMass : (d.label.startsWith("FAR") ? g.farEnvelope : g.maxEnvelope));
-      const aPt = anchor?.[0] ? iso.project(anchor[0][0], anchor[0][1], d.h) : null;
+      const anchorCandidates = (d.ring || []).map((pt) => iso.project(pt[0], pt[1], d.h));
+      const anchorX = anchorCandidates.length ? Math.max(...anchorCandidates.map((p) => p.x)) : iso.frame.right;
       createVerticalHeightMarker(svg, ns, {
-        x: markerX + (i * 6),
+        x: markerX,
         bottomY: botY,
         topY,
         color: d.color,
         label: d.label,
         labelX,
-        labelY: stackTop + (i * stackStep),
-        anchorBottomX: aPt ? aPt.x : iso.frame.right,
-        anchorTopX: aPt ? aPt.x : iso.frame.right,
+        labelY: d.y,
+        labelAlign: "left",
+        anchorBottomX: anchorX,
+        anchorTopX: anchorX,
         panelWidth: w,
         panelHeight: h,
         theme: annTheme,
       }, annotationLayout);
-      i += 1;
     }
   }
 
@@ -8473,27 +8520,41 @@ function drawSectionSVG(w, h, g, mode = "comparison") {
   }
 
   const dimX = padX + plotW + 22;
-  let step = 0;
-  for (const dim of dims) {
-    const x = dimX + (step * 7);
+  const sectionLabelX = dimX + 22;
+  const sectionSpecs = dims.map((dim, idx) => {
+    const x = dimX + (idx * 7);
     const topY = yFor(dim.h);
     const barRef = renderedBars.find((b) => dim.label.toLowerCase().includes(b.label.toLowerCase().split(" ")[0]));
     const anchorTopX = barRef ? (barRef.x + barRef.bw) : (padX + plotW - 8);
-    createVerticalHeightMarker(svg, ns, {
+    return {
+      ...dim,
       x,
-      bottomY: baseY,
       topY,
+      anchorTopX,
+      targetY: (topY + baseY) / 2,
+    };
+  });
+  const spacedSectionLabels = resolveLabelOverlap(sectionSpecs, {
+    minSpacing: Math.max(14, 16 * annScale),
+    minY: annTheme.margin + 18,
+    maxY: h - annTheme.margin - 18,
+  });
+  for (const dim of spacedSectionLabels) {
+    createVerticalHeightMarker(svg, ns, {
+      x: dim.x,
+      bottomY: baseY,
+      topY: dim.topY,
       color: dim.color,
       label: dim.label,
-      labelX: x,
-      labelY: (topY + baseY) / 2,
-      anchorBottomX: anchorTopX,
-      anchorTopX,
+      labelX: sectionLabelX,
+      labelY: dim.y,
+      labelAlign: "left",
+      anchorBottomX: dim.anchorTopX,
+      anchorTopX: dim.anchorTopX,
       panelWidth: w,
       panelHeight: h,
       theme: annTheme,
     }, annotationLayout);
-    step += 1;
   }
 
   const frontSet = Math.max(0, Number(g.setbacks?.front || 0));
