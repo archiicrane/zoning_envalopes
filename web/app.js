@@ -3219,8 +3219,14 @@ function _lotMiniSvg(ring, classification, label) {
   const width = 220;
   const height = 150;
   const pad = 14;
-  const closed = _closeRing(ring || []);
-  if (!closed.length) return "";
+  const isValidPoint = (pt) => (
+    Array.isArray(pt)
+    && pt.length >= 2
+    && Number.isFinite(Number(pt[0]))
+    && Number.isFinite(Number(pt[1]))
+  );
+  const closed = _closeRing(ring || []).filter(isValidPoint);
+  if (closed.length < 4) return "";
 
   let minX = Infinity;
   let minY = Infinity;
@@ -3237,22 +3243,28 @@ function _lotMiniSvg(ring, classification, label) {
   const spanY = Math.max(1e-9, maxY - minY);
   const scale = Math.min((width - pad * 2) / spanX, (height - pad * 2) / spanY);
   const toPt = (pt) => {
+    if (!isValidPoint(pt)) return null;
     const x = pad + (pt[0] - minX) * scale;
     const y = height - pad - (pt[1] - minY) * scale;
     return [x, y];
   };
 
-  const boundary = closed.map((pt) => {
-    const [x, y] = toPt(pt);
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
-  }).join(" ");
+  const boundary = closed
+    .map((pt) => toPt(pt))
+    .filter(Boolean)
+    .map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`)
+    .join(" ");
+  if (!boundary) return "";
 
   const frontSet = new Set(classification?.frontEdgeIndices || []);
   const sideSet = new Set(classification?.sideEdgeIndices || []);
   const rearIdx = classification?.rearEdgeIndex;
   const edgeLines = (classification?.edges || []).map((edge) => {
-    const [x1, y1] = toPt(edge.start);
-    const [x2, y2] = toPt(edge.end);
+    const p1 = toPt(edge?.start);
+    const p2 = toPt(edge?.end);
+    if (!p1 || !p2) return "";
+    const [x1, y1] = p1;
+    const [x2, y2] = p2;
     let stroke = "#111827";
     if (frontSet.has(edge.idx)) stroke = "#2563eb";
     else if (rearIdx === edge.idx) stroke = "#dc2626";
@@ -3605,7 +3617,10 @@ function _polygonAreaFt2(ring) {
 
 function _closeRing(ring) {
   if (!Array.isArray(ring) || !ring.length) return [];
-  const out = ring.map((pt) => [pt[0], pt[1]]);
+  const out = ring
+    .filter((pt) => Array.isArray(pt) && pt.length >= 2 && Number.isFinite(Number(pt[0])) && Number.isFinite(Number(pt[1])))
+    .map((pt) => [Number(pt[0]), Number(pt[1])]);
+  if (!out.length) return [];
   const first = out[0];
   const last = out[out.length - 1];
   if (first[0] !== last[0] || first[1] !== last[1]) {
