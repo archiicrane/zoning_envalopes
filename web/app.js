@@ -99,6 +99,8 @@ let baselineEnvelopeGeojson = null;
 let baselineEnvelopeResults = null;
 let scenarioEnvelopeGeojson = null;
 let scenarioEnvelopeResults = null;
+let originalEnvelopeVolume = null;
+let originalComparisonSelectionKey = null;
 let assumptionOverrides = _defaultAssumptionOverrides();
 let zoningStudyDefaults = null;
 let lastAssumptionChanged = null;
@@ -153,6 +155,12 @@ let studyState = {
   analysis: null,
   controls: null,
   maxEnvelope: null,
+};
+
+let zoneAccentPalette = {
+  lotFill: "#93c5fd",
+  maxEnvelope: "#9fc3ff",
+  farEnvelope: "#a6d9b6",
 };
 let lastEnvelopeDebug = null;
 
@@ -561,6 +569,11 @@ farInput.addEventListener("input", () => {
   farVal.textContent = Number(farInput.value).toFixed(2);
   if (activeLotPolygon && activeLotData) {
     _ensureFarVisibleAndRebuild();
+    updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
+  }
+  if (!activeLotData && multiSelectedLots.length > 0) {
+    const summaryLot = buildClientLotData(multiSelectedLots[0]);
+    updateLotSummary(summaryLot, scenarioEnvelopeResults || baselineEnvelopeResults);
   }
 });
 
@@ -569,6 +582,12 @@ if (osrSlider) {
     if (osrVal) osrVal.textContent = `${formatNumber(osrSlider.value, 1)}%`;
     if ((activeLotPolygon && activeLotData) || multiSelectedLots.length > 0) {
       _ensureFarVisibleAndRebuild();
+      if (activeLotData) {
+        updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
+      } else if (multiSelectedLots.length > 0) {
+        const summaryLot = buildClientLotData(multiSelectedLots[0]);
+        updateLotSummary(summaryLot, scenarioEnvelopeResults || baselineEnvelopeResults);
+      }
     }
   });
 }
@@ -637,12 +656,12 @@ function applyEnvelopeOpacityToLayers() {
   }
 
   if (map.getLayer("selected-max-envelope-fill")) {
-    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-color", solidMode ? "#c7dcff" : STYLE_PRESET.maxEnvelope.fillColor);
+    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-color", solidMode ? _mixHex(zoneAccentPalette.maxEnvelope, "#ffffff", 0.22) : zoneAccentPalette.maxEnvelope);
     map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-opacity", 1);
     map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("selected-far-envelope-fill")) {
-    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-color", solidMode ? "#bfe4ca" : ["coalesce", ["get", "envelopeColor"], STYLE_PRESET.farEnvelope.fillColor]);
+    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-color", solidMode ? _mixHex(zoneAccentPalette.farEnvelope, "#ffffff", 0.18) : ["coalesce", ["get", "envelopeColor"], zoneAccentPalette.farEnvelope]);
     map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", 1);
     // Keep vertical gradient in solid mode to make side faces read slightly darker.
     map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-vertical-gradient", true);
@@ -2972,6 +2991,422 @@ function _buildRuleEngineRows(snapshot) {
   `;
 }
 
+function _hexToRgb(hex) {
+  const raw = String(hex || "").trim().replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(raw)) return null;
+  return {
+    r: parseInt(raw.slice(0, 2), 16),
+    g: parseInt(raw.slice(2, 4), 16),
+    b: parseInt(raw.slice(4, 6), 16),
+  };
+}
+
+function _rgbToHex(rgb) {
+  const r = Math.max(0, Math.min(255, Math.round(rgb?.r || 0))).toString(16).padStart(2, "0");
+  const g = Math.max(0, Math.min(255, Math.round(rgb?.g || 0))).toString(16).padStart(2, "0");
+  const b = Math.max(0, Math.min(255, Math.round(rgb?.b || 0))).toString(16).padStart(2, "0");
+  return `#${r}${g}${b}`;
+}
+
+function _mixHex(a, b, t = 0.5) {
+  const ca = _hexToRgb(a);
+  const cb = _hexToRgb(b);
+  if (!ca) return b || "#94a3b8";
+  if (!cb) return a || "#94a3b8";
+  const w = Math.max(0, Math.min(1, Number(t) || 0));
+  return _rgbToHex({
+    r: ca.r + (cb.r - ca.r) * w,
+    g: ca.g + (cb.g - ca.g) * w,
+    b: ca.b + (cb.b - ca.b) * w,
+  });
+}
+
+function _selectedLotsForAnalysis() {
+  if (Array.isArray(multiSelectedLots) && multiSelectedLots.length > 0) {
+    return multiSelectedLots;
+  }
+  if (activeLotPolygon && activeLotData) {
+    return [{
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [_closeRing(activeLotPolygon)] },
+      properties: activeLotData,
+    }];
+  }
+  return [];
+}
+
+function getZoningColor(zone) {
+  const tokens = extractZoneTokens(zone);
+  const families = new Set(tokens.map((token) => token.charAt(0)));
+  const palette = {
+    R: "#7fb2ff",
+    C: "#f29ab7",
+    M: "#9b8fb2",
+  };
+
+  if (!tokens.length) return "#9ca3af";
+  if (families.size === 1) {
+    const family = [...families][0];
+    return palette[family] || "#9ca3af";
+  }
+
+  let mixed = palette[tokens[0]?.charAt(0)] || "#9ca3af";
+  for (let i = 1; i < tokens.length; i += 1) {
+    mixed = _mixHex(mixed, palette[tokens[i].charAt(0)] || "#9ca3af", 0.5);
+  }
+  return mixed;
+}
+
+function _zonePaletteFor(zone) {
+  const base = getZoningColor(zone);
+  return {
+    lotFill: _mixHex(base, "#ffffff", 0.35),
+    maxEnvelope: _mixHex(base, "#dbeafe", 0.35),
+    farEnvelope: _mixHex(base, "#bbf7d0", 0.45),
+  };
+}
+
+function calculateEnvelopeVolume(envelopeGeometry) {
+  const source = envelopeGeometry || EMPTY_FC;
+  const features = Array.isArray(source?.features)
+    ? source.features
+    : (source?.type === "Feature" ? [source] : []);
+
+  let totalFt3 = 0;
+  for (const feature of features) {
+    const geometry = feature?.geometry || null;
+    if (!geometry) continue;
+    const props = feature?.properties || {};
+    const heightFt =
+      coerceNumber(props.envelopeHeight)
+      ?? coerceNumber(props.height_ft)
+      ?? coerceNumber(props.render_height)
+      ?? coerceNumber(props.max_height_ft)
+      ?? 0;
+    if (!(heightFt > 0)) continue;
+    const areaFt2 = _areaFt2FromGeometry(geometry);
+    if (areaFt2 > 0) {
+      totalFt3 += areaFt2 * heightFt;
+    }
+  }
+
+  if (totalFt3 > 0) return totalFt3;
+
+  if (source?.type === "Polygon" || source?.type === "MultiPolygon") {
+    const areaFt2 = _areaFt2FromGeometry(source);
+    const fallbackHeightFt = coerceNumber(activeLotData?.zoning_analysis?.max_height_ft) ?? 0;
+    return areaFt2 * fallbackHeightFt;
+  }
+
+  return 0;
+}
+
+function calculateVolumeChange(existingVolume, proposedVolume) {
+  const existing = Number(existingVolume) || 0;
+  const proposed = Number(proposedVolume) || 0;
+  const delta = proposed - existing;
+  const percentChange = existing > 0 ? (delta / existing) * 100 : null;
+  return {
+    existing,
+    proposed,
+    delta,
+    percentChange,
+    label: delta < 0 ? "Volume Decrease" : "Volume Increase",
+  };
+}
+
+function _computeLotEnvelopeStatsForZone(zone, feature) {
+  const data = feature?.properties || {};
+  const lotRing = featureGeometryToLotPolygon(feature) || data.lot_polygon;
+  if (!Array.isArray(lotRing) || lotRing.length < 4) {
+    return null;
+  }
+
+  const lotGeometry = { type: "Polygon", coordinates: [_closeRing(lotRing)] };
+  const lotFeature = { type: "Feature", geometry: lotGeometry, properties: data };
+  const lotAnalysis = analyzeLot({
+    lotFeature,
+    lotRing,
+    map,
+    neighborhoodFeatures: activeNeighborhoodData?.features || [],
+  });
+
+  const selection = _syncRuleSelectionFromUi();
+  const targetZone = normalizeZoneToken(zone || lotAnalysis?.primaryZone || data?.zonedist1 || data?.zone || "");
+  const controlsResult = getControlsForLot({
+    ...lotAnalysis,
+    primaryZone: targetZone || lotAnalysis?.primaryZone,
+    zoneTokens: targetZone ? [targetZone] : (lotAnalysis?.zoneTokens || []),
+    buildingUseType: selection.buildingUseType,
+    housingType: selection.housingType,
+    footnoteVariant: selection.footnoteVariant,
+  }, zoningRuleIndex);
+  const entry = controlsResult?.controlsByZone?.[0];
+  if (!entry?.controls) {
+    return null;
+  }
+
+  const controls = entry.controls;
+  const generated = generateEnvelopeFromControls({
+    lotGeometry,
+    controls,
+    envelopeColor: "#9fc3ff",
+    zoneCode: entry.zoneCode || targetZone,
+    lotAnalysis,
+  });
+
+  const lotAreaFt2 =
+    coerceNumber(data?.lot_area)
+    ?? coerceNumber(data?.lotarea)
+    ?? coerceNumber(data?.LotArea)
+    ?? coerceNumber(lotAnalysis?.lotAreaFt2)
+    ?? _areaFt2FromGeometry(lotGeometry);
+  const buildableAreaFt2 = _areaFt2FromGeometry(generated?.buildableFootprintFeature?.geometry || lotGeometry);
+  const maxHeightFt =
+    coerceNumber(controls.maxBuildingHeight)
+    ?? coerceNumber(controls.frontWallHeight)
+    ?? coerceNumber(data?.zoning_analysis?.max_height_ft)
+    ?? 0;
+  const far = coerceNumber(controls.far) ?? coerceNumber(data?.zoning_analysis?.scenario_far) ?? 0;
+  const osr = coerceNumber(osrSlider?.value) ?? coerceNumber(controls.openSpaceRatio) ?? 0;
+  const envelopeFc = { type: "FeatureCollection", features: generated?.envelopeFeatures || [] };
+  const computedVolume = calculateEnvelopeVolume(envelopeFc);
+  const fallbackVolume = buildableAreaFt2 * maxHeightFt;
+
+  return {
+    zone: targetZone || entry.zoneCode || "n/a",
+    lotAreaFt2,
+    far,
+    osr,
+    maxBuildableAreaFt2: buildableAreaFt2,
+    maxHeightFt,
+    envelopeVolumeFt3: computedVolume > 0 ? computedVolume : fallbackVolume,
+  };
+}
+
+function _aggregateEnvelopeStatsForZone(zone, selectedLots) {
+  const lots = Array.isArray(selectedLots) ? selectedLots : [];
+  const stats = lots
+    .map((feature) => _computeLotEnvelopeStatsForZone(zone, feature))
+    .filter(Boolean);
+  if (!stats.length) return null;
+
+  const sums = stats.reduce((acc, stat) => {
+    acc.lotAreaFt2 += stat.lotAreaFt2 || 0;
+    acc.maxBuildableAreaFt2 += stat.maxBuildableAreaFt2 || 0;
+    acc.envelopeVolumeFt3 += stat.envelopeVolumeFt3 || 0;
+    acc.maxHeightFt = Math.max(acc.maxHeightFt, stat.maxHeightFt || 0);
+    acc.far += stat.far || 0;
+    acc.osr += stat.osr || 0;
+    return acc;
+  }, {
+    zone: stats[0].zone,
+    lotAreaFt2: 0,
+    maxBuildableAreaFt2: 0,
+    envelopeVolumeFt3: 0,
+    maxHeightFt: 0,
+    far: 0,
+    osr: 0,
+    count: stats.length,
+  });
+
+  sums.far = sums.count > 0 ? sums.far / sums.count : 0;
+  sums.osr = sums.count > 0 ? sums.osr / sums.count : 0;
+  return sums;
+}
+
+function _lotMiniSvg(ring, classification, label) {
+  const width = 220;
+  const height = 150;
+  const pad = 14;
+  const closed = _closeRing(ring || []);
+  if (!closed.length) return "";
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [x, y] of closed) {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  }
+
+  const spanX = Math.max(1e-9, maxX - minX);
+  const spanY = Math.max(1e-9, maxY - minY);
+  const scale = Math.min((width - pad * 2) / spanX, (height - pad * 2) / spanY);
+  const toPt = (pt) => {
+    const x = pad + (pt[0] - minX) * scale;
+    const y = height - pad - (pt[1] - minY) * scale;
+    return [x, y];
+  };
+
+  const boundary = closed.map((pt) => {
+    const [x, y] = toPt(pt);
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(" ");
+
+  const frontSet = new Set(classification?.frontEdgeIndices || []);
+  const sideSet = new Set(classification?.sideEdgeIndices || []);
+  const rearIdx = classification?.rearEdgeIndex;
+  const edgeLines = (classification?.edges || []).map((edge) => {
+    const [x1, y1] = toPt(edge.start);
+    const [x2, y2] = toPt(edge.end);
+    let stroke = "#111827";
+    if (frontSet.has(edge.idx)) stroke = "#2563eb";
+    else if (rearIdx === edge.idx) stroke = "#dc2626";
+    else if (sideSet.has(edge.idx)) stroke = "#16a34a";
+    return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${stroke}" stroke-width="2.4"/>`;
+  }).join("");
+
+  return `
+    <svg class="setback-plan-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escapeHtml(label)} setback plan">
+      <polygon points="${boundary}" fill="none" stroke="#111827" stroke-width="1.4"/>
+      ${edgeLines}
+      <text x="10" y="16" fill="#334155" font-size="11" font-weight="700">${_escapeHtml(label)}</text>
+    </svg>
+  `;
+}
+
+function renderPlanSetbackDiagram(selectedLots) {
+  const lots = Array.isArray(selectedLots) ? selectedLots : [];
+  if (!lots.length) return "";
+
+  const lotCards = lots.map((feature, idx) => {
+    const lotRing = featureGeometryToLotPolygon(feature) || feature?.properties?.lot_polygon || [];
+    if (!Array.isArray(lotRing) || lotRing.length < 4) return "";
+
+    const lotGeometry = { type: "Polygon", coordinates: [_closeRing(lotRing)] };
+    const lotFeature = { type: "Feature", geometry: lotGeometry, properties: feature?.properties || {} };
+    const classification = analyzeLot({
+      lotFeature,
+      lotRing,
+      map,
+      neighborhoodFeatures: activeNeighborhoodData?.features || [],
+    });
+
+    const label = `Lot ${String.fromCharCode(65 + (idx % 26))}`;
+    const zone = normalizeZoneToken(activeZoneOverride || feature?.properties?.zonedist1 || feature?.properties?.zone || "");
+    const stats = _computeLotEnvelopeStatsForZone(zone, lotFeature);
+
+    return `
+      <div class="setback-plan-card">
+        ${_lotMiniSvg(lotRing, classification, label)}
+        <div class="setback-plan-stats">
+          <div><span>Lot Area</span><strong>${formatNumber(stats?.lotAreaFt2, 0)} sf</strong></div>
+          <div><span>Zoning</span><strong>${_escapeHtml(stats?.zone || zone || "n/a")}</strong></div>
+          <div><span>FAR</span><strong>${formatNumber(stats?.far, 2)}</strong></div>
+          <div><span>OSR</span><strong>${formatNumber(stats?.osr, 1)}%</strong></div>
+          <div><span>Max Buildable</span><strong>${formatNumber(stats?.maxBuildableAreaFt2, 0)} sf</strong></div>
+          <div><span>Max Height</span><strong>${formatNumber(stats?.maxHeightFt, 0)} ft</strong></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <section class="summary-analysis-card">
+      <div class="summary-analysis-card__head">PLAN / SETBACK LOGIC</div>
+      <div class="setback-plan-grid">${lotCards}</div>
+      <div class="setback-legend">
+        <span><i style="background:#2563eb"></i>Front Yard</span>
+        <span><i style="background:#16a34a"></i>Side Yard</span>
+        <span><i style="background:#dc2626"></i>Rear Yard</span>
+        <span><i style="background:#111827"></i>Lot Line</span>
+      </div>
+    </section>
+  `;
+}
+
+function _renderVolumeBars(existingVolume, proposedVolume) {
+  const maxValue = Math.max(1, existingVolume, proposedVolume);
+  const existingPct = Math.max(6, (existingVolume / maxValue) * 100);
+  const proposedPct = Math.max(6, (proposedVolume / maxValue) * 100);
+  return `
+    <div class="volume-bars" aria-hidden="true">
+      <div class="volume-bars__item">
+        <div class="volume-bars__bar volume-bars__bar--existing" style="height:${existingPct.toFixed(1)}%"></div>
+        <span>Existing</span>
+      </div>
+      <div class="volume-bars__item">
+        <div class="volume-bars__bar volume-bars__bar--proposed" style="height:${proposedPct.toFixed(1)}%"></div>
+        <span>Proposed</span>
+      </div>
+    </div>
+  `;
+}
+
+function updateLotColorAfterRezoning(lotId, newZone) {
+  const palette = _zonePaletteFor(newZone);
+  zoneAccentPalette = palette;
+
+  if (!map) return;
+  if (map.getLayer("selected-lot-fill")) {
+    map.setPaintProperty("selected-lot-fill", "fill-color", palette.lotFill);
+  }
+  if (map.getLayer("selected-max-envelope-fill")) {
+    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-color", palette.maxEnvelope);
+  }
+  if (map.getLayer("selected-far-envelope-fill")) {
+    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-color", palette.farEnvelope);
+  }
+  if (map.getLayer("multi-selected-lots-fill")) {
+    map.setPaintProperty("multi-selected-lots-fill", "fill-color", palette.lotFill);
+  }
+
+  const zoneBadge = document.getElementById("lotZoneBadge");
+  if (zoneBadge) {
+    zoneBadge.style.backgroundColor = palette.lotFill;
+  }
+
+  console.log("[rezoning-color] lotId", lotId, "newZone", newZone, "palette", palette);
+}
+
+function _renderUpzoneComparisonCard(selectedLots) {
+  if (!Array.isArray(selectedLots) || !selectedLots.length) return "";
+
+  const originalZone = normalizeZoneToken(activeOriginalZone || activeLotData?.zonedist1 || activeLotData?.zone || "");
+  const proposedZone = normalizeZoneToken(activeZoneOverride || originalZone);
+  const existingStats = _aggregateEnvelopeStatsForZone(originalZone, selectedLots);
+  const proposedStats = _aggregateEnvelopeStatsForZone(proposedZone, selectedLots);
+  if (!existingStats || !proposedStats) return "";
+
+  const selectedLotIds = selectedLots.map((feature) => keyOfLotFeature(feature));
+  const selectionKey = selectedLotIds.join("|");
+  if (selectionKey !== originalComparisonSelectionKey) {
+    originalComparisonSelectionKey = selectionKey;
+    originalEnvelopeVolume = existingStats.envelopeVolumeFt3;
+  }
+
+  const existingVolume = Number.isFinite(originalEnvelopeVolume) ? originalEnvelopeVolume : existingStats.envelopeVolumeFt3;
+  const proposedVolume = proposedStats.envelopeVolumeFt3;
+  const change = calculateVolumeChange(existingVolume, proposedVolume);
+
+  console.log("[upzone-compare] originalZone", originalZone);
+  console.log("[upzone-compare] proposedZone", proposedZone);
+  console.log("[upzone-compare] existingVolume", existingVolume);
+  console.log("[upzone-compare] proposedVolume", proposedVolume);
+  console.log("[upzone-compare] percentChange", change.percentChange);
+  console.log("[upzone-compare] selectedLotIds", selectedLotIds);
+
+  return `
+    <section class="summary-analysis-card">
+      <div class="summary-analysis-card__head">UP-ZONE / VOLUME INCREASE</div>
+      <div class="summary-row"><span>Existing Zone</span><strong>${_escapeHtml(originalZone || "n/a")}</strong></div>
+      <div class="summary-row"><span>Proposed Zone</span><strong>${_escapeHtml(proposedZone || "n/a")}</strong></div>
+      <div class="summary-row"><span>Existing FAR</span><strong>${formatNumber(existingStats.far, 2)}</strong></div>
+      <div class="summary-row"><span>Proposed FAR</span><strong>${formatNumber(proposedStats.far, 2)}</strong></div>
+      <div class="summary-row"><span>Existing Max Buildable</span><strong>${formatNumber(existingStats.maxBuildableAreaFt2, 0)} sf</strong></div>
+      <div class="summary-row"><span>Proposed Max Buildable</span><strong>${formatNumber(proposedStats.maxBuildableAreaFt2, 0)} sf</strong></div>
+      <div class="summary-row"><span>Existing Volume</span><strong>${formatNumber(existingVolume, 0)} cf</strong></div>
+      <div class="summary-row"><span>Proposed Volume</span><strong>${formatNumber(proposedVolume, 0)} cf</strong></div>
+      <div class="summary-row"><span>${change.label}</span><strong>${change.percentChange == null ? "n/a" : `${formatNumber(change.percentChange, 1)}%`}</strong></div>
+      ${_renderVolumeBars(existingVolume, proposedVolume)}
+    </section>
+  `;
+}
+
 function updateLotSummary(data, envelopeResults) {
   if (!data) {
     lotSummary.className = "lot-summary";
@@ -3030,6 +3465,10 @@ function updateLotSummary(data, envelopeResults) {
     `;
   })();
 
+  const selectedLotsForCards = _selectedLotsForAnalysis();
+  const planSetbackHtml = renderPlanSetbackDiagram(selectedLotsForCards);
+  const upzoneComparisonHtml = _renderUpzoneComparisonCard(selectedLotsForCards);
+
   lotSummary.className = "lot-summary";
   const debugJson = lastEnvelopeDebug
     ? _escapeHtml(JSON.stringify(lastEnvelopeDebug, null, 2))
@@ -3049,6 +3488,8 @@ function updateLotSummary(data, envelopeResults) {
     <div class="summary-row"><span>Max Height</span><strong>${_heightLabel(zoning.max_height_ft)}</strong></div>
     <div class="summary-row"><span>Allowed Floor Area (FAR)</span><strong>${formatNumber(zoning.scenario_far || farInput.value, 2)}</strong></div>
     ${lastFarFitWarning ? `<div class="summary-row summary-row--warning"><span>FAR Fit Warning</span><strong>${_escapeHtml(lastFarFitWarning)}</strong></div>` : ""}
+    ${planSetbackHtml}
+    ${upzoneComparisonHtml}
     ${multiSummaryHtml}
     <details>
       <summary>Advanced Details</summary>
@@ -4837,6 +5278,8 @@ function clearActiveEnvelope() {
   activeLotData = null;
   activeZoneOverride = null;
   activeOriginalZone = null;
+  originalEnvelopeVolume = null;
+  originalComparisonSelectionKey = null;
   baselineEnvelopeGeojson = null;
   baselineEnvelopeResults = null;
   scenarioEnvelopeGeojson = null;
@@ -4916,6 +5359,9 @@ function applySelectedZoneOverride(zoneCode) {
       ?? null,
     warnings: combinedWarnings,
   };
+
+  const lotId = String(activeLotData?.bbl || activeLotData?.BBL || "selected");
+  updateLotColorAfterRezoning(lotId, zone);
 
   if (standardFar && standardFar > 0) {
     farInput.value = standardFar;
@@ -5182,6 +5628,9 @@ async function lookupLot() {
   activeLotData = data;
   activeOriginalZone = pickPrimaryZoneToken(data.zoning_analysis?.primary_zone, data.zonedist1, data.zonedist2);
   activeZoneOverride = activeOriginalZone;
+  originalEnvelopeVolume = null;
+  originalComparisonSelectionKey = null;
+  updateLotColorAfterRezoning(String(data?.bbl || data?.BBL || "selected"), activeZoneOverride || activeOriginalZone);
   baselineEnvelopeGeojson = null;
   baselineEnvelopeResults = null;
   scenarioEnvelopeGeojson = null;
@@ -5215,6 +5664,9 @@ function selectLotFeature(feature) {
   activeLotData = data;
   activeOriginalZone = pickPrimaryZoneToken(data.zoning_analysis?.primary_zone, data.zonedist1, data.zonedist2);
   activeZoneOverride = activeOriginalZone;
+  originalEnvelopeVolume = null;
+  originalComparisonSelectionKey = null;
+  updateLotColorAfterRezoning(String(data?.bbl || data?.BBL || "selected"), activeZoneOverride || activeOriginalZone);
   baselineEnvelopeGeojson = null;
   baselineEnvelopeResults = null;
   scenarioEnvelopeGeojson = null;
@@ -5264,6 +5716,12 @@ async function handleMapClick(ev) {
     }
     _updateMultiSelectHighlight();
     _updateSelectionButtonStates();
+    if (multiSelectedLots.length > 0) {
+      const summaryLot = buildClientLotData(multiSelectedLots[0]);
+      updateLotSummary(summaryLot, scenarioEnvelopeResults || baselineEnvelopeResults);
+    } else if (activeLotData) {
+      updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
+    }
     return;
   }
 
@@ -8641,6 +9099,7 @@ if (controlsZoneOverrideSelect) {
         updateLotSummary(activeLotData);
         await generateEnvelopes();
       } else if (newZone && multiSelectedLots.length > 0) {
+        updateLotColorAfterRezoning("multi-selection", newZone);
         // No single active lot — resolve the new zone's FAR and update the slider
         const selection = _syncRuleSelectionFromUi();
         const resolved = resolveZoningVariant(newZone, {
