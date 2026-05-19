@@ -3366,43 +3366,48 @@ function updateLotColorAfterRezoning(lotId, newZone) {
 function _renderUpzoneComparisonCard(selectedLots) {
   if (!Array.isArray(selectedLots) || !selectedLots.length) return "";
 
-  const originalZone = normalizeZoneToken(activeOriginalZone || activeLotData?.zonedist1 || activeLotData?.zone || "");
-  const proposedZone = normalizeZoneToken(activeZoneOverride || originalZone);
-  const existingStats = _aggregateEnvelopeStatsForZone(originalZone, selectedLots);
-  const proposedStats = _aggregateEnvelopeStatsForZone(proposedZone, selectedLots);
-  if (!existingStats || !proposedStats) return "";
+  const analysis = analyzeSelectedLots(selectedLots);
+  if (!analysis) return "";
 
-  const selectedLotIds = selectedLots.map((feature) => keyOfLotFeature(feature));
-  const selectionKey = selectedLotIds.join("|");
-  if (selectionKey !== originalComparisonSelectionKey) {
-    originalComparisonSelectionKey = selectionKey;
-    originalEnvelopeVolume = existingStats.envelopeVolumeFt3;
-  }
+  const controls = getApplicableControls(analysis);
+  const maxEnvelope = generateMaxEnvelope(analysis, controls);
+  const geometry = computeStudyGeometry({
+    analysis,
+    controls,
+    maxEnvelope,
+    floorHeight: Number(document.getElementById("floorHeight")?.value || studyState.floorHeight || 10),
+    farUsed: Number(farInput?.value || studyState.farUsed || controls?.far || 1),
+    footprintCoverage: Number(coverageInput?.value || studyState.footprintCoverage || 80),
+    envelopeOpacity: Number(studyState.envelopeOpacity || 0.35),
+  });
 
-  const existingVolume = Number.isFinite(originalEnvelopeVolume) ? originalEnvelopeVolume : existingStats.envelopeVolumeFt3;
-  const proposedVolume = proposedStats.envelopeVolumeFt3;
-  const change = calculateVolumeChange(existingVolume, proposedVolume);
+  const existingVolume = Number(geometry.existingVolumeFt3 || 0);
+  const farEnvelopeVolume = Number(geometry.farEnvelopeVolumeFt3 || 0);
+  const change = calculateVolumeChange(existingVolume, farEnvelopeVolume);
+  const volumeChangeLabel = change.percentChange == null
+    ? "n/a"
+    : `${change.percentChange >= 0 ? "+" : ""}${formatNumber(change.percentChange, 1)}%`;
 
-  console.log("[upzone-compare] originalZone", originalZone);
-  console.log("[upzone-compare] proposedZone", proposedZone);
-  console.log("[upzone-compare] existingVolume", existingVolume);
-  console.log("[upzone-compare] proposedVolume", proposedVolume);
-  console.log("[upzone-compare] percentChange", change.percentChange);
-  console.log("[upzone-compare] selectedLotIds", selectedLotIds);
+  console.log("[study-compare] existingVolume", existingVolume);
+  console.log("[study-compare] farEnvelopeVolume", farEnvelopeVolume);
+  console.log("[study-compare] farUsed", geometry.farUsed);
+  console.log("[study-compare] existingHeight", geometry.analysis?.existingHeightFt || 0);
+  console.log("[study-compare] farEnvelopeHeight", geometry.farHeight || 0);
+  console.log("[study-compare] volumeChangePct", change.percentChange);
 
   return `
     <section class="summary-analysis-card">
-      <div class="summary-analysis-card__head">UP-ZONE / VOLUME INCREASE</div>
-      <div class="summary-row"><span>Existing Zone</span><strong>${_escapeHtml(originalZone || "n/a")}</strong></div>
-      <div class="summary-row"><span>Proposed Zone</span><strong>${_escapeHtml(proposedZone || "n/a")}</strong></div>
-      <div class="summary-row"><span>Existing FAR</span><strong>${formatNumber(existingStats.far, 2)}</strong></div>
-      <div class="summary-row"><span>Proposed FAR</span><strong>${formatNumber(proposedStats.far, 2)}</strong></div>
-      <div class="summary-row"><span>Existing Max Buildable</span><strong>${formatNumber(existingStats.maxBuildableAreaFt2, 0)} sf</strong></div>
-      <div class="summary-row"><span>Proposed Max Buildable</span><strong>${formatNumber(proposedStats.maxBuildableAreaFt2, 0)} sf</strong></div>
-      <div class="summary-row"><span>Existing Volume</span><strong>${formatNumber(existingVolume, 0)} cf</strong></div>
-      <div class="summary-row"><span>Proposed Volume</span><strong>${formatNumber(proposedVolume, 0)} cf</strong></div>
-      <div class="summary-row"><span>${change.label}</span><strong>${change.percentChange == null ? "n/a" : `${formatNumber(change.percentChange, 1)}%`}</strong></div>
-      ${_renderVolumeBars(existingVolume, proposedVolume)}
+      <div class="summary-analysis-card__head">ZONING STUDY SHEET COMPARISON</div>
+      <div class="summary-row"><span>FAR Envelope</span><strong>${Math.round(geometry.farHeight)} ft</strong></div>
+      <div class="summary-row"><span>Existing</span><strong>${Math.round(geometry.analysis?.existingHeightFt || 0)} ft</strong></div>
+      <div class="summary-row"><span>Volume Change</span><strong>${volumeChangeLabel}</strong></div>
+      <div class="summary-row"><span>FAR Used</span><strong>${formatNumber(geometry.farUsed, 2)}</strong></div>
+      <div class="summary-row"><span>Existing Building Volume</span><strong>${formatNumber(existingVolume, 0)} cf</strong></div>
+      <div class="summary-row"><span>FAR Envelope Volume</span><strong>${formatNumber(farEnvelopeVolume, 0)} cf</strong></div>
+      <div class="summary-row"><span>Existing Height</span><strong>${Math.round(geometry.analysis?.existingHeightFt || 0)} ft</strong></div>
+      <div class="summary-row"><span>FAR Envelope Height</span><strong>${Math.round(geometry.farHeight || 0)} ft</strong></div>
+      <div class="summary-row"><span>Percent Increase / Decrease</span><strong>${volumeChangeLabel}</strong></div>
+      ${_renderVolumeBars(existingVolume, farEnvelopeVolume)}
     </section>
   `;
 }
@@ -7237,10 +7242,10 @@ function _updateIsometricLabels(maxHeightFt, farHeightFt, existingHeightFt) {
     if (el) el.textContent = text;
   };
   set("amLabelExisting", `Existing: ${Math.round(existingHeightFt)} ft`);
-  set("amLabelFar", `FAR massing: ${Math.round(farHeightFt)} ft`);
-  set("amLabelMax", `Max envelope: ${Math.round(maxHeightFt)} ft`);
+  set("amLabelFar", `FAR Envelope: ${Math.round(farHeightFt)} ft`);
+  set("amLabelMax", `Max Ref: ${Math.round(maxHeightFt)} ft`);
   set("amHeightMax", `${Math.round(maxHeightFt)} ft max height`);
-  set("amHeightFar", `${Math.round(farHeightFt)} ft FAR massing`);
+  set("amHeightFar", `${Math.round(farHeightFt)} ft FAR envelope`);
 }
 
 async function _updateIsometricDiagram() {
@@ -7493,22 +7498,28 @@ function computeStudyGeometry(state) {
 
   const lotArea = polygonArea(lot);
   const buildableArea = polygonArea(buildable);
+  const existingFootprintArea = polygonArea(existing);
 
   const allowedFloorArea = lotArea * state.farUsed;
   const farFootprintArea = buildableArea * (state.footprintCoverage / 100);
 
   const rawFloorCount = farFootprintArea > 0 ? (allowedFloorArea / farFootprintArea) : 0;
-  const floorCount = Math.max(1, Math.floor(rawFloorCount));
+  const floorCount = Math.max(0, rawFloorCount);
 
-  const rawFarHeight = floorCount * state.floorHeight;
+  const rawFarHeight = farFootprintArea > 0 ? (allowedFloorArea / farFootprintArea) : 0;
   const maxHeight = state.controls.maximumBuildingHeightFt;
-  const farHeight = Math.min(rawFarHeight, maxHeight);
+  const farHeight = Math.max(0, rawFarHeight);
 
   const farFootprint = scalePolygonInside(buildable, state.footprintCoverage / 100);
 
   const farEnvelope = extrudePolygon(farFootprint, farHeight);
   const maxEnvelope = state.maxEnvelope;
   const existingMass = extrudePolygon(existing, state.analysis.existingHeightFt);
+  const existingVolumeFt3 = existingFootprintArea * Math.max(0, Number(state.analysis.existingHeightFt || 0));
+  const farEnvelopeVolumeFt3 = farFootprintArea * farHeight;
+  const volumeChangePct = existingVolumeFt3 > 0
+    ? ((farEnvelopeVolumeFt3 - existingVolumeFt3) / existingVolumeFt3) * 100
+    : null;
 
   return {
     analysis: state.analysis,
@@ -7521,18 +7532,22 @@ function computeStudyGeometry(state) {
     maxEnvelope,
     lotArea,
     buildableArea,
+    existingFootprintArea,
     allowedFloorArea,
     farFootprintArea,
     floorCount,
     farHeight,
     maxHeight,
+    existingVolumeFt3,
+    farEnvelopeVolumeFt3,
+    volumeChangePct,
     floorHeight: state.floorHeight,
     farUsed: state.farUsed,
     coverage: state.footprintCoverage,
     opacity: state.envelopeOpacity,
     setbacks: state.controls.setbacks,
     dimensions: computeDimensions(state.analysis, state.controls),
-    isCapped: rawFarHeight > maxHeight,
+    isCapped: farHeight > maxHeight,
   };
 }
 
@@ -7890,13 +7905,13 @@ function drawPlanSVG(w, h, g, mode = "comparison") {
 
   if (mode === "comparison") {
     addPoly(g.buildable, "transparent", "rgba(75,85,99,0.55)", 1, "5 5");
+    addPoly(g.maxEnvelope?.footprint || g.buildable, "transparent", "#7d67a8", 1.4, "7 5");
     addPoly(
       g.farFootprint,
       g.isCapped ? "rgba(190,24,24,0.26)" : "rgba(87,138,111,0.35)",
       g.isCapped ? "#991b1b" : "#4f7f65",
       1.8
     );
-    addPoly(g.maxEnvelope?.footprint || g.buildable, "transparent", "#7d67a8", 1.4, "7 5");
   } else if (mode === "max") {
     addPoly(g.maxEnvelope?.footprint || g.buildable, "rgba(137,108,177,0.23)", "#7d67a8", 1.8, "7 4");
   }
@@ -8065,6 +8080,7 @@ function drawIsoSVG(w, h, g, mode = "comparison") {
       fill: "rgba(107,114,128,0.20)", sideFill: "rgba(107,114,128,0.16)", topFill: "rgba(107,114,128,0.24)", stroke: "#4b5563", lineWidth: 1.3,
     });
   } else if (mode === "comparison") {
+    _isoOutlineDashedSVG(svg, ns, iso, ring(g.maxEnvelope), g.maxHeight, "#7d67a8");
     _isoExtrusionSVG(svg, ns, iso, ring(g.existingMass), hFt(g.existingMass), {
       fill: "rgba(107,114,128,0.22)", sideFill: "rgba(107,114,128,0.18)", topFill: "rgba(107,114,128,0.26)", stroke: "#4b5563", lineWidth: 1.2,
     });
@@ -8074,7 +8090,6 @@ function drawIsoSVG(w, h, g, mode = "comparison") {
       topFill: g.isCapped ? "rgba(190,24,24,0.32)" : "rgba(87,138,111,0.37)",
       stroke: g.isCapped ? "#991b1b" : "#4f7f65", lineWidth: 1.3,
     });
-    _isoOutlineDashedSVG(svg, ns, iso, ring(g.maxEnvelope), g.maxHeight, "#7d67a8");
   } else {
     _isoExtrusionSVG(svg, ns, iso, ring(g.maxEnvelope), g.maxHeight, {
       fill: "rgba(137,108,177,0.24)", sideFill: "rgba(137,108,177,0.18)", topFill: "rgba(137,108,177,0.30)",
@@ -8090,8 +8105,8 @@ function drawIsoSVG(w, h, g, mode = "comparison") {
     dimEntries.push({ label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#4b5563" });
   } else if (mode === "comparison") {
     dimEntries.push({ label: `Existing: ${Math.round(hFt(g.existingMass))} ft`, h: hFt(g.existingMass), color: "#4b5563" });
-    dimEntries.push({ label: `FAR: ${Math.round(hFt(g.farEnvelope))} ft`, h: hFt(g.farEnvelope), color: g.isCapped ? "#991b1b" : "#4f7f65" });
-    dimEntries.push({ label: `Max: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#7d67a8" });
+    dimEntries.push({ label: `FAR Envelope: ${Math.round(hFt(g.farEnvelope))} ft`, h: hFt(g.farEnvelope), color: g.isCapped ? "#991b1b" : "#4f7f65" });
+    dimEntries.push({ label: `Max Ref: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#7d67a8" });
   } else {
     dimEntries.push({ label: `Max: ${Math.round(g.maxHeight)} ft`, h: g.maxHeight, color: "#7d67a8" });
   }
@@ -8161,9 +8176,9 @@ function drawSectionSVG(w, h, g, mode = "comparison") {
   if (mode === "existing") {
     bars.push({ label: "Existing Height", height: g.analysis?.existingHeightFt || 0, color: "rgba(107,114,128,0.34)", stroke: "#4b5563", widthPct: 0.44 });
   } else if (mode === "comparison") {
+    bars.push({ label: "Max Height", height: g.maxHeight || 0, color: "transparent", stroke: "#7d67a8", widthPct: 0.84, dashed: true });
     bars.push({ label: "Existing Height", height: g.analysis?.existingHeightFt || 0, color: "rgba(107,114,128,0.30)", stroke: "#4b5563", widthPct: 0.42 });
-    bars.push({ label: "FAR Height", height: g.farHeight || 0, color: g.isCapped ? "rgba(190,24,24,0.30)" : "rgba(87,138,111,0.30)", stroke: g.isCapped ? "#991b1b" : "#4f7f65", widthPct: 0.66 });
-    bars.push({ label: "Max Height", height: g.maxHeight || 0, color: "rgba(137,108,177,0.16)", stroke: "#7d67a8", widthPct: 0.84, dashed: true });
+    bars.push({ label: "FAR Envelope Height", height: g.farHeight || 0, color: g.isCapped ? "rgba(190,24,24,0.30)" : "rgba(87,138,111,0.30)", stroke: g.isCapped ? "#991b1b" : "#4f7f65", widthPct: 0.66 });
   } else {
     bars.push({ label: "Max Height", height: g.maxHeight || 0, color: "rgba(137,108,177,0.24)", stroke: "#7d67a8", widthPct: 0.84, dashed: true });
   }
@@ -8189,8 +8204,8 @@ function drawSectionSVG(w, h, g, mode = "comparison") {
     dims.push({ label: `Existing ${Math.round(g.analysis?.existingHeightFt || 0)} ft`, h: g.analysis?.existingHeightFt || 0, color: "#4b5563" });
   } else if (mode === "comparison") {
     dims.push({ label: `Existing ${Math.round(g.analysis?.existingHeightFt || 0)} ft`, h: g.analysis?.existingHeightFt || 0, color: "#4b5563" });
-    dims.push({ label: `FAR ${Math.round(g.farHeight || 0)} ft`, h: g.farHeight || 0, color: g.isCapped ? "#991b1b" : "#4f7f65" });
-    dims.push({ label: `Max ${Math.round(g.maxHeight || 0)} ft`, h: g.maxHeight || 0, color: "#7d67a8" });
+    dims.push({ label: `FAR Envelope ${Math.round(g.farHeight || 0)} ft`, h: g.farHeight || 0, color: g.isCapped ? "#991b1b" : "#4f7f65" });
+    dims.push({ label: `Max Ref ${Math.round(g.maxHeight || 0)} ft`, h: g.maxHeight || 0, color: "#7d67a8" });
   } else {
     dims.push({ label: `Max ${Math.round(g.maxHeight || 0)} ft`, h: g.maxHeight || 0, color: "#7d67a8" });
   }
@@ -8529,7 +8544,7 @@ function drawIsoHeightDimensions(ctx, iso, g) {
       basePoint: getRightSideAnchor(g.existingMass.footprint || g.lot),
     },
     {
-      label: `FAR massing: ${Math.round(g.farHeight)} ft`,
+      label: `FAR envelope: ${Math.round(g.farHeight)} ft`,
       heightFt: g.farHeight,
       color: "#1f7a4d",
       xOffset: 50,
@@ -8537,7 +8552,7 @@ function drawIsoHeightDimensions(ctx, iso, g) {
       basePoint: getRightSideAnchor(g.farEnvelope.footprint || g.lot),
     },
     {
-      label: `Max envelope: ${Math.round(g.maxHeight)} ft`,
+      label: `Max ref: ${Math.round(g.maxHeight)} ft`,
       heightFt: g.maxHeight,
       color: "rgba(36,92,66,0.65)",
       xOffset: 75,
