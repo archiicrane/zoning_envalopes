@@ -1183,7 +1183,7 @@ function _applyBuildingModeFilters() {
     ? ["all", baseFilter, ["within", selectedGeometry]]
     : _emptyMatchFilter();
   const contextWithoutSelectedFilter = selectedGeometry
-    ? ["all", baseFilter, ["!", ["within", selectedGeometry]]]
+    ? ["all", baseFilter, ["==", ["within", selectedGeometry], false]]
     : baseFilter;
 
   switch (buildingMode) {
