@@ -594,29 +594,21 @@ if (osrSlider) {
 
 function _envelopeOpacityValues() {
   const legacyTransparencyPercent = Number(envelopeOpacitySlider?.value ?? 35);
-  const legacyOpacityValue = Math.max(0.05, Math.min(1, 1 - (legacyTransparencyPercent / 100)));
-  // Per-layer opacity from individual sliders.
-  const neighborhoodOpacity = neighborhoodOpacitySlider
-    ? Math.max(0, Math.min(1, Number(neighborhoodOpacitySlider.value) / 100))
-    : STYLE_PRESET.contextEnvelope.fillOpacityDefault;
-  const farOpacity = farOpacitySlider
-    ? Math.max(0, Math.min(1, Number(farOpacitySlider.value) / 100))
-    : STYLE_PRESET.farEnvelope.fillOpacityDefault;
-  const maxOpacity = maxEnvOpacitySlider
-    ? Math.max(0, Math.min(1, Number(maxEnvOpacitySlider.value) / 100))
-    : STYLE_PRESET.maxEnvelope.fillOpacityDefault;
-  const buildingsOpacity = buildingsOpacitySlider
-    ? Math.max(0, Math.min(1, Number(buildingsOpacitySlider.value) / 100))
-    : STYLE_PRESET.existingBuildings.opacityDefault;
-  const baselineMultiplier = 0.88;
+  // Extrusions are intentionally opaque to preserve true occlusion in massing views.
+  const neighborhoodOpacity = 1;
+  const farOpacity = 1;
+  const maxOpacity = 1;
+  // Existing buildings stay fully opaque to ensure proper occlusion.
+  const buildingsOpacity = 1;
+  const baselineMultiplier = 1;
   const maxEnvelopeFillOpacity = maxOpacity;
   const farEnvelopeFillOpacity = farOpacity;
   return {
     transparencyPercent: legacyTransparencyPercent,
     buildingsOpacity,
     neighborhoodOpacity,
-    scenarioOpacity: legacyOpacityValue,
-    baselineOpacity: legacyOpacityValue * baselineMultiplier,
+    scenarioOpacity: 1,
+    baselineOpacity: 1 * baselineMultiplier,
     maxEnvelopeFillOpacity,
     farEnvelopeFillOpacity,
     farOpacity,
@@ -2362,17 +2354,9 @@ function _syncBasemapTextVisibility() {
 function _bringAnalysisLayersToFront() {
   if (!map) return;
   const ordered = [
+    // Base site and 2D zoning fills (bottom)
     "neighborhood-lot-fill",
-    "neighborhood-lot-outline",
     "selected-lot-fill",
-    "study-outline",
-    "selected-lot-outline",
-    "buildable-footprint-outline",
-    "existing-buildings-mapbox",
-    "zoning-envelope-layer",
-    "zoning-envelope-outline",
-    "selected-max-envelope-fill",
-    "selected-max-envelope-outline",
     "front-yard-zone-fill",
     "side-yard-zone-fill",
     "rear-yard-zone-fill",
@@ -2381,18 +2365,77 @@ function _bringAnalysisLayersToFront() {
     "open-space-zone-fill",
     "selected-far-open-space-fill",
     "selected-far-footprint-fill",
-    "selected-far-envelope-fill",
-    "selected-far-envelope-outline",
+
+    // Lot/parcel/setback linework (below all extrusions)
+    "neighborhood-lot-outline",
+    "study-outline",
+    "selected-lot-outline",
+    "buildable-footprint-outline",
     "yard-edge-front-line",
     "yard-edge-side-line",
     "yard-edge-rear-line",
     "yard-edge-corner-line",
     "setback-offset-lines",
+
+    // 3D extrusion masses
+    "existing-buildings-mapbox",
+    "zoning-envelope-layer",
+    "zoning-envelope-fill-baseline",
+    "zoning-envelope-fill",
+    "selected-max-envelope-fill",
+    "selected-far-envelope-fill",
+
+    // Extrusion outlines
+    "zoning-envelope-outline",
+    "selected-max-envelope-outline",
+    "selected-far-envelope-outline",
+
+    // Labels/annotations (top)
     "buildable-label",
     "yard-edge-labels",
   ];
   for (const layerId of ordered) {
     if (map.getLayer(layerId)) map.moveLayer(layerId);
+  }
+
+  // Ensure lot/parcel/property boundary lines from basemap stay below 3D extrusions.
+  const extrusionAnchor = [
+    "existing-buildings-mapbox",
+    "selected-far-envelope-fill",
+    "selected-max-envelope-fill",
+    "zoning-envelope-layer",
+    "zoning-envelope-fill",
+  ].find((id) => map.getLayer(id));
+  if (!extrusionAnchor) return;
+
+  const explicitLineIds = [
+    "lot-lines",
+    "parcel-lines",
+    "property-boundary",
+    "tax-lot-outline",
+    "selected-lot-outline",
+    "neighborhood-lot-outline",
+  ];
+  for (const id of explicitLineIds) {
+    if (!map.getLayer(id) || id === extrusionAnchor) continue;
+    try {
+      map.moveLayer(id, extrusionAnchor);
+    } catch (_err) {
+      // Ignore style layers that cannot be moved in current style state.
+    }
+  }
+
+  const styleLayers = map.getStyle()?.layers || [];
+  const lotLinePattern = /(lot|parcel|property|tax[-_]?lot|boundary)/i;
+  for (const layer of styleLayers) {
+    if (!layer || layer.id === extrusionAnchor) continue;
+    if (layer.type !== "line") continue;
+    if (!lotLinePattern.test(layer.id)) continue;
+    try {
+      map.moveLayer(layer.id, extrusionAnchor);
+    } catch (_err) {
+      // Ignore layers that disappear during style updates.
+    }
   }
 }
 
