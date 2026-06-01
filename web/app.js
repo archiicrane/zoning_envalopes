@@ -607,15 +607,15 @@ function _envelopeOpacityValues() {
   const buildingsOpacity = buildingsOpacitySlider
     ? Math.max(0, Math.min(1, 1 - (Number(buildingsOpacitySlider.value) / 100)))
     : STYLE_PRESET.existingBuildings.opacityDefault;
-  const baselineMultiplier = 1;
+  const baselineMultiplier = 0.88;
   const maxEnvelopeFillOpacity = maxOpacity;
   const farEnvelopeFillOpacity = farOpacity;
   return {
     transparencyPercent: legacyTransparencyPercent,
     buildingsOpacity,
     neighborhoodOpacity,
-    scenarioOpacity: legacyOpacityValue,
-    baselineOpacity: legacyOpacityValue * baselineMultiplier,
+    scenarioOpacity: maxOpacity,
+    baselineOpacity: maxOpacity * baselineMultiplier,
     maxEnvelopeFillOpacity,
     farEnvelopeFillOpacity,
     farOpacity,
@@ -656,8 +656,9 @@ function applyEnvelopeOpacityToLayers() {
   }
   // Also apply (scaled down) to the neighborhood ghost-volume envelope
   if (map.getLayer("zoning-envelope-layer")) {
+    const neighborhoodMaxOpacity = Math.max(0, Math.min(1, neighborhoodOpacity * maxEnvelopeFillOpacity));
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-color", solidMode ? "#e8f0ff" : ["coalesce", ["get", "envelopeColor"], "#9fc3ff"]);
-    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", neighborhoodOpacity);
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", neighborhoodMaxOpacity);
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("zoning-envelope-outline")) {
@@ -1437,6 +1438,33 @@ function _buildLightweightLotAnalysisFromProps(props) {
 }
   const samples = [];
 
+  function fallbackControlsForNeighborhoodLot(props, zoneCode) {
+    const fallbackFar =
+      coerceNumber(props?.maxfar)
+      ?? coerceNumber(props?.MAXFAR)
+      ?? coerceNumber(props?.residfar)
+      ?? coerceNumber(props?.ResidFAR)
+      ?? 1;
+    const fallbackHeight =
+      coerceNumber(props?.maxheight)
+      ?? coerceNumber(props?.MAXHEIGHT)
+      ?? coerceNumber(props?.height)
+      ?? coerceNumber(props?.Height)
+      ?? 75;
+    return {
+      bulkRegime: "flat",
+      streetType: "narrow",
+      far: Math.max(0.1, fallbackFar),
+      maxBuildingHeight: Math.max(20, fallbackHeight),
+      maxBaseHeight: Math.max(20, fallbackHeight),
+      frontWallHeight: Math.max(20, fallbackHeight),
+      frontYard: 0,
+      sideYard: 0,
+      rearYard: 0,
+      openSpaceRatio: 0,
+    };
+  }
+
   for (let lotIdx = 0; lotIdx < (geojson.features || []).length; lotIdx += 1) {
     const feature = geojson.features[lotIdx];
     const geometry = feature?.geometry;
@@ -1458,11 +1486,6 @@ function _buildLightweightLotAnalysisFromProps(props) {
       continue;
     }
 
-    const lotRing = featureGeometryToLotPolygon(feature);
-    if (!lotRing || lotRing.length < 4) {
-      continue;
-    }
-
     const lotAnalysis = _buildLightweightLotAnalysisFromProps(props);
 
     const controlResult = getControlsForLot(
@@ -1473,7 +1496,15 @@ function _buildLightweightLotAnalysisFromProps(props) {
       zoningRuleIndex
     );
 
-    const controlEntries = controlResult.controlsByZone || [];
+    const controlEntriesRaw = controlResult.controlsByZone || [];
+    const controlEntries = controlEntriesRaw.length
+      ? controlEntriesRaw
+      : [{
+        zone: zone || "UNKNOWN",
+        zoneCode: zone || "UNKNOWN",
+        overlapRatio: 1,
+        controls: fallbackControlsForNeighborhoodLot(props, zone),
+      }];
     const splitGeometries = controlEntries.length > 1
       ? _splitGeometryByRatios(geometry, controlEntries.map((entry) => entry.overlapRatio || 1))
       : [geometry];
