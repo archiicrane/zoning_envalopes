@@ -1211,14 +1211,14 @@ function _applyBuildingModeFilters() {
   if (!contextLayer && !selectedLayer) return;
 
   const baseFilter = ["==", "$type", "Polygon"];
-  const selectedGeometry = _selectedLotGeometryForWithinFilter();
-  const exclusionGeometry = selectedGeometry
-    ? _bufferGeometryForBuildingExclusion(selectedGeometry, 8)
-    : null;
   const selectedBbls = _selectedLotBblList();
-  const selectedFilter = selectedGeometry
-    ? ["all", baseFilter, ["within", selectedGeometry]]
-    : _emptyMatchFilter();
+  const selectedBblIncludeFilter = selectedBbls.length
+    ? [
+      "any",
+      ["in", "bbl", ...selectedBbls],
+      ["in", "BBL", ...selectedBbls],
+    ]
+    : null;
   const bblExclusionFilters = selectedBbls.length
     ? [
       ["!in", "bbl", ...selectedBbls],
@@ -1226,9 +1226,6 @@ function _applyBuildingModeFilters() {
     ]
     : [];
   const contextWithoutSelectedFilterParts = [baseFilter];
-  if (exclusionGeometry) {
-    contextWithoutSelectedFilterParts.push(["none", ["within", exclusionGeometry]]);
-  }
   if (bblExclusionFilters.length) {
     contextWithoutSelectedFilterParts.push(...bblExclusionFilters);
   }
@@ -1244,8 +1241,13 @@ function _applyBuildingModeFilters() {
     case "selected_only":
       if (contextLayer) _setLayerVisibility(BUILDING_LAYER_CONTEXT_ID, false);
       if (selectedLayer) {
-        map.setFilter(BUILDING_LAYER_SELECTED_ID, selectedFilter);
-        _setLayerVisibility(BUILDING_LAYER_SELECTED_ID, selectedGeometry != null);
+        map.setFilter(
+          BUILDING_LAYER_SELECTED_ID,
+          selectedBblIncludeFilter
+            ? ["all", baseFilter, selectedBblIncludeFilter]
+            : _emptyMatchFilter()
+        );
+        _setLayerVisibility(BUILDING_LAYER_SELECTED_ID, selectedBblIncludeFilter != null);
       }
       break;
     case "neighborhood_without_selected":
