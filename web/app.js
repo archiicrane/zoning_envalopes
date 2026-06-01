@@ -2722,9 +2722,9 @@ function syncLayerVisibility() {
     _setLayerVisibility(id, true);
   }
 
-  // Neighborhood-wide envelope layers stay off; envelope modes are selected-lot scoped.
-  _setLayerVisibility("zoning-envelope-layer", false);
-  _setLayerVisibility("zoning-envelope-outline", false);
+  // Neighborhood envelope context follows Max mode.
+  _setLayerVisibility("zoning-envelope-layer", showMax);
+  _setLayerVisibility("zoning-envelope-outline", showMax);
 
   applyFocusModeVisuals();
   if (showBuildingsBtn) {
@@ -6670,34 +6670,31 @@ function buildMaxEnvelopeForSelectedLot() {
       },
       zoningRuleIndex
     );
-    const controlsArray = controlsResult?.controlsByZone || [];
-    if (!controlsArray.length) {
-      map.getSource("selected-max-envelope").setData(EMPTY_FC);
-      lastEnvelopeDebug = {
-        zoneCode: lotAnalysis?.primaryZone || null,
-        ruleFound: false,
-        resolvedZoneCode: null,
-        residentialEquivalent: null,
-        bulkRegime: null,
-        maximumBuildingHeightFt: null,
-        maximumFrontWallHeightFt: null,
-        standardFar: null,
-        bbl: activeLotData?.bbl || activeLotData?.BBL || null,
-        resolvedRule: null,
-        lotType: lotAnalysis?.lotType || null,
-        streetEdges: lotAnalysis?.frontEdgeIndices || [],
-        frontYardFt: null,
-        sideYardEachFt: null,
-        rearYardFt: null,
-        generatedEnvelope: false,
-        warnings: controlsResult?.warnings?.length
-          ? controlsResult.warnings
-          : [`Envelope: Not generated because ${lotAnalysis?.primaryZone || "selected zone"} height/bulk rules are missing.`],
-      };
-      updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
-      console.warn("[envelope-debug]", lastEnvelopeDebug);
-      return;
-    }
+    const controlsArrayRaw = controlsResult?.controlsByZone || [];
+    const fallbackControls = {
+      bulkRegime: "flat",
+      streetType: lotAnalysis?.streetType || "narrow",
+      far: coerceNumber(farInput?.value) ?? coerceNumber(activeLotData?.zoning_analysis?.base_far) ?? 1,
+      maxBuildingHeight: coerceNumber(activeLotData?.zoning_analysis?.max_height_ft)
+        ?? coerceNumber(activeLotData?.existing_height_ft)
+        ?? 75,
+      maxBaseHeight: coerceNumber(activeLotData?.zoning_analysis?.base_height_ft)
+        ?? coerceNumber(activeLotData?.existing_height_ft)
+        ?? 75,
+      frontWallHeight: coerceNumber(activeLotData?.zoning_analysis?.max_height_ft)
+        ?? coerceNumber(activeLotData?.existing_height_ft)
+        ?? 75,
+      frontYard: 0,
+      sideYard: 0,
+      rearYard: 0,
+      openSpaceRatio: 0,
+    };
+    const controlsArray = controlsArrayRaw.length
+      ? controlsArrayRaw
+      : [{
+        zoneCode: lotAnalysis?.primaryZone || activeLotData?.zonedist1 || "UNKNOWN",
+        controls: fallbackControls,
+      }];
 
     const allFeatures = [];
     const allWarnings = [...(controlsResult?.warnings || [])];
