@@ -122,6 +122,9 @@ let multiSelectedLots = [];       // array of lot GeoJSON features
 let multiSelectMode = false;
 let showMaxEnvelope = true;        // toggle: MAX zoning envelope (blue)
 let showFarEnvelope = true;        // toggle: FAR buildable envelope (green)
+let buildingMode = "neighborhood_all";
+let farEnvelopeMode = "selected_only";
+let maxEnvelopeMode = "selected_only";
 let showSetbackLines = true;
 let showBuildableArea = true;
 let showOpenSpaceArea = true;
@@ -181,6 +184,9 @@ const farOpacitySlider = document.getElementById("farOpacitySlider");
 const farOpacityVal = document.getElementById("farOpacityVal");
 const maxEnvOpacitySlider = document.getElementById("maxEnvOpacitySlider");
 const maxEnvOpacityVal = document.getElementById("maxEnvOpacityVal");
+const buildingModeSelect = document.getElementById("buildingModeSelect");
+const farEnvelopeModeSelect = document.getElementById("farEnvelopeModeSelect");
+const maxEnvelopeModeSelect = document.getElementById("maxEnvelopeModeSelect");
 const lotSummary = document.getElementById("lotSummary");
 const useTypeSelect = document.getElementById("useType");
 const housingConditionSelect = document.getElementById("housingCondition");
@@ -638,10 +644,11 @@ function applyEnvelopeOpacityToLayers() {
     maxOpacity,
   } = _envelopeOpacityValues();
 
-  // Existing buildings layer – driven by its own slider
-  if (map.getLayer("existing-buildings-mapbox")) {
-    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-color", solidMode ? "#f8fafc" : STYLE_PRESET.existingBuildings.color);
-    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", buildingsOpacity);
+  // Existing buildings layers – driven by buildings slider and building mode.
+  for (const layerId of _buildingLayerIds()) {
+    if (!map.getLayer(layerId)) continue;
+    map.setPaintProperty(layerId, "fill-extrusion-color", solidMode ? "#f8fafc" : STYLE_PRESET.existingBuildings.color);
+    map.setPaintProperty(layerId, "fill-extrusion-opacity", buildingsOpacity);
   }
 
   if (map.getLayer("zoning-envelope-fill")) {
@@ -713,6 +720,47 @@ function _initializeOpacityControls() {
 
 _initializeOpacityControls();
 
+function _syncScopeModeControls() {
+  if (buildingModeSelect) buildingModeSelect.value = buildingMode;
+  if (farEnvelopeModeSelect) farEnvelopeModeSelect.value = farEnvelopeMode;
+  if (maxEnvelopeModeSelect) maxEnvelopeModeSelect.value = maxEnvelopeMode;
+}
+
+_syncScopeModeControls();
+
+if (buildingModeSelect) {
+  buildingModeSelect.addEventListener("change", () => {
+    const next = String(buildingModeSelect.value || "neighborhood_all");
+    buildingMode = [
+      "neighborhood_all",
+      "selected_only",
+      "neighborhood_without_selected",
+      "off",
+    ].includes(next) ? next : "neighborhood_all";
+    if (showBuildingToggle) showBuildingToggle.checked = buildingMode !== "off";
+    _syncScopeModeControls();
+    syncLayerVisibility();
+  });
+}
+
+if (farEnvelopeModeSelect) {
+  farEnvelopeModeSelect.addEventListener("change", () => {
+    farEnvelopeMode = farEnvelopeModeSelect.value === "off" ? "off" : "selected_only";
+    showFarEnvelope = farEnvelopeMode === "selected_only";
+    _syncScopeModeControls();
+    syncLayerVisibility();
+  });
+}
+
+if (maxEnvelopeModeSelect) {
+  maxEnvelopeModeSelect.addEventListener("change", () => {
+    maxEnvelopeMode = maxEnvelopeModeSelect.value === "off" ? "off" : "selected_only";
+    showMaxEnvelope = maxEnvelopeMode === "selected_only";
+    _syncScopeModeControls();
+    syncLayerVisibility();
+  });
+}
+
 if (envelopeOpacitySlider) {
   envelopeOpacitySlider.addEventListener("input", () => {
     const { transparencyPercent } = _envelopeOpacityValues();
@@ -753,12 +801,17 @@ if (maxEnvOpacitySlider) {
   });
 }
 
-showBuildingToggle.addEventListener("change", syncLayerVisibility);
+showBuildingToggle.addEventListener("change", () => {
+  buildingMode = showBuildingToggle.checked ? "neighborhood_all" : "off";
+  _syncScopeModeControls();
+  syncLayerVisibility();
+});
 showEnvelopeToggle.addEventListener("change", syncLayerVisibility);
 if (showBuildingsBtn) {
   showBuildingsBtn.addEventListener("click", () => {
-    showBuildingToggle.checked = !showBuildingToggle.checked;
-    showBuildingsBtn.classList.toggle("pill--on", showBuildingToggle.checked);
+    buildingMode = buildingMode === "off" ? "neighborhood_all" : "off";
+    if (showBuildingToggle) showBuildingToggle.checked = buildingMode !== "off";
+    _syncScopeModeControls();
     syncLayerVisibility();
   });
 }
@@ -897,14 +950,11 @@ function applyDiagramMode() {
     presentationModeBtn.classList.toggle("active", presentationMode);
   }
   if (!map) return;
-  if (map.getLayer("existing-buildings-mapbox")) {
+  for (const layerId of _buildingLayerIds()) {
+    if (!map.getLayer(layerId)) continue;
+    map.setPaintProperty(layerId, "fill-extrusion-color", STYLE_PRESET.existingBuildings.color);
     map.setPaintProperty(
-      "existing-buildings-mapbox",
-      "fill-extrusion-color",
-      STYLE_PRESET.existingBuildings.color
-    );
-    map.setPaintProperty(
-      "existing-buildings-mapbox",
+      layerId,
       "fill-extrusion-opacity",
       presentationMode
         ? STYLE_PRESET.existingBuildings.opacityPresentation
@@ -923,14 +973,11 @@ function applyPresentationMode() {
   // Update opacity layers to reflect presentation mode
   applyEnvelopeOpacityToLayers();
   // Fade buildings in presentation mode
-  if (map.getLayer("existing-buildings-mapbox")) {
+  for (const layerId of _buildingLayerIds()) {
+    if (!map.getLayer(layerId)) continue;
+    map.setPaintProperty(layerId, "fill-extrusion-color", STYLE_PRESET.existingBuildings.color);
     map.setPaintProperty(
-      "existing-buildings-mapbox",
-      "fill-extrusion-color",
-      STYLE_PRESET.existingBuildings.color
-    );
-    map.setPaintProperty(
-      "existing-buildings-mapbox",
+      layerId,
       "fill-extrusion-opacity",
       presentationMode
         ? STYLE_PRESET.existingBuildings.opacityPresentation
@@ -1054,6 +1101,93 @@ function featureGeometryToLotPolygon(feature) {
     return geometry.coordinates[0][0];
   }
   return null;
+}
+
+const BUILDING_LAYER_CONTEXT_ID = "existing-buildings-context";
+const BUILDING_LAYER_SELECTED_ID = "existing-buildings-selected";
+
+function _buildingLayerIds() {
+  return [BUILDING_LAYER_CONTEXT_ID, BUILDING_LAYER_SELECTED_ID];
+}
+
+function _hasAnyBuildingLayer() {
+  return _buildingLayerIds().some((id) => map?.getLayer(id));
+}
+
+function _emptyMatchFilter() {
+  return ["==", 1, 0];
+}
+
+function _selectedLotGeometryForWithinFilter() {
+  const polygons = [];
+
+  if (Array.isArray(multiSelectedLots) && multiSelectedLots.length > 0) {
+    for (const feature of multiSelectedLots) {
+      const geometry = feature?.geometry;
+      if (!geometry) continue;
+      if (geometry.type === "Polygon") {
+        polygons.push(geometry.coordinates);
+      } else if (geometry.type === "MultiPolygon") {
+        for (const poly of geometry.coordinates || []) {
+          polygons.push(poly);
+        }
+      }
+    }
+  } else if (Array.isArray(activeLotPolygon) && activeLotPolygon.length >= 4) {
+    polygons.push([_closeRing(activeLotPolygon)]);
+  }
+
+  if (!polygons.length) return null;
+  if (polygons.length === 1) {
+    return { type: "Polygon", coordinates: polygons[0] };
+  }
+  return { type: "MultiPolygon", coordinates: polygons };
+}
+
+function _applyBuildingModeFilters() {
+  if (!map) return;
+
+  const contextLayer = map.getLayer(BUILDING_LAYER_CONTEXT_ID);
+  const selectedLayer = map.getLayer(BUILDING_LAYER_SELECTED_ID);
+  if (!contextLayer && !selectedLayer) return;
+
+  const baseFilter = ["==", "$type", "Polygon"];
+  const selectedGeometry = _selectedLotGeometryForWithinFilter();
+  const selectedFilter = selectedGeometry
+    ? ["all", baseFilter, ["within", selectedGeometry]]
+    : _emptyMatchFilter();
+  const contextWithoutSelectedFilter = selectedGeometry
+    ? ["all", baseFilter, ["!", ["within", selectedGeometry]]]
+    : baseFilter;
+
+  switch (buildingMode) {
+    case "off":
+      if (contextLayer) _setLayerVisibility(BUILDING_LAYER_CONTEXT_ID, false);
+      if (selectedLayer) _setLayerVisibility(BUILDING_LAYER_SELECTED_ID, false);
+      break;
+    case "selected_only":
+      if (contextLayer) _setLayerVisibility(BUILDING_LAYER_CONTEXT_ID, false);
+      if (selectedLayer) {
+        map.setFilter(BUILDING_LAYER_SELECTED_ID, selectedFilter);
+        _setLayerVisibility(BUILDING_LAYER_SELECTED_ID, selectedGeometry != null);
+      }
+      break;
+    case "neighborhood_without_selected":
+      if (selectedLayer) _setLayerVisibility(BUILDING_LAYER_SELECTED_ID, false);
+      if (contextLayer) {
+        map.setFilter(BUILDING_LAYER_CONTEXT_ID, contextWithoutSelectedFilter);
+        _setLayerVisibility(BUILDING_LAYER_CONTEXT_ID, true);
+      }
+      break;
+    case "neighborhood_all":
+    default:
+      if (selectedLayer) _setLayerVisibility(BUILDING_LAYER_SELECTED_ID, false);
+      if (contextLayer) {
+        map.setFilter(BUILDING_LAYER_CONTEXT_ID, baseFilter);
+        _setLayerVisibility(BUILDING_LAYER_CONTEXT_ID, true);
+      }
+      break;
+  }
 }
 
 function computeNeighborhoodBounds(geojson) {
@@ -1695,17 +1829,17 @@ function buildNeighborhoodMaskGeometry(geojson) {
 }
 
 function refreshExistingBuildingsForNeighborhood() {
-  if (!map || !map.getLayer("existing-buildings-mapbox")) return;
-  map.setFilter("existing-buildings-mapbox", ["==", "$type", "Polygon"]);
+  if (!map || !_hasAnyBuildingLayer()) return;
+  _applyBuildingModeFilters();
   syncLayerVisibility();
-  console.log("[existing-buildings] global mode: rendering all buildings");
+  console.log("[existing-buildings] refreshed scoped building mode:", buildingMode);
 }
 
 function disableDefaultMapboxBuildingExtrusions() {
   const layers = map?.getStyle()?.layers || [];
   for (const layer of layers) {
     if (
-      layer.id !== "existing-buildings-mapbox"
+      !_buildingLayerIds().includes(layer.id)
       && layer.type === "fill-extrusion"
       && layer.source === "composite"
       && layer["source-layer"] === "building"
@@ -1772,7 +1906,11 @@ function ensureSourcesAndLayers() {
     });
   }
 
-  if (!map.getLayer("existing-buildings-mapbox")) {
+  if (map.getLayer("existing-buildings-mapbox")) {
+    map.removeLayer("existing-buildings-mapbox");
+  }
+
+  if (!map.getLayer(BUILDING_LAYER_CONTEXT_ID)) {
     const layers = map.getStyle().layers || [];
     const labelLayerId = layers.find(
       (layer) => layer.type === "symbol" && layer.layout && layer.layout["text-field"]
@@ -1780,7 +1918,7 @@ function ensureSourcesAndLayers() {
 
     map.addLayer(
       {
-        id: "existing-buildings-mapbox",
+        id: BUILDING_LAYER_CONTEXT_ID,
         type: "fill-extrusion",
         source: "composite",
         "source-layer": "building",
@@ -1796,7 +1934,50 @@ function ensureSourcesAndLayers() {
       },
       labelLayerId
     );
-    console.log("[existing-buildings] added composite/building layer");
+    map.addLayer(
+      {
+        id: BUILDING_LAYER_SELECTED_ID,
+        type: "fill-extrusion",
+        source: "composite",
+        "source-layer": "building",
+        minzoom: 10,
+        filter: _emptyMatchFilter(),
+        paint: {
+          "fill-extrusion-color": STYLE_PRESET.existingBuildings.color,
+          "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 10],
+          "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
+          "fill-extrusion-opacity": STYLE_PRESET.existingBuildings.opacityDefault,
+          "fill-extrusion-vertical-gradient": true,
+        },
+      },
+      labelLayerId
+    );
+    console.log("[existing-buildings] added scoped composite/building layers");
+  }
+
+  if (!map.getLayer(BUILDING_LAYER_SELECTED_ID)) {
+    const layers = map.getStyle().layers || [];
+    const labelLayerId = layers.find(
+      (layer) => layer.type === "symbol" && layer.layout && layer.layout["text-field"]
+    )?.id;
+    map.addLayer(
+      {
+        id: BUILDING_LAYER_SELECTED_ID,
+        type: "fill-extrusion",
+        source: "composite",
+        "source-layer": "building",
+        minzoom: 10,
+        filter: _emptyMatchFilter(),
+        paint: {
+          "fill-extrusion-color": STYLE_PRESET.existingBuildings.color,
+          "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 10],
+          "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
+          "fill-extrusion-opacity": STYLE_PRESET.existingBuildings.opacityDefault,
+          "fill-extrusion-vertical-gradient": true,
+        },
+      },
+      labelLayerId
+    );
   }
 
   if (map.getLayer("neighborhood-building-fill")) {
@@ -2312,12 +2493,13 @@ function applyFocusModeVisuals() {
   if (map.getLayer("neighborhood-lot-outline")) {
     map.setPaintProperty("neighborhood-lot-outline", "line-opacity", focusSelectedLotMode ? 0.12 : 0.5);
   }
-  if (map.getLayer("existing-buildings-mapbox")) {
-    const modeOpacity = focusSelectedLotMode
-      ? STYLE_PRESET.existingBuildings.opacityFocus
-      : STYLE_PRESET.existingBuildings.opacityDefault;
+  const modeOpacity = focusSelectedLotMode
+    ? STYLE_PRESET.existingBuildings.opacityFocus
+    : STYLE_PRESET.existingBuildings.opacityDefault;
+  for (const layerId of _buildingLayerIds()) {
+    if (!map.getLayer(layerId)) continue;
     map.setPaintProperty(
-      "existing-buildings-mapbox",
+      layerId,
       "fill-extrusion-opacity",
       Math.max(0, Math.min(1, modeOpacity * buildingsOpacity))
     );
@@ -2326,12 +2508,10 @@ function applyFocusModeVisuals() {
 
 const LAYER_GROUPS = {
   existingBuildings: [
-    "existing-buildings-mapbox",
-    "neighborhood-building-fill",
+    BUILDING_LAYER_CONTEXT_ID,
+    BUILDING_LAYER_SELECTED_ID,
   ],
   maxEnvelope: [
-    "zoning-envelope-layer",
-    "zoning-envelope-outline",
     "zoning-envelope-fill-baseline",
     "zoning-envelope-fill",
     "selected-max-envelope-fill",
@@ -2429,8 +2609,8 @@ function _bringAnalysisLayersToFront() {
     "setback-offset-lines",
 
     // 3D extrusion masses
-    "existing-buildings-mapbox",
-    "zoning-envelope-layer",
+    BUILDING_LAYER_CONTEXT_ID,
+    BUILDING_LAYER_SELECTED_ID,
     "zoning-envelope-fill-baseline",
     "zoning-envelope-fill",
     "selected-max-envelope-fill",
@@ -2451,10 +2631,10 @@ function _bringAnalysisLayersToFront() {
 
   // Ensure lot/parcel/property boundary lines from basemap stay below 3D extrusions.
   const extrusionAnchor = [
-    "existing-buildings-mapbox",
+    BUILDING_LAYER_CONTEXT_ID,
+    BUILDING_LAYER_SELECTED_ID,
     "selected-far-envelope-fill",
     "selected-max-envelope-fill",
-    "zoning-envelope-layer",
     "zoning-envelope-fill",
   ].find((id) => map.getLayer(id));
   if (!extrusionAnchor) return;
@@ -2505,10 +2685,10 @@ function syncLayerVisibility() {
   if (!map) {
     return;
   }
-  const showBuildings = !!showBuildingToggle?.checked;
+  const showBuildings = buildingMode !== "off";
   const showArea = !!showEnvelopeToggle?.checked;
-  const showMax = !!showMaxEnvelope;
-  const showFar = !!showFarEnvelope;
+  const showMax = maxEnvelopeMode === "selected_only";
+  const showFar = farEnvelopeMode === "selected_only";
   const showSetbacks = !!showSetbackLines;
   const showBuildable = !!showBuildableArea;
   const showOpenSpace = !!showOpenSpaceArea;
@@ -2516,6 +2696,7 @@ function syncLayerVisibility() {
 
   // Independent category visibility.
   _setLayerGroupVisibility(LAYER_GROUPS.existingBuildings, showBuildings);
+  _applyBuildingModeFilters();
   _setLayerGroupVisibility(LAYER_GROUPS.maxEnvelope, showMax);
   _setLayerGroupVisibility(LAYER_GROUPS.farEnvelope, showFar);
   _setLayerGroupVisibility(LAYER_GROUPS.openSpaceArea, showArea && showOpenSpace);
@@ -2540,8 +2721,9 @@ function syncLayerVisibility() {
     _setLayerVisibility(id, true);
   }
 
-  _setLayerVisibility("zoning-envelope-layer", showMax);
-  _setLayerVisibility("zoning-envelope-outline", showMax);
+  // Neighborhood-wide envelope layers stay off; envelope modes are selected-lot scoped.
+  _setLayerVisibility("zoning-envelope-layer", false);
+  _setLayerVisibility("zoning-envelope-outline", false);
 
   applyFocusModeVisuals();
   if (showBuildingsBtn) {
@@ -2553,12 +2735,12 @@ function syncLayerVisibility() {
     showEnvelopeBtn.classList.toggle("pill--on", showArea);
   }
   if (toggleMaxEnvelopeBtn) {
-    toggleMaxEnvelopeBtn.classList.toggle("active", showMax);
-    toggleMaxEnvelopeBtn.classList.toggle("pill--on", showMax);
+    toggleMaxEnvelopeBtn.classList.toggle("active", maxEnvelopeMode === "selected_only");
+    toggleMaxEnvelopeBtn.classList.toggle("pill--on", maxEnvelopeMode === "selected_only");
   }
   if (toggleFarEnvelopeBtn) {
-    toggleFarEnvelopeBtn.classList.toggle("active", showFar);
-    toggleFarEnvelopeBtn.classList.toggle("pill--on", showFar);
+    toggleFarEnvelopeBtn.classList.toggle("active", farEnvelopeMode === "selected_only");
+    toggleFarEnvelopeBtn.classList.toggle("pill--on", farEnvelopeMode === "selected_only");
   }
   if (toggleSetbackLinesBtn) {
     toggleSetbackLinesBtn.classList.toggle("active", showSetbacks);
@@ -5734,7 +5916,7 @@ async function loadNtaBoundaries() {
       if (data && Array.isArray(data.features) && data.features.length) {
         ntaData = data;
         console.log("[existing-buildings] loaded NTA boundaries:", data.features.length, "from", url);
-        if (activeNeighborhood && map?.getLayer("existing-buildings-mapbox")) {
+        if (activeNeighborhood && _hasAnyBuildingLayer()) {
           refreshExistingBuildingsForNeighborhood();
         }
         return;
@@ -6588,7 +6770,9 @@ function _rebuildFarEnvelope() {
 }
 
 function _ensureFarVisibleAndRebuild() {
+  farEnvelopeMode = "selected_only";
   showFarEnvelope = true;
+  _syncScopeModeControls();
   if (toggleFarEnvelopeBtn) {
     toggleFarEnvelopeBtn.classList.add("pill--on", "active");
   }
@@ -9876,16 +10060,18 @@ if (toggleMultiSelectBtn) {
 
 if (toggleMaxEnvelopeBtn) {
   toggleMaxEnvelopeBtn.addEventListener("click", () => {
-    showMaxEnvelope = !showMaxEnvelope;
-    toggleMaxEnvelopeBtn.classList.toggle("pill--on", showMaxEnvelope);
+    maxEnvelopeMode = maxEnvelopeMode === "off" ? "selected_only" : "off";
+    showMaxEnvelope = maxEnvelopeMode === "selected_only";
+    _syncScopeModeControls();
     syncLayerVisibility();
   });
 }
 
 if (toggleFarEnvelopeBtn) {
   toggleFarEnvelopeBtn.addEventListener("click", () => {
-    showFarEnvelope = !showFarEnvelope;
-    toggleFarEnvelopeBtn.classList.toggle("pill--on", showFarEnvelope);
+    farEnvelopeMode = farEnvelopeMode === "off" ? "selected_only" : "off";
+    showFarEnvelope = farEnvelopeMode === "selected_only";
+    _syncScopeModeControls();
     syncLayerVisibility();
   });
 }

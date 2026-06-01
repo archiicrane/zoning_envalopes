@@ -153,6 +153,30 @@
               <input id="maxEnvOpacitySlider" type="range" min="0" max="100" step="1" value="0" />
               <span id="maxEnvOpacityVal" class="sheet-slider-val">0%</span>
             </div>
+            <div class="sheet-step-head">03B VISIBILITY MODES</div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">Buildings</span>
+              <select id="buildingModeSelect" class="sheet-select">
+                <option value="neighborhood_all">Neighborhood All</option>
+                <option value="selected_only">Selected Only</option>
+                <option value="neighborhood_without_selected">Neighborhood Without Selected</option>
+                <option value="off">Off</option>
+              </select>
+            </div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">FAR Env</span>
+              <select id="farEnvelopeModeSelect" class="sheet-select">
+                <option value="selected_only">Selected Only</option>
+                <option value="off">Off</option>
+              </select>
+            </div>
+            <div class="sheet-slider-row">
+              <span class="sheet-slider-label">Max Env</span>
+              <select id="maxEnvelopeModeSelect" class="sheet-select">
+                <option value="selected_only">Selected Only</option>
+                <option value="off">Off</option>
+              </select>
+            </div>
             <!-- legacy hidden slider kept for JS compat -->
             <input id="envelopeOpacitySlider" type="range" min="0" max="100" step="1" value="0" style="display:none" />
             <div class="sheet-slider-row">
