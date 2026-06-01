@@ -133,7 +133,7 @@ let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, footprintAr
 let lastFarFitWarning = null;
 let lastMaxEnvelopeGeojson = EMPTY_FC;
 let lastFarEnvelopeGeojson = EMPTY_FC;
-const MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES = 6000;
+const MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES = 12000;
 let lastMultiLotAnalysis = null;
 let isoRenderer = null;
 let isoScene = null;
@@ -593,20 +593,30 @@ if (osrSlider) {
 }
 
 function _envelopeOpacityValues() {
-  const legacyTransparencyPercent = Number(envelopeOpacitySlider.value);
-  const legacyOpacityValue = 1;
+  const legacyTransparencyPercent = Number(envelopeOpacitySlider?.value ?? 35);
+  const legacyOpacityValue = Math.max(0.05, Math.min(1, 1 - (legacyTransparencyPercent / 100)));
   // Per-layer opacity from individual sliders (fall back to legacy single slider)
-  const neighborhoodOpacity = legacyOpacityValue;
-  const farOpacity = legacyOpacityValue;
-  const maxOpacity = legacyOpacityValue;
-  const baselineMultiplier = 1;
-  const maxEnvelopeFillOpacity = 1;
-  const farEnvelopeFillOpacity = 1;
+  const neighborhoodOpacity = neighborhoodOpacitySlider
+    ? Math.max(0, Math.min(1, Number(neighborhoodOpacitySlider.value) / 100))
+    : legacyOpacityValue;
+  const farOpacity = farOpacitySlider
+    ? Math.max(0, Math.min(1, Number(farOpacitySlider.value) / 100))
+    : neighborhoodOpacity;
+  const maxOpacity = maxEnvOpacitySlider
+    ? Math.max(0, Math.min(1, Number(maxEnvOpacitySlider.value) / 100))
+    : neighborhoodOpacity;
+  const buildingsOpacity = buildingsOpacitySlider
+    ? Math.max(0, Math.min(1, Number(buildingsOpacitySlider.value) / 100))
+    : STYLE_PRESET.existingBuildings.opacityDefault;
+  const baselineMultiplier = 0.88;
+  const maxEnvelopeFillOpacity = maxOpacity;
+  const farEnvelopeFillOpacity = farOpacity;
   return {
     transparencyPercent: legacyTransparencyPercent,
+    buildingsOpacity,
     neighborhoodOpacity,
-    scenarioOpacity: neighborhoodOpacity,
-    baselineOpacity: neighborhoodOpacity * baselineMultiplier,
+    scenarioOpacity: maxOpacity,
+    baselineOpacity: maxOpacity * baselineMultiplier,
     maxEnvelopeFillOpacity,
     farEnvelopeFillOpacity,
     farOpacity,
@@ -619,6 +629,7 @@ function applyEnvelopeOpacityToLayers() {
     return;
   }
   const {
+    buildingsOpacity,
     neighborhoodOpacity,
     scenarioOpacity,
     baselineOpacity,
@@ -631,38 +642,38 @@ function applyEnvelopeOpacityToLayers() {
   // Existing buildings layer – driven by its own slider
   if (map.getLayer("existing-buildings-mapbox") && buildingsOpacitySlider) {
     map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-color", solidMode ? "#f8fafc" : STYLE_PRESET.existingBuildings.color);
-    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", 1);
+    map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", buildingsOpacity);
   }
 
   if (map.getLayer("zoning-envelope-fill")) {
     map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-color", solidMode ? "#c7dcff" : STYLE_PRESET.maxEnvelope.fillColor);
-    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-opacity", 1);
+    map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-opacity", scenarioOpacity);
     map.setPaintProperty("zoning-envelope-fill", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("zoning-envelope-fill-baseline")) {
     map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-color", solidMode ? "#dce9ff" : STYLE_PRESET.maxEnvelope.fillColor);
-    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-opacity", 1);
+    map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-opacity", baselineOpacity);
     map.setPaintProperty("zoning-envelope-fill-baseline", "fill-extrusion-vertical-gradient", false);
   }
   // Also apply (scaled down) to the neighborhood ghost-volume envelope
   if (map.getLayer("zoning-envelope-layer")) {
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-color", solidMode ? "#e8f0ff" : ["coalesce", ["get", "envelopeColor"], "#9fc3ff"]);
-    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", 1);
+    map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-opacity", neighborhoodOpacity);
     map.setPaintProperty("zoning-envelope-layer", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("zoning-envelope-outline")) {
-    map.setPaintProperty("zoning-envelope-outline", "line-opacity", 1);
+    map.setPaintProperty("zoning-envelope-outline", "line-opacity", Math.max(0.2, neighborhoodOpacity));
     map.setPaintProperty("zoning-envelope-outline", "line-color", solidMode ? "#94a3b8" : "#475569");
   }
 
   if (map.getLayer("selected-max-envelope-fill")) {
     map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-color", solidMode ? _mixHex(zoneAccentPalette.maxEnvelope, "#ffffff", 0.22) : zoneAccentPalette.maxEnvelope);
-    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-opacity", 1);
+    map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-opacity", maxEnvelopeFillOpacity);
     map.setPaintProperty("selected-max-envelope-fill", "fill-extrusion-vertical-gradient", false);
   }
   if (map.getLayer("selected-far-envelope-fill")) {
     map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-color", solidMode ? _mixHex(zoneAccentPalette.farEnvelope, "#ffffff", 0.18) : ["coalesce", ["get", "envelopeColor"], zoneAccentPalette.farEnvelope]);
-    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", 1);
+    map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-opacity", farEnvelopeFillOpacity);
     // Keep vertical gradient in solid mode to make side faces read slightly darker.
     map.setPaintProperty("selected-far-envelope-fill", "fill-extrusion-vertical-gradient", true);
   }
@@ -1411,13 +1422,20 @@ function _buildLightweightLotAnalysisFromProps(props) {
 }
   const samples = [];
 
-  for (const feature of geojson.features || []) {
+  for (let lotIdx = 0; lotIdx < (geojson.features || []).length; lotIdx += 1) {
+    const feature = geojson.features[lotIdx];
     const geometry = feature?.geometry;
     if (!geometry || (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")) {
       continue;
     }
 
     const props = extractProps(feature);
+    const lotKey = String(
+      props.bbl
+      ?? props.BBL
+      ?? `${props.borough || props.Borough || ""}-${props.block || props.Block || ""}-${props.lot || props.Lot || ""}`
+      ?? `lot-${lotIdx}`
+    );
     const zone = normalizeZoneToken(props.zonedist1 ?? props.ZoneDist1 ?? props.zone ?? "");
 
     // Skip park and open space zones
@@ -1458,7 +1476,13 @@ function _buildLightweightLotAnalysisFromProps(props) {
         lotAnalysis,
       });
       for (const piece of generated.envelopeFeatures || []) {
-        features.push(piece);
+        features.push({
+          ...piece,
+          properties: {
+            ...piece.properties,
+            neighborhoodLotKey: lotKey,
+          },
+        });
       }
 
       if (samples.length < 5) {
@@ -1527,12 +1551,43 @@ function _capNeighborhoodEnvelopeFeatures(features, maxCount) {
     return list;
   }
 
-  const step = Math.ceil(list.length / cap);
-  const sampled = [];
-  for (let i = 0; i < list.length; i += step) {
-    sampled.push(list[i]);
-    if (sampled.length >= cap) {
-      break;
+  // First pass: keep at least one envelope piece per lot when possible.
+  const pickedIndices = new Set();
+  const firstByLot = new Map();
+  for (let i = 0; i < list.length; i += 1) {
+    const feature = list[i];
+    const lotKey = String(feature?.properties?.neighborhoodLotKey || `lot-${i}`);
+    if (!firstByLot.has(lotKey)) {
+      firstByLot.set(lotKey, i);
+    }
+  }
+
+  let sampled = Array.from(firstByLot.values()).map((idx) => {
+    pickedIndices.add(idx);
+    return list[idx];
+  });
+
+  if (sampled.length > cap) {
+    const step = Math.ceil(sampled.length / cap);
+    const reduced = [];
+    for (let i = 0; i < sampled.length; i += step) {
+      reduced.push(sampled[i]);
+      if (reduced.length >= cap) break;
+    }
+    return reduced;
+  }
+
+  // Second pass: add remaining pieces with even sampling to preserve shape detail.
+  const remaining = [];
+  for (let i = 0; i < list.length; i += 1) {
+    if (!pickedIndices.has(i)) remaining.push(list[i]);
+  }
+  if (remaining.length > 0 && sampled.length < cap) {
+    const slots = cap - sampled.length;
+    const step = Math.max(1, Math.ceil(remaining.length / slots));
+    for (let i = 0; i < remaining.length; i += step) {
+      sampled.push(remaining[i]);
+      if (sampled.length >= cap) break;
     }
   }
   return sampled;
