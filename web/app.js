@@ -1219,23 +1219,18 @@ function _applyBuildingModeFilters() {
   const selectedFilter = selectedGeometry
     ? ["all", baseFilter, ["within", selectedGeometry]]
     : _emptyMatchFilter();
-  const bblExclusionFilter = selectedBbls.length
+  const bblExclusionFilters = selectedBbls.length
     ? [
-      "==",
-      [
-        "in",
-        ["to-string", ["coalesce", ["get", "bbl"], ["get", "BBL"], ""]],
-        ["literal", selectedBbls],
-      ],
-      false,
+      ["!in", "bbl", ...selectedBbls],
+      ["!in", "BBL", ...selectedBbls],
     ]
-    : null;
+    : [];
   const contextWithoutSelectedFilterParts = [baseFilter];
   if (exclusionGeometry) {
     contextWithoutSelectedFilterParts.push(["==", ["within", exclusionGeometry], false]);
   }
-  if (bblExclusionFilter) {
-    contextWithoutSelectedFilterParts.push(bblExclusionFilter);
+  if (bblExclusionFilters.length) {
+    contextWithoutSelectedFilterParts.push(...bblExclusionFilters);
   }
   const contextWithoutSelectedFilter = contextWithoutSelectedFilterParts.length > 1
     ? ["all", ...contextWithoutSelectedFilterParts]
