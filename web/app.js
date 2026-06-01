@@ -1115,7 +1115,8 @@ function _hasAnyBuildingLayer() {
 }
 
 function _emptyMatchFilter() {
-  return ["==", 1, 0];
+  // Valid filter syntax that matches nothing for building polygons.
+  return ["==", "$type", "Point"];
 }
 
 function _selectedLotGeometryForWithinFilter() {
