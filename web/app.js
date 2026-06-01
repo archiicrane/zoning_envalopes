@@ -1179,11 +1179,14 @@ function _applyBuildingModeFilters() {
 
   const baseFilter = ["==", "$type", "Polygon"];
   const selectedGeometry = _selectedLotGeometryForWithinFilter();
+  const exclusionGeometry = selectedGeometry
+    ? (_bufferGeometryInMeters(selectedGeometry, 2) || selectedGeometry)
+    : null;
   const selectedFilter = selectedGeometry
     ? ["all", baseFilter, ["within", selectedGeometry]]
     : _emptyMatchFilter();
-  const contextWithoutSelectedFilter = selectedGeometry
-    ? ["all", baseFilter, ["==", ["within", selectedGeometry], false]]
+  const contextWithoutSelectedFilter = exclusionGeometry
+    ? ["all", baseFilter, ["==", ["within", exclusionGeometry], false]]
     : baseFilter;
 
   switch (buildingMode) {
