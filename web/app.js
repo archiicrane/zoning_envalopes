@@ -133,7 +133,7 @@ let lastFarEnvelopeData = null;    // { numFloors, buildingHeightFt, footprintAr
 let lastFarFitWarning = null;
 let lastMaxEnvelopeGeojson = EMPTY_FC;
 let lastFarEnvelopeGeojson = EMPTY_FC;
-const MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES = 12000;
+const MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES = 22000;
 let lastMultiLotAnalysis = null;
 let isoRenderer = null;
 let isoScene = null;
@@ -595,16 +595,16 @@ if (osrSlider) {
 function _envelopeOpacityValues() {
   const legacyTransparencyPercent = Number(envelopeOpacitySlider?.value ?? 35);
   const legacyOpacityValue = Math.max(0.05, Math.min(1, 1 - (legacyTransparencyPercent / 100)));
-  // Per-layer opacity from individual sliders (fall back to legacy single slider)
+  // Per-layer opacity from individual sliders.
   const neighborhoodOpacity = neighborhoodOpacitySlider
     ? Math.max(0, Math.min(1, Number(neighborhoodOpacitySlider.value) / 100))
-    : legacyOpacityValue;
+    : STYLE_PRESET.contextEnvelope.fillOpacityDefault;
   const farOpacity = farOpacitySlider
     ? Math.max(0, Math.min(1, Number(farOpacitySlider.value) / 100))
-    : neighborhoodOpacity;
+    : STYLE_PRESET.farEnvelope.fillOpacityDefault;
   const maxOpacity = maxEnvOpacitySlider
     ? Math.max(0, Math.min(1, Number(maxEnvOpacitySlider.value) / 100))
-    : neighborhoodOpacity;
+    : STYLE_PRESET.maxEnvelope.fillOpacityDefault;
   const buildingsOpacity = buildingsOpacitySlider
     ? Math.max(0, Math.min(1, Number(buildingsOpacitySlider.value) / 100))
     : STYLE_PRESET.existingBuildings.opacityDefault;
@@ -615,8 +615,8 @@ function _envelopeOpacityValues() {
     transparencyPercent: legacyTransparencyPercent,
     buildingsOpacity,
     neighborhoodOpacity,
-    scenarioOpacity: maxOpacity,
-    baselineOpacity: maxOpacity * baselineMultiplier,
+    scenarioOpacity: legacyOpacityValue,
+    baselineOpacity: legacyOpacityValue * baselineMultiplier,
     maxEnvelopeFillOpacity,
     farEnvelopeFillOpacity,
     farOpacity,
@@ -640,7 +640,7 @@ function applyEnvelopeOpacityToLayers() {
   } = _envelopeOpacityValues();
 
   // Existing buildings layer – driven by its own slider
-  if (map.getLayer("existing-buildings-mapbox") && buildingsOpacitySlider) {
+  if (map.getLayer("existing-buildings-mapbox")) {
     map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-color", solidMode ? "#f8fafc" : STYLE_PRESET.existingBuildings.color);
     map.setPaintProperty("existing-buildings-mapbox", "fill-extrusion-opacity", buildingsOpacity);
   }
@@ -713,7 +713,6 @@ if (envelopeOpacitySlider) {
 if (neighborhoodOpacitySlider) {
   neighborhoodOpacitySlider.addEventListener("input", () => {
     if (neighborhoodOpacityVal) neighborhoodOpacityVal.textContent = `${neighborhoodOpacitySlider.value}%`;
-    if (envelopeOpacitySlider) envelopeOpacitySlider.value = `${100 - Number(neighborhoodOpacitySlider.value)}`;
     applyEnvelopeOpacityToLayers();
   });
 }
@@ -1551,44 +1550,50 @@ function _capNeighborhoodEnvelopeFeatures(features, maxCount) {
     return list;
   }
 
-  // First pass: keep at least one envelope piece per lot when possible.
-  const pickedIndices = new Set();
-  const firstByLot = new Map();
+  // Group envelope pieces by lot so sampled output keeps complete lot envelopes.
+  const lotGroups = new Map();
   for (let i = 0; i < list.length; i += 1) {
     const feature = list[i];
     const lotKey = String(feature?.properties?.neighborhoodLotKey || `lot-${i}`);
-    if (!firstByLot.has(lotKey)) {
-      firstByLot.set(lotKey, i);
+    if (!lotGroups.has(lotKey)) lotGroups.set(lotKey, []);
+    lotGroups.get(lotKey).push(feature);
+  }
+
+  const lotKeys = Array.from(lotGroups.keys());
+  if (!lotKeys.length) {
+    return list.slice(0, cap);
+  }
+
+  const sampled = [];
+  const selectedLots = new Set();
+
+  // First pass: evenly distribute selected lots across the neighborhood.
+  const firstPassStep = Math.max(1, Math.ceil(lotKeys.length / Math.min(cap, lotKeys.length)));
+  for (let i = 0; i < lotKeys.length; i += firstPassStep) {
+    const lotKey = lotKeys[i];
+    const group = lotGroups.get(lotKey) || [];
+    if (!group.length) continue;
+    if (sampled.length + group.length > cap) continue;
+    sampled.push(...group);
+    selectedLots.add(lotKey);
+    if (sampled.length >= cap) {
+      break;
     }
   }
 
-  let sampled = Array.from(firstByLot.values()).map((idx) => {
-    pickedIndices.add(idx);
-    return list[idx];
-  });
-
-  if (sampled.length > cap) {
-    const step = Math.ceil(sampled.length / cap);
-    const reduced = [];
-    for (let i = 0; i < sampled.length; i += step) {
-      reduced.push(sampled[i]);
-      if (reduced.length >= cap) break;
-    }
-    return reduced;
+  // Second pass: pack additional full lots while capacity remains.
+  for (const lotKey of lotKeys) {
+    if (selectedLots.has(lotKey)) continue;
+    const group = lotGroups.get(lotKey) || [];
+    if (!group.length) continue;
+    if (sampled.length + group.length > cap) continue;
+    sampled.push(...group);
+    selectedLots.add(lotKey);
+    if (sampled.length >= cap) break;
   }
 
-  // Second pass: add remaining pieces with even sampling to preserve shape detail.
-  const remaining = [];
-  for (let i = 0; i < list.length; i += 1) {
-    if (!pickedIndices.has(i)) remaining.push(list[i]);
-  }
-  if (remaining.length > 0 && sampled.length < cap) {
-    const slots = cap - sampled.length;
-    const step = Math.max(1, Math.ceil(remaining.length / slots));
-    for (let i = 0; i < remaining.length; i += step) {
-      sampled.push(remaining[i]);
-      if (sampled.length >= cap) break;
-    }
+  if (!sampled.length) {
+    return list.slice(0, cap);
   }
   return sampled;
 }
@@ -2257,6 +2262,7 @@ function ensureSourcesAndLayers() {
 
 function applyFocusModeVisuals() {
   if (!map) return;
+  const { buildingsOpacity } = _envelopeOpacityValues();
   if (map.getLayer("neighborhood-lot-fill")) {
     map.setPaintProperty("neighborhood-lot-fill", "fill-opacity", focusSelectedLotMode ? 0.03 : 0.1);
   }
@@ -2264,10 +2270,13 @@ function applyFocusModeVisuals() {
     map.setPaintProperty("neighborhood-lot-outline", "line-opacity", focusSelectedLotMode ? 0.12 : 0.5);
   }
   if (map.getLayer("existing-buildings-mapbox")) {
+    const modeOpacity = focusSelectedLotMode
+      ? STYLE_PRESET.existingBuildings.opacityFocus
+      : STYLE_PRESET.existingBuildings.opacityDefault;
     map.setPaintProperty(
       "existing-buildings-mapbox",
       "fill-extrusion-opacity",
-      focusSelectedLotMode ? STYLE_PRESET.existingBuildings.opacityFocus : STYLE_PRESET.existingBuildings.opacityDefault
+      Math.max(0, Math.min(1, modeOpacity * buildingsOpacity))
     );
   }
 }
