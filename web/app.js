@@ -1227,7 +1227,7 @@ function _applyBuildingModeFilters() {
     : [];
   const contextWithoutSelectedFilterParts = [baseFilter];
   if (exclusionGeometry) {
-    contextWithoutSelectedFilterParts.push(["==", ["within", exclusionGeometry], false]);
+    contextWithoutSelectedFilterParts.push(["none", ["within", exclusionGeometry]]);
   }
   if (bblExclusionFilters.length) {
     contextWithoutSelectedFilterParts.push(...bblExclusionFilters);
