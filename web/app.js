@@ -1170,6 +1170,39 @@ function _selectedLotGeometryForWithinFilter() {
   return { type: "MultiPolygon", coordinates: polygons };
 }
 
+function _selectedLotBblList() {
+  const values = new Set();
+
+  if (Array.isArray(multiSelectedLots) && multiSelectedLots.length > 0) {
+    for (const feature of multiSelectedLots) {
+      const bbl = String(feature?.properties?.bbl || feature?.properties?.BBL || "").trim();
+      if (bbl) values.add(bbl);
+    }
+  }
+
+  const activeBbl = String(activeLotData?.bbl || activeLotData?.BBL || "").trim();
+  if (activeBbl) values.add(activeBbl);
+
+  return Array.from(values);
+}
+
+function _bufferGeometryForBuildingExclusion(geometry, bufferFeet = 8) {
+  if (!geometry || !window?.turf?.buffer) return geometry;
+  const bufferMeters = Math.max(0, Number(bufferFeet) || 0) * 0.3048;
+  if (bufferMeters <= 0) return geometry;
+
+  try {
+    const buffered = turf.buffer({ type: "Feature", geometry, properties: {} }, bufferMeters, { units: "meters" });
+    const g = buffered?.geometry;
+    if (g && (g.type === "Polygon" || g.type === "MultiPolygon")) {
+      return g;
+    }
+  } catch (_err) {
+    // Fall back to original geometry when buffering fails.
+  }
+  return geometry;
+}
+
 function _applyBuildingModeFilters() {
   if (!map) return;
 
@@ -1180,13 +1213,32 @@ function _applyBuildingModeFilters() {
   const baseFilter = ["==", "$type", "Polygon"];
   const selectedGeometry = _selectedLotGeometryForWithinFilter();
   const exclusionGeometry = selectedGeometry
-    ? (_bufferGeometryInMeters(selectedGeometry, 2) || selectedGeometry)
+    ? _bufferGeometryForBuildingExclusion(selectedGeometry, 8)
     : null;
+  const selectedBbls = _selectedLotBblList();
   const selectedFilter = selectedGeometry
     ? ["all", baseFilter, ["within", selectedGeometry]]
     : _emptyMatchFilter();
-  const contextWithoutSelectedFilter = exclusionGeometry
-    ? ["all", baseFilter, ["==", ["within", exclusionGeometry], false]]
+  const bblExclusionFilter = selectedBbls.length
+    ? [
+      "==",
+      [
+        "in",
+        ["to-string", ["coalesce", ["get", "bbl"], ["get", "BBL"], ""]],
+        ["literal", selectedBbls],
+      ],
+      false,
+    ]
+    : null;
+  const contextWithoutSelectedFilterParts = [baseFilter];
+  if (exclusionGeometry) {
+    contextWithoutSelectedFilterParts.push(["==", ["within", exclusionGeometry], false]);
+  }
+  if (bblExclusionFilter) {
+    contextWithoutSelectedFilterParts.push(bblExclusionFilter);
+  }
+  const contextWithoutSelectedFilter = contextWithoutSelectedFilterParts.length > 1
+    ? ["all", ...contextWithoutSelectedFilterParts]
     : baseFilter;
 
   switch (buildingMode) {
