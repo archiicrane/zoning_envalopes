@@ -1489,28 +1489,53 @@ function refreshZoningEnvelopeFromNeighborhood() {
   }
 
   const built = buildZoningEnvelopeFeatures(activeNeighborhoodData || EMPTY_FC);
+  const renderFeatures = _capNeighborhoodEnvelopeFeatures(
+    built.features,
+    MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES
+  );
   map.getSource("zoning-envelope-source").setData({
     type: "FeatureCollection",
-    features: built.features,
+    features: renderFeatures,
   });
 
   console.log("[zoning-envelope] selected neighborhood:", activeNeighborhood?.name || "n/a");
   console.log("[zoning-envelope] lots loaded:", (activeNeighborhoodData?.features || []).length);
   console.log("[zoning-envelope] envelope features created:", built.features.length);
+  console.log("[zoning-envelope] envelope features rendered:", renderFeatures.length);
   console.log("[zoning-envelope] sample FAR/height values:", built.samples);
 
-  neighborhoodEnvelopeFillEnabled = built.features.length <= MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES;
-  if (!neighborhoodEnvelopeFillEnabled) {
+  neighborhoodEnvelopeFillEnabled = true;
+  if (renderFeatures.length < built.features.length) {
     console.warn(
-      "[zoning-envelope] disabling neighborhood fill extrusion to avoid WebGL overload:",
+      "[zoning-envelope] sampling neighborhood fill extrusion to avoid WebGL overload:",
       built.features.length,
-      "features"
+      "total ->",
+      renderFeatures.length,
+      "rendered"
     );
   }
   syncLayerVisibility();
 
   // Update Three.js wireframe edges to match new envelope geometry
-  updateEnvelopeEdges(built.features, []);
+  updateEnvelopeEdges(renderFeatures, []);
+}
+
+function _capNeighborhoodEnvelopeFeatures(features, maxCount) {
+  const list = Array.isArray(features) ? features : [];
+  const cap = Math.max(1, Number(maxCount) || 1);
+  if (list.length <= cap) {
+    return list;
+  }
+
+  const step = Math.ceil(list.length / cap);
+  const sampled = [];
+  for (let i = 0; i < list.length; i += step) {
+    sampled.push(list[i]);
+    if (sampled.length >= cap) {
+      break;
+    }
+  }
+  return sampled;
 }
 
 function findNtaPolygon(neighborhoodName) {
@@ -2357,7 +2382,7 @@ function syncLayerVisibility() {
     _setLayerVisibility(id, true);
   }
 
-  _setLayerVisibility("zoning-envelope-layer", showMax && neighborhoodEnvelopeFillEnabled);
+  _setLayerVisibility("zoning-envelope-layer", showMax);
   _setLayerVisibility("zoning-envelope-outline", showMax);
 
   applyFocusModeVisuals();
