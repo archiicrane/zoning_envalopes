@@ -3039,9 +3039,9 @@ function getZoningColor(zone) {
   const tokens = extractZoneTokens(zone);
   const families = new Set(tokens.map((token) => token.charAt(0)));
   const palette = {
-    R: "#7fb2ff",
-    C: "#f29ab7",
-    M: "#9b8fb2",
+    R: "#3b82f6",
+    C: "#14b8a6",
+    M: "#f59e0b",
   };
 
   if (!tokens.length) return "#9ca3af";
@@ -3060,9 +3060,10 @@ function getZoningColor(zone) {
 function _zonePaletteFor(zone) {
   const base = getZoningColor(zone);
   return {
-    lotFill: _mixHex(base, "#ffffff", 0.35),
-    maxEnvelope: _mixHex(base, "#dbeafe", 0.35),
-    farEnvelope: _mixHex(base, "#bbf7d0", 0.45),
+    // Keep lot fill lighter while preserving saturated envelope colors.
+    lotFill: _mixHex(base, "#ffffff", 0.22),
+    maxEnvelope: _mixHex(base, "#dbeafe", 0.16),
+    farEnvelope: _mixHex(base, "#bbf7d0", 0.24),
   };
 }
 
