@@ -593,13 +593,20 @@ if (osrSlider) {
 }
 
 function _envelopeOpacityValues() {
-  const legacyTransparencyPercent = Number(envelopeOpacitySlider?.value ?? 35);
-  // Extrusions are intentionally opaque to preserve true occlusion in massing views.
-  const neighborhoodOpacity = 1;
-  const farOpacity = 1;
-  const maxOpacity = 1;
-  // Existing buildings stay fully opaque to ensure proper occlusion.
-  const buildingsOpacity = 1;
+  const legacyTransparencyPercent = Number(envelopeOpacitySlider?.value ?? 0);
+  const legacyOpacityValue = Math.max(0, Math.min(1, 1 - (legacyTransparencyPercent / 100)));
+  const neighborhoodOpacity = neighborhoodOpacitySlider
+    ? Math.max(0, Math.min(1, 1 - (Number(neighborhoodOpacitySlider.value) / 100)))
+    : STYLE_PRESET.contextEnvelope.fillOpacityDefault;
+  const farOpacity = farOpacitySlider
+    ? Math.max(0, Math.min(1, 1 - (Number(farOpacitySlider.value) / 100)))
+    : STYLE_PRESET.farEnvelope.fillOpacityDefault;
+  const maxOpacity = maxEnvOpacitySlider
+    ? Math.max(0, Math.min(1, 1 - (Number(maxEnvOpacitySlider.value) / 100)))
+    : STYLE_PRESET.maxEnvelope.fillOpacityDefault;
+  const buildingsOpacity = buildingsOpacitySlider
+    ? Math.max(0, Math.min(1, 1 - (Number(buildingsOpacitySlider.value) / 100)))
+    : STYLE_PRESET.existingBuildings.opacityDefault;
   const baselineMultiplier = 1;
   const maxEnvelopeFillOpacity = maxOpacity;
   const farEnvelopeFillOpacity = farOpacity;
@@ -607,8 +614,8 @@ function _envelopeOpacityValues() {
     transparencyPercent: legacyTransparencyPercent,
     buildingsOpacity,
     neighborhoodOpacity,
-    scenarioOpacity: 1,
-    baselineOpacity: 1 * baselineMultiplier,
+    scenarioOpacity: legacyOpacityValue,
+    baselineOpacity: legacyOpacityValue * baselineMultiplier,
     maxEnvelopeFillOpacity,
     farEnvelopeFillOpacity,
     farOpacity,
@@ -677,16 +684,33 @@ function applyEnvelopeOpacityToLayers() {
   }
   if (map.getLayer("selected-max-envelope-outline")) {
     map.setPaintProperty("selected-max-envelope-outline", "line-color", solidMode ? "#64748b" : STYLE_PRESET.maxEnvelope.outlineColor);
-    map.setPaintProperty("selected-max-envelope-outline", "line-opacity", solidMode ? 1 : maxOpacity);
+    map.setPaintProperty("selected-max-envelope-outline", "line-opacity", 1);
     map.setPaintProperty("selected-max-envelope-outline", "line-width", STYLE_PRESET.maxEnvelope.outlineWidth);
   }
   if (map.getLayer("selected-far-envelope-outline")) {
     map.setPaintProperty("selected-far-envelope-outline", "line-color", solidMode ? "#166534" : STYLE_PRESET.farEnvelope.outlineColor);
-    map.setPaintProperty("selected-far-envelope-outline", "line-opacity", solidMode ? 1 : farOpacity);
+    map.setPaintProperty("selected-far-envelope-outline", "line-opacity", 1);
     map.setPaintProperty("selected-far-envelope-outline", "line-width", STYLE_PRESET.farEnvelope.outlineWidth);
     map.setPaintProperty("selected-far-envelope-outline", "line-dasharray", solidMode ? [1, 0] : [2, 2]);
   }
 }
+
+function _initializeOpacityControls() {
+  const pairs = [
+    [neighborhoodOpacitySlider, neighborhoodOpacityVal],
+    [buildingsOpacitySlider, buildingsOpacityVal],
+    [farOpacitySlider, farOpacityVal],
+    [maxEnvOpacitySlider, maxEnvOpacityVal],
+  ];
+  for (const [slider, valEl] of pairs) {
+    if (slider) slider.value = "0";
+    if (valEl) valEl.textContent = "0%";
+  }
+  if (envelopeOpacitySlider) envelopeOpacitySlider.value = "0";
+  if (envelopeOpacityVal) envelopeOpacityVal.textContent = "0%";
+}
+
+_initializeOpacityControls();
 
 if (envelopeOpacitySlider) {
   envelopeOpacitySlider.addEventListener("input", () => {
@@ -1504,10 +1528,8 @@ function refreshZoningEnvelopeFromNeighborhood() {
   }
 
   const built = buildZoningEnvelopeFeatures(activeNeighborhoodData || EMPTY_FC);
-  const renderFeatures = _capNeighborhoodEnvelopeFeatures(
-    built.features,
-    MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES
-  );
+  // Render full feature set so neighborhood sections are not dropped.
+  const renderFeatures = built.features;
   map.getSource("zoning-envelope-source").setData({
     type: "FeatureCollection",
     features: renderFeatures,
@@ -1520,13 +1542,11 @@ function refreshZoningEnvelopeFromNeighborhood() {
   console.log("[zoning-envelope] sample FAR/height values:", built.samples);
 
   neighborhoodEnvelopeFillEnabled = true;
-  if (renderFeatures.length < built.features.length) {
+  if (built.features.length > MAX_SOLID_NEIGHBORHOOD_ENVELOPE_FEATURES) {
     console.warn(
-      "[zoning-envelope] sampling neighborhood fill extrusion to avoid WebGL overload:",
+      "[zoning-envelope] high neighborhood envelope feature count:",
       built.features.length,
-      "total ->",
-      renderFeatures.length,
-      "rendered"
+      "features"
     );
   }
   syncLayerVisibility();
