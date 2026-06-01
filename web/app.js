@@ -726,6 +726,25 @@ function _syncScopeModeControls() {
   if (maxEnvelopeModeSelect) maxEnvelopeModeSelect.value = maxEnvelopeMode;
 }
 
+function _refreshMapFromControlChange({ rebuildSelected = false } = {}) {
+  if (!map) return;
+
+  if (rebuildSelected) {
+    if (multiSelectedLots.length > 0) {
+      _buildEnvelopesForMultiSelectedLots();
+    } else if (activeLotPolygon && activeLotData) {
+      buildMaxEnvelopeForSelectedLot();
+      buildFarEnvelopeForSelectedLot();
+    } else if ((activeNeighborhoodData?.features || []).length > 0 && maxEnvelopeMode !== "off") {
+      // Keep neighborhood context envelopes available when Max mode is enabled.
+      refreshZoningEnvelopeFromNeighborhood();
+    }
+  }
+
+  syncLayerVisibility();
+  applyEnvelopeOpacityToLayers();
+}
+
 _syncScopeModeControls();
 
 if (buildingModeSelect) {
@@ -739,7 +758,7 @@ if (buildingModeSelect) {
     ].includes(next) ? next : "neighborhood_all";
     if (showBuildingToggle) showBuildingToggle.checked = buildingMode !== "off";
     _syncScopeModeControls();
-    syncLayerVisibility();
+    _refreshMapFromControlChange();
   });
 }
 
@@ -748,7 +767,7 @@ if (farEnvelopeModeSelect) {
     farEnvelopeMode = farEnvelopeModeSelect.value === "off" ? "off" : "selected_only";
     showFarEnvelope = farEnvelopeMode === "selected_only";
     _syncScopeModeControls();
-    syncLayerVisibility();
+    _refreshMapFromControlChange({ rebuildSelected: true });
   });
 }
 
@@ -757,7 +776,7 @@ if (maxEnvelopeModeSelect) {
     maxEnvelopeMode = maxEnvelopeModeSelect.value === "off" ? "off" : "selected_only";
     showMaxEnvelope = maxEnvelopeMode === "selected_only";
     _syncScopeModeControls();
-    syncLayerVisibility();
+    _refreshMapFromControlChange({ rebuildSelected: true });
   });
 }
 
@@ -778,35 +797,41 @@ if (envelopeOpacitySlider) {
 if (neighborhoodOpacitySlider) {
   neighborhoodOpacitySlider.addEventListener("input", () => {
     if (neighborhoodOpacityVal) neighborhoodOpacityVal.textContent = `${neighborhoodOpacitySlider.value}%`;
-    applyEnvelopeOpacityToLayers();
+    _refreshMapFromControlChange();
   });
 }
 
 if (buildingsOpacitySlider) {
   buildingsOpacitySlider.addEventListener("input", () => {
     if (buildingsOpacityVal) buildingsOpacityVal.textContent = `${buildingsOpacitySlider.value}%`;
-    applyEnvelopeOpacityToLayers();
+    _refreshMapFromControlChange();
   });
 }
 if (farOpacitySlider) {
   farOpacitySlider.addEventListener("input", () => {
     if (farOpacityVal) farOpacityVal.textContent = `${farOpacitySlider.value}%`;
-    applyEnvelopeOpacityToLayers();
+    _refreshMapFromControlChange();
   });
 }
 if (maxEnvOpacitySlider) {
   maxEnvOpacitySlider.addEventListener("input", () => {
     if (maxEnvOpacityVal) maxEnvOpacityVal.textContent = `${maxEnvOpacitySlider.value}%`;
-    applyEnvelopeOpacityToLayers();
+    _refreshMapFromControlChange();
   });
 }
 
-showBuildingToggle.addEventListener("change", () => {
-  buildingMode = showBuildingToggle.checked ? "neighborhood_all" : "off";
-  _syncScopeModeControls();
-  syncLayerVisibility();
-});
-showEnvelopeToggle.addEventListener("change", syncLayerVisibility);
+if (showBuildingToggle) {
+  showBuildingToggle.addEventListener("change", () => {
+    buildingMode = showBuildingToggle.checked ? "neighborhood_all" : "off";
+    _syncScopeModeControls();
+    _refreshMapFromControlChange();
+  });
+}
+if (showEnvelopeToggle) {
+  showEnvelopeToggle.addEventListener("change", () => {
+    _refreshMapFromControlChange();
+  });
+}
 if (showBuildingsBtn) {
   showBuildingsBtn.addEventListener("click", () => {
     buildingMode = buildingMode === "off" ? "neighborhood_all" : "off";
@@ -2726,6 +2751,8 @@ function syncLayerVisibility() {
   _setLayerVisibility("zoning-envelope-layer", showMax);
   _setLayerVisibility("zoning-envelope-outline", showMax);
 
+  // Re-apply current slider-driven paint properties whenever visibility changes.
+  applyEnvelopeOpacityToLayers();
   applyFocusModeVisuals();
   if (showBuildingsBtn) {
     showBuildingsBtn.classList.toggle("active", showBuildings);
