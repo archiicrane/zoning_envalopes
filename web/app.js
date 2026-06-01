@@ -1170,20 +1170,55 @@ function _selectedLotGeometryForWithinFilter() {
   return { type: "MultiPolygon", coordinates: polygons };
 }
 
-function _selectedLotBblList() {
+function _selectedLotIdList() {
   const values = new Set();
 
   if (Array.isArray(multiSelectedLots) && multiSelectedLots.length > 0) {
     for (const feature of multiSelectedLots) {
-      const bbl = String(feature?.properties?.bbl || feature?.properties?.BBL || "").trim();
-      if (bbl) values.add(bbl);
+      const id = String(
+        feature?.properties?.BBL
+        || feature?.properties?.bbl
+        || feature?.properties?.id
+        || feature?.properties?.ID
+        || ""
+      ).trim();
+      if (id) values.add(id);
     }
   }
 
-  const activeBbl = String(activeLotData?.bbl || activeLotData?.BBL || "").trim();
-  if (activeBbl) values.add(activeBbl);
+  const activeId = String(
+    activeLotData?.BBL
+    || activeLotData?.bbl
+    || activeLotData?.id
+    || activeLotData?.ID
+    || ""
+  ).trim();
+  if (activeId) values.add(activeId);
 
   return Array.from(values);
+}
+
+function _featureSelectionId(properties) {
+  return String(
+    properties?.selectedLotId
+    || properties?.BBL
+    || properties?.bbl
+    || properties?.id
+    || properties?.ID
+    || ""
+  ).trim();
+}
+
+function _withSelectionId(feature, selectedLotId) {
+  if (!feature) return feature;
+  const nextId = String(selectedLotId || _featureSelectionId(feature?.properties || {})).trim();
+  return {
+    ...feature,
+    properties: {
+      ...(feature.properties || {}),
+      selectedLotId: nextId,
+    },
+  };
 }
 
 function _bufferGeometryForBuildingExclusion(geometry, bufferFeet = 8) {
@@ -1211,23 +1246,27 @@ function _applyBuildingModeFilters() {
   if (!contextLayer && !selectedLayer) return;
 
   const baseFilter = ["==", "$type", "Polygon"];
-  const selectedBbls = _selectedLotBblList();
-  const selectedBblIncludeFilter = selectedBbls.length
+  const selectedIds = _selectedLotIdList();
+  const selectedIncludeFilter = selectedIds.length
     ? [
       "any",
-      ["in", "bbl", ...selectedBbls],
-      ["in", "BBL", ...selectedBbls],
+      ["in", "bbl", ...selectedIds],
+      ["in", "BBL", ...selectedIds],
+      ["in", "id", ...selectedIds],
+      ["in", "ID", ...selectedIds],
     ]
     : null;
-  const bblExclusionFilters = selectedBbls.length
+  const exclusionFilters = selectedIds.length
     ? [
-      ["!in", "bbl", ...selectedBbls],
-      ["!in", "BBL", ...selectedBbls],
+      ["!in", "bbl", ...selectedIds],
+      ["!in", "BBL", ...selectedIds],
+      ["!in", "id", ...selectedIds],
+      ["!in", "ID", ...selectedIds],
     ]
     : [];
   const contextWithoutSelectedFilterParts = [baseFilter];
-  if (bblExclusionFilters.length) {
-    contextWithoutSelectedFilterParts.push(...bblExclusionFilters);
+  if (exclusionFilters.length) {
+    contextWithoutSelectedFilterParts.push(...exclusionFilters);
   }
   const contextWithoutSelectedFilter = contextWithoutSelectedFilterParts.length > 1
     ? ["all", ...contextWithoutSelectedFilterParts]
@@ -1243,11 +1282,11 @@ function _applyBuildingModeFilters() {
       if (selectedLayer) {
         map.setFilter(
           BUILDING_LAYER_SELECTED_ID,
-          selectedBblIncludeFilter
-            ? ["all", baseFilter, selectedBblIncludeFilter]
+          selectedIncludeFilter
+            ? ["all", baseFilter, selectedIncludeFilter]
             : _emptyMatchFilter()
         );
-        _setLayerVisibility(BUILDING_LAYER_SELECTED_ID, selectedBblIncludeFilter != null);
+        _setLayerVisibility(BUILDING_LAYER_SELECTED_ID, selectedIncludeFilter != null);
       }
       break;
     case "neighborhood_without_selected":
@@ -1266,6 +1305,35 @@ function _applyBuildingModeFilters() {
       }
       break;
   }
+}
+
+function _applySelectionScopedSourceFilters() {
+  if (!map) return;
+
+  const selectedIds = _selectedLotIdList();
+  const hasSelected = selectedIds.length > 0;
+  const includeSelected = hasSelected ? ["in", "selectedLotId", ...selectedIds] : _emptyMatchFilter();
+  const excludeSelected = hasSelected ? ["!in", "selectedLotId", ...selectedIds] : null;
+
+  const apply = (layerId, filter) => {
+    if (!map.getLayer(layerId)) return;
+    try {
+      map.setFilter(layerId, filter);
+    } catch (_err) {
+      // Ignore filter updates when layer schema differs during style transitions.
+    }
+  };
+
+  apply("selected-max-envelope-fill", includeSelected);
+  apply("selected-max-envelope-outline", includeSelected);
+  apply("selected-far-envelope-fill", includeSelected);
+  apply("selected-far-envelope-outline", ["all", ["==", "kind", "far_footprint"], includeSelected]);
+  apply("selected-far-open-space-fill", ["all", ["==", "kind", "far_open_space"], includeSelected]);
+  apply("selected-far-footprint-fill", ["all", ["==", "kind", "far_footprint"], includeSelected]);
+
+  const envelopeActive = (farEnvelopeMode === "selected_only" || maxEnvelopeMode === "selected_only") && hasSelected;
+  apply("zoning-envelope-layer", envelopeActive ? excludeSelected : null);
+  apply("zoning-envelope-outline", envelopeActive ? excludeSelected : null);
 }
 
 function computeNeighborhoodBounds(geojson) {
@@ -1734,11 +1802,13 @@ function _buildLightweightLotAnalysisFromProps(props) {
         lotAnalysis,
       });
       for (const piece of generated.envelopeFeatures || []) {
+        const selectionId = String(props.BBL || props.bbl || props.id || props.ID || lotKey).trim();
         features.push({
           ...piece,
           properties: {
             ...piece.properties,
             neighborhoodLotKey: lotKey,
+            selectedLotId: selectionId,
           },
         });
       }
@@ -2663,9 +2733,15 @@ function _syncBasemapTextVisibility() {
 function _bringAnalysisLayersToFront() {
   if (!map) return;
   const ordered = [
-    // Base site and 2D zoning fills (bottom)
+    // Context and study base layers (bottom)
     "neighborhood-lot-fill",
-    "selected-lot-fill",
+    "neighborhood-lot-outline",
+    "study-outline",
+    "buildable-footprint-outline",
+    "zoning-envelope-fill-baseline",
+    "zoning-envelope-fill",
+    "zoning-envelope-layer",
+    "zoning-envelope-outline",
     "front-yard-zone-fill",
     "side-yard-zone-fill",
     "rear-yard-zone-fill",
@@ -2674,32 +2750,27 @@ function _bringAnalysisLayersToFront() {
     "open-space-zone-fill",
     "selected-far-open-space-fill",
     "selected-far-footprint-fill",
+    "selected-lot-fill",
 
-    // Lot/parcel/setback linework (below all extrusions)
-    "neighborhood-lot-outline",
-    "study-outline",
+    // Context buildings, then selected buildings.
+    BUILDING_LAYER_CONTEXT_ID,
+    BUILDING_LAYER_SELECTED_ID,
+
+    // Selected envelopes over buildings.
+    "selected-max-envelope-fill",
+    "selected-max-envelope-outline",
+    "selected-far-envelope-fill",
+    "selected-far-envelope-outline",
+
+    // Selected lot edge and analysis lines.
     "selected-lot-outline",
-    "buildable-footprint-outline",
     "yard-edge-front-line",
     "yard-edge-side-line",
     "yard-edge-rear-line",
     "yard-edge-corner-line",
     "setback-offset-lines",
 
-    // 3D extrusion masses
-    BUILDING_LAYER_CONTEXT_ID,
-    BUILDING_LAYER_SELECTED_ID,
-    "zoning-envelope-fill-baseline",
-    "zoning-envelope-fill",
-    "selected-max-envelope-fill",
-    "selected-far-envelope-fill",
-
-    // Extrusion outlines
-    "zoning-envelope-outline",
-    "selected-max-envelope-outline",
-    "selected-far-envelope-outline",
-
-    // Labels/annotations (top)
+    // Selected labels/annotations (top).
     "buildable-label",
     "yard-edge-labels",
   ];
@@ -2709,11 +2780,9 @@ function _bringAnalysisLayersToFront() {
 
   // Ensure lot/parcel/property boundary lines from basemap stay below 3D extrusions.
   const extrusionAnchor = [
+    "zoning-envelope-layer",
     BUILDING_LAYER_CONTEXT_ID,
     BUILDING_LAYER_SELECTED_ID,
-    "selected-far-envelope-fill",
-    "selected-max-envelope-fill",
-    "zoning-envelope-fill",
   ].find((id) => map.getLayer(id));
   if (!extrusionAnchor) return;
 
@@ -2722,7 +2791,6 @@ function _bringAnalysisLayersToFront() {
     "parcel-lines",
     "property-boundary",
     "tax-lot-outline",
-    "selected-lot-outline",
     "neighborhood-lot-outline",
   ];
   for (const id of explicitLineIds) {
@@ -2775,6 +2843,7 @@ function syncLayerVisibility() {
   // Independent category visibility.
   _setLayerGroupVisibility(LAYER_GROUPS.existingBuildings, showBuildings);
   _applyBuildingModeFilters();
+  _applySelectionScopedSourceFilters();
   _setLayerGroupVisibility(LAYER_GROUPS.maxEnvelope, showMax);
   _setLayerGroupVisibility(LAYER_GROUPS.farEnvelope, showFar);
   _setLayerGroupVisibility(LAYER_GROUPS.openSpaceArea, showArea && showOpenSpace);
@@ -6349,6 +6418,7 @@ function _buildEnvelopesForMultiSelectedLots() {
   for (const feature of multiSelectedLots) {
     try {
       const data = buildClientLotData(feature);
+      const lotSelectionId = String(data?.BBL || data?.bbl || data?.id || data?.ID || keyOfLotFeature(feature)).trim();
       const lotPolygon = data?.lot_polygon;
       if (!Array.isArray(lotPolygon) || lotPolygon.length < 4) continue;
 
@@ -6398,7 +6468,7 @@ function _buildEnvelopesForMultiSelectedLots() {
           { type: "FeatureCollection", features: generated.envelopeFeatures || [] },
           lotGeometry
         );
-        maxFeatures.push(...(boundedMax.features || []));
+        maxFeatures.push(...(boundedMax.features || []).map((item) => _withSelectionId(item, lotSelectionId)));
 
         const buildableGeometry = generated?.buildableFootprintFeature?.geometry;
         if (buildableGeometry) {
@@ -6585,7 +6655,7 @@ function _buildEnvelopesForMultiSelectedLots() {
           rear: lotAnalysis?.rearEdgeIndex ?? null,
         },
       });
-      farFeatures.push(...(ensuredFar.features || []));
+      farFeatures.push(...(ensuredFar.features || []).map((item) => _withSelectionId(item, lotSelectionId)));
 
       const farFootprintGeometry = farFootprintFeature?.geometry || controlsFootprintGeometry;
       const farFootprintAreaFt2 = _areaFt2FromGeometry(farFootprintGeometry);
@@ -6791,10 +6861,15 @@ function buildMaxEnvelopeForSelectedLot() {
       resolvedRuleRows.push({ zoneCode, controls, debug });
     }
 
-    const boundedMax = _clampFeatureCollectionToLotBounds({
+    const selectionId = String(activeLotData?.BBL || activeLotData?.bbl || activeLotData?.id || activeLotData?.ID || "").trim();
+    const boundedMaxRaw = _clampFeatureCollectionToLotBounds({
       type: "FeatureCollection",
       features: allFeatures,
     }, lotGeometry);
+    const boundedMax = {
+      type: "FeatureCollection",
+      features: (boundedMaxRaw.features || []).map((item) => _withSelectionId(item, selectionId)),
+    };
     map.getSource("selected-max-envelope").setData(boundedMax);
     lastMaxEnvelopeGeojson = boundedMax;
     const primaryResolved = resolvedRuleRows[0] || {};
@@ -7107,13 +7182,18 @@ function buildFarEnvelopeForSelectedLot() {
       console.warn("[far-envelope][warnings]", buildWarnings);
     }
 
-    const boundedFar = _clampFeatureCollectionToLotBounds(
+    const selectionId = String(activeLotData?.BBL || activeLotData?.bbl || activeLotData?.id || activeLotData?.ID || "").trim();
+    const boundedFarRaw = _clampFeatureCollectionToLotBounds(
       {
         type: "FeatureCollection",
         features,
       },
       lotGeometry
     );
+    const boundedFar = {
+      type: "FeatureCollection",
+      features: (boundedFarRaw.features || []).map((item) => _withSelectionId(item, selectionId)),
+    };
     const insideFarValidation = _validateFeatureCollectionInsideLot(boundedFar, lotGeometry, "far-envelope");
     const buildableInsideLot = _isGeometryInsideLot(controlsFootprintGeometry, lotGeometry);
     const farFootprintFeature = (boundedFar.features || []).find((f) => String(f?.properties?.kind || "") === "far_footprint");
@@ -7129,7 +7209,7 @@ function buildFarEnvelopeForSelectedLot() {
         const fallbackFar = {
           type: "FeatureCollection",
           features: [
-            {
+            _withSelectionId({
               type: "Feature",
               properties: {
                 kind: "far_footprint",
@@ -7139,7 +7219,7 @@ function buildFarEnvelopeForSelectedLot() {
                 area_ft2: Math.round(_areaFt2FromGeometry(fallbackGeometry)),
               },
               geometry: fallbackGeometry,
-            },
+            }, selectionId),
           ],
         };
         map.getSource("selected-far-envelope").setData(fallbackFar);
@@ -7152,6 +7232,10 @@ function buildFarEnvelopeForSelectedLot() {
     console.log(`[FAR-DEBUG] After clamping: ${boundedFar.features.length} features. Volume features: ${boundedFar.features.filter(f => f.properties?.kind === "far_volume").length}`);
 
     const ensuredFar = _ensureFarVolumeFeatures(boundedFar, buildingHeightFt, "#22c55e");
+    const ensuredFarWithSelectionId = {
+      type: "FeatureCollection",
+      features: (ensuredFar.features || []).map((item) => _withSelectionId(item, selectionId)),
+    };
     console.log(`[FAR-DEBUG] After ensuring volume: ${ensuredFar.features.length} features. Volume features: ${ensuredFar.features.filter(f => f.properties?.kind === "far_volume").length}`);
     
     // DEBUG: Check layer visibility
@@ -7163,7 +7247,7 @@ function buildFarEnvelopeForSelectedLot() {
       console.warn("[FAR-DEBUG] Layer selected-far-envelope-fill does NOT exist!");
     }
 
-    map.getSource("selected-far-envelope").setData(ensuredFar);
+    map.getSource("selected-far-envelope").setData(ensuredFarWithSelectionId);
     console.log(`[FAR-DEBUG] Data set to map source.`);
     
     // DEBUG: Update on-screen debug panel
@@ -7171,8 +7255,8 @@ function buildFarEnvelopeForSelectedLot() {
     const debugContent = document.getElementById("farDebugContent");
     if (debugPanel && debugContent) {
       debugPanel.style.display = debugMode ? "block" : "none";
-      const volCount = ensuredFar.features.filter(f => f.properties?.kind === "far_volume").length;
-      const maxHeight = Math.max(...ensuredFar.features.map(f => f.properties?.envelopeHeight || 0), 0);
+      const volCount = ensuredFarWithSelectionId.features.filter(f => f.properties?.kind === "far_volume").length;
+      const maxHeight = Math.max(...ensuredFarWithSelectionId.features.map(f => f.properties?.envelopeHeight || 0), 0);
       const layerVis = map.getLayoutProperty("selected-far-envelope-fill", "visibility");
       debugContent.innerHTML = `
         Total features: ${ensuredFar.features.length}<br/>
@@ -7184,8 +7268,8 @@ function buildFarEnvelopeForSelectedLot() {
     }
     
     lastFarEnvelopeGeojson = {
-      type: ensuredFar.type,
-      features: ensuredFar.features,
+      type: ensuredFarWithSelectionId.type,
+      features: ensuredFarWithSelectionId.features,
     };
 
     updateLotSummary(activeLotData, scenarioEnvelopeResults || baselineEnvelopeResults);
